@@ -12,8 +12,14 @@ void main() {
 
       test('invalid phone numbers', () {
         expect(Validators.isValidChinesePhone('12345678901'), isFalse);
-        expect(Validators.isValidChinesePhone('1380013800'), isFalse); // 10 digits
-        expect(Validators.isValidChinesePhone('138001380001'), isFalse); // 12 digits
+        expect(
+          Validators.isValidChinesePhone('1380013800'),
+          isFalse,
+        ); // 10 digits
+        expect(
+          Validators.isValidChinesePhone('138001380001'),
+          isFalse,
+        ); // 12 digits
         expect(Validators.isValidChinesePhone('abcdefghijk'), isFalse);
         expect(Validators.isValidChinesePhone(''), isFalse);
       });

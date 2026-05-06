@@ -266,10 +266,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         .read(authNotifierProvider.notifier)
         .sendPhoneVerification(phone: phone)
         .then((success) {
-      if (success && mounted) {
-        setState(() => _codeSent = true);
-      }
-    });
+          if (success && mounted) {
+            setState(() => _codeSent = true);
+          }
+        });
   }
 
   void _handlePhoneVerify() {
@@ -289,8 +289,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }

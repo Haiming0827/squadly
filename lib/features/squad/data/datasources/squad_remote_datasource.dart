@@ -25,13 +25,16 @@ class SquadRemoteDatasource {
       final inviteCode = codeResult as String;
 
       // 插入小队
-      final data =
-          await _client.from(SupabaseConstants.squads).insert({
+      final data = await _client
+          .from(SupabaseConstants.squads)
+          .insert({
             'name': name,
             'description': description,
             'invite_code': inviteCode,
             'created_by': _userId,
-          }).select().single();
+          })
+          .select()
+          .single();
 
       // 创建者自动成为队长
       await _client.from(SupabaseConstants.squadMembers).insert({
@@ -55,8 +58,9 @@ class SquadRemoteDatasource {
           .select('squad_id')
           .eq('user_id', _userId);
 
-      final squadIds =
-          (memberRows as List).map((r) => r['squad_id'] as String).toList();
+      final squadIds = (memberRows as List)
+          .map((r) => r['squad_id'] as String)
+          .toList();
 
       if (squadIds.isEmpty) return [];
 
@@ -102,9 +106,11 @@ class SquadRemoteDatasource {
 
       // 检查人数上限
       final count =
-          await _client.rpc('get_squad_member_count', params: {
-            'p_squad_id': squad.id,
-          }) as int;
+          await _client.rpc(
+                'get_squad_member_count',
+                params: {'p_squad_id': squad.id},
+              )
+              as int;
 
       if (count >= squad.maxMembers) {
         throw const ServerException(message: '小队已满员');
@@ -153,9 +159,11 @@ class SquadRemoteDatasource {
 
       // 检查当前成员数（最少 2 人）
       final count =
-          await _client.rpc('get_squad_member_count', params: {
-            'p_squad_id': squadId,
-          }) as int;
+          await _client.rpc(
+                'get_squad_member_count',
+                params: {'p_squad_id': squadId},
+              )
+              as int;
 
       if (count <= AppConstants.squadMinMembers) {
         throw const ServerException(message: '小队至少需要 2 人');
@@ -188,9 +196,11 @@ class SquadRemoteDatasource {
 
       // 检查人数
       final count =
-          await _client.rpc('get_squad_member_count', params: {
-            'p_squad_id': squadId,
-          }) as int;
+          await _client.rpc(
+                'get_squad_member_count',
+                params: {'p_squad_id': squadId},
+              )
+              as int;
 
       if (count <= AppConstants.squadMinMembers) {
         throw const ServerException(message: '小队至少需要 2 人');

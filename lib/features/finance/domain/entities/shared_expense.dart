@@ -11,7 +11,8 @@ abstract class SharedExpense with _$SharedExpense {
     required String squadId,
     required String paidBy,
     required double amount,
-    required String category, // 'dining' | 'transport' | 'entertainment' | 'other'
+    required String
+    category, // 'dining' | 'transport' | 'entertainment' | 'other'
     String? description,
     required DateTime expenseDate,
     @Default(false) bool needsApproval,

@@ -18,9 +18,7 @@ abstract class AuthRepository {
   });
 
   /// 手机号验证码登录
-  Future<Either<Failure, Unit>> sendPhoneVerification({
-    required String phone,
-  });
+  Future<Either<Failure, Unit>> sendPhoneVerification({required String phone});
 
   Future<Either<Failure, User>> verifyPhoneCode({
     required String phone,

@@ -2,23 +2,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../core/network/supabase_client_provider.dart';
+import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
-import '../features/squad/presentation/screens/squad_list_screen.dart';
+import '../features/home/presentation/screens/home_shell_screen.dart';
 
 part 'router.g.dart';
 
 @riverpod
 GoRouter router(Ref ref) {
-  final authState = ref.watch(authStateChangesProvider);
+  final authState = ref.watch(authNotifierProvider);
 
   return GoRouter(
     initialLocation: '/',
     debugLogDiagnostics: true,
     redirect: (context, state) {
-      final isLoggedIn = authState.whenOrNull(
-        data: (data) => data.session != null,
-      ) ?? false;
+      final isLoggedIn = authState.valueOrNull != null;
 
       final isOnLoginPage = state.matchedLocation == '/login';
 
@@ -30,7 +28,7 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/',
         name: 'home',
-        builder: (context, state) => const SquadListScreen(),
+        builder: (context, state) => const HomeShellScreen(),
       ),
       GoRoute(
         path: '/login',

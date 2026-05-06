@@ -24,7 +24,9 @@ class AuthRemoteDatasource {
 
       final user = response.user;
       if (user == null) {
-        throw const ServerException(message: 'Sign up failed: no user returned');
+        throw const ServerException(
+          message: 'Sign up failed: no user returned',
+        );
       }
 
       // 创建 profile 记录
@@ -53,7 +55,9 @@ class AuthRemoteDatasource {
 
       final user = response.user;
       if (user == null) {
-        throw const ServerException(message: 'Sign in failed: no user returned');
+        throw const ServerException(
+          message: 'Sign in failed: no user returned',
+        );
       }
 
       return _fetchProfile(user.id);
@@ -114,7 +118,7 @@ class AuthRemoteDatasource {
   /// Apple 登录
   Future<UserDto> signInWithApple() async {
     try {
-      final response = await _client.auth.signInWithApple();
+      await _client.auth.signInWithOAuth(sb.OAuthProvider.apple);
 
       final user = _client.auth.currentUser;
       if (user == null) {

@@ -10,7 +10,8 @@ abstract class WorkoutPlan with _$WorkoutPlan {
     required String id,
     required String squadId,
     required String name,
-    required String planType, // 'muscle_gain' | 'fat_loss' | 'body_shaping' | 'custom'
+    required String
+    planType, // 'muscle_gain' | 'fat_loss' | 'body_shaping' | 'custom'
     String? description,
     required String createdBy,
     required DateTime createdAt,

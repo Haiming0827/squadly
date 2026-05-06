@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../app/demo/demo_store.dart';
 import '../../../../core/network/supabase_client_provider.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../data/repositories/demo_auth_repository.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 
@@ -18,6 +20,13 @@ AuthRemoteDatasource authRemoteDatasource(Ref ref) {
 /// 认证仓库 Provider
 @riverpod
 AuthRepository authRepository(Ref ref) {
+  const useDemoBackend = bool.fromEnvironment(
+    'USE_DEMO_BACKEND',
+    defaultValue: true,
+  );
+  if (useDemoBackend) {
+    return DemoAuthRepository(ref.watch(demoAppStoreProvider.notifier));
+  }
   return AuthRepositoryImpl(ref.watch(authRemoteDatasourceProvider));
 }
 
@@ -26,7 +35,15 @@ AuthRepository authRepository(Ref ref) {
 class AuthNotifier extends _$AuthNotifier {
   @override
   AsyncValue<User?> build() {
-    // 监听 Supabase auth 状态变化
+    const useDemoBackend = bool.fromEnvironment(
+      'USE_DEMO_BACKEND',
+      defaultValue: true,
+    );
+    if (useDemoBackend) {
+      final demoState = ref.watch(demoAppStoreProvider);
+      return AsyncData(demoState.currentUser);
+    }
+
     ref.listen(authStateChangesProvider, (prev, next) {
       next.whenData((authState) {
         if (authState.session == null) {
@@ -36,12 +53,6 @@ class AuthNotifier extends _$AuthNotifier {
         }
       });
     });
-
-    // 初始检查
-    final currentUser = ref.read(currentUserProvider);
-    if (currentUser != null) {
-      _loadCurrentUser();
-    }
 
     return const AsyncData(null);
   }
@@ -62,10 +73,7 @@ class AuthNotifier extends _$AuthNotifier {
   }) async {
     state = const AsyncLoading();
     final repo = ref.read(authRepositoryProvider);
-    final result = await repo.signInWithEmail(
-      email: email,
-      password: password,
-    );
+    final result = await repo.signInWithEmail(email: email, password: password);
     state = result.fold(
       (failure) => AsyncError(failure, StackTrace.current),
       (user) => AsyncData(user),

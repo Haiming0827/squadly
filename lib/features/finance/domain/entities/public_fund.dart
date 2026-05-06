@@ -10,7 +10,8 @@ abstract class PublicFund with _$PublicFund {
     required String id,
     required String squadId,
     required String name,
-    required String fundType, // 'travel' | 'dining' | 'team_building' | 'custom'
+    required String
+    fundType, // 'travel' | 'dining' | 'team_building' | 'custom'
     @Default(0) double targetAmount,
     @Default(0) double currentAmount,
     required String createdBy,

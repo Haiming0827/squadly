@@ -20,4 +20,11 @@ class SupabaseConstants {
   static const String privateAssets = 'private_assets';
   static const String sharedExpenses = 'shared_expenses';
   static const String watchlistItems = 'watchlist_items';
+
+  // 旅行模块
+  static const String travelPlans = 'travel_plans';
+
+  // 美食模块
+  static const String foodSpots = 'food_spots';
+  static const String foodVotes = 'food_votes';
 }

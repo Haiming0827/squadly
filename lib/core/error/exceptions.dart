@@ -15,7 +15,8 @@ class NetworkException implements Exception {
   const NetworkException({this.message});
 
   @override
-  String toString() => 'NetworkException: ${message ?? "No network connection"}';
+  String toString() =>
+      'NetworkException: ${message ?? "No network connection"}';
 }
 
 class CacheException implements Exception {

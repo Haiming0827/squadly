@@ -10,7 +10,8 @@ abstract class DailyTask with _$DailyTask {
     required String id,
     required String squadId,
     required String title,
-    required String taskType, // 'stretch' | 'cardio' | 'night_run' | 'home_training'
+    required String
+    taskType, // 'stretch' | 'cardio' | 'night_run' | 'home_training'
     double? targetValue,
     String? targetUnit, // 'minutes' | 'reps' | 'km'
     @Default([]) List<int> recurringDays, // [1,2,3,4,5] = 周一到周五

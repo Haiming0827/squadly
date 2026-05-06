@@ -6,7 +6,10 @@ void main() {
     test('squad member limits are valid', () {
       expect(AppConstants.squadMinMembers, 2);
       expect(AppConstants.squadMaxMembers, 9);
-      expect(AppConstants.squadMinMembers, lessThan(AppConstants.squadMaxMembers));
+      expect(
+        AppConstants.squadMinMembers,
+        lessThan(AppConstants.squadMaxMembers),
+      );
     });
 
     test('roles are defined', () {

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -10,12 +11,14 @@ part 'router.g.dart';
 
 @riverpod
 GoRouter router(Ref ref) {
-  final authState = ref.watch(authNotifierProvider);
+  final authRefresh = ValueNotifier(0);
 
-  return GoRouter(
+  final appRouter = GoRouter(
     initialLocation: '/',
     debugLogDiagnostics: true,
+    refreshListenable: authRefresh,
     redirect: (context, state) {
+      final authState = ref.read(authNotifierProvider);
       final isLoggedIn = authState.valueOrNull != null;
 
       final isOnLoginPage = state.matchedLocation == '/login';
@@ -37,4 +40,14 @@ GoRouter router(Ref ref) {
       ),
     ],
   );
+
+  ref.listen(authNotifierProvider, (previous, next) {
+    authRefresh.value++;
+  });
+  ref.onDispose(() {
+    appRouter.dispose();
+    authRefresh.dispose();
+  });
+
+  return appRouter;
 }

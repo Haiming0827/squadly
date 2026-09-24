@@ -26,4 +26,27 @@ void main() {
     expect(find.text('美食'), findsOneWidget);
     expect(find.text('周末行动组'), findsWidgets);
   });
+
+  testWidgets('signing out returns to login without framework errors', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const ProviderScope(child: SquadlyApp()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextField, '邮箱'),
+      'haiming@example.com',
+    );
+    await tester.enterText(find.widgetWithText(TextField, '密码'), 'password1');
+    await tester.tap(find.widgetWithText(ElevatedButton, '登录'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('账号'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('退出登录'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('邮箱登录'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

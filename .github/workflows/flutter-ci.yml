@@ -17,7 +17,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: '3.41.9'
           cache: true
 
       - name: Install dependencies
@@ -34,6 +34,9 @@ jobs:
 
       - name: Unit and widget tests
         run: flutter test --coverage
+
+      - name: Real-backend auth and routing tests
+        run: flutter test --dart-define=USE_DEMO_BACKEND=false test/app/real_mode_router_test.dart test/features/auth/presentation/auth_recovery_state_test.dart
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4
@@ -59,7 +62,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: '3.41.9'
           cache: true
 
       - name: Install dependencies
@@ -91,7 +94,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: '3.41.9'
           cache: true
 
       - name: Install dependencies
@@ -117,7 +120,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: '3.47.4'
           cache: true
 
       - name: Install dependencies
@@ -131,3 +134,21 @@ jobs:
         with:
           name: squadly-ios-debug
           path: build/ios/iphoneos
+
+  backend-contracts:
+    name: Database and Push Worker Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+
+      - name: PostgreSQL migration, RLS, and delivery contracts
+        run: bash supabase/tests/run_contracts.sh
+
+      - name: APNs worker unit tests
+        run: node --experimental-strip-types --test supabase/functions/push-deliveries/*.test.mjs

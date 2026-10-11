@@ -4,6 +4,7 @@ import '../../../../app/demo/demo_store.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/validators.dart';
 import '../../domain/entities/user.dart';
+import '../../domain/public_nickname.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 class DemoAuthRepository implements AuthRepository {
@@ -26,13 +27,14 @@ class DemoAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, User>> signUpWithEmail({
+  Future<Either<Failure, User?>> signUpWithEmail({
     required String email,
     required String password,
     required String nickname,
   }) async {
-    if (nickname.trim().isEmpty) {
-      return const Left(Failure.validation(message: '请输入昵称'));
+    final normalized = normalizePublicNickname(nickname);
+    if (normalized == null) {
+      return const Left(Failure.validation(message: '昵称需为 1–60 字，不能含换行或控制字符'));
     }
     if (!Validators.isValidEmail(email)) {
       return const Left(Failure.validation(message: '请输入有效的邮箱地址'));
@@ -44,10 +46,22 @@ class DemoAuthRepository implements AuthRepository {
       _store.signUpWithEmail(
         email: email,
         password: password,
-        nickname: nickname,
+        nickname: normalized,
       ),
     );
   }
+
+  @override
+  Future<Either<Failure, Unit>> requestPasswordRecovery({
+    required String email,
+  }) async => const Left(Failure.server(message: '演示模式不发送找回密码邮件'));
+
+  @override
+  Future<Either<Failure, Unit>> completePasswordRecovery({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async => const Left(Failure.server(message: '演示模式不支持找回密码'));
 
   @override
   Future<Either<Failure, Unit>> sendPhoneVerification({
@@ -75,6 +89,27 @@ class DemoAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, Unit>> requestEmailChange({
+    required String email,
+  }) async => const Left(Failure.server(message: '演示模式不支持修改联系方式'));
+
+  @override
+  Future<Either<Failure, Unit>> requestPhoneChange({
+    required String phone,
+  }) async => const Left(Failure.server(message: '演示模式不支持绑定手机号'));
+
+  @override
+  Future<Either<Failure, Unit>> resendPhoneChange({
+    required String phone,
+  }) async => const Left(Failure.server(message: '演示模式不支持绑定手机号'));
+
+  @override
+  Future<Either<Failure, User>> verifyPhoneChange({
+    required String phone,
+    required String code,
+  }) async => const Left(Failure.server(message: '演示模式不支持绑定手机号'));
+
+  @override
   Future<Either<Failure, User>> signInWithApple() async {
     return Right(_store.signInWithApple());
   }
@@ -86,6 +121,21 @@ class DemoAuthRepository implements AuthRepository {
       return const Left(Failure.unauthorized(message: '请先登录'));
     }
     return Right(user);
+  }
+
+  @override
+  Future<Either<Failure, User>> updateNickname({
+    required String nickname,
+  }) async {
+    final normalized = normalizePublicNickname(nickname);
+    if (normalized == null) {
+      return const Left(Failure.validation(message: '昵称需为 1–60 字，不能含换行或控制字符'));
+    }
+    try {
+      return Right(_store.updateNickname(normalized));
+    } on StateError {
+      return const Left(Failure.unauthorized(message: '请先登录'));
+    }
   }
 
   @override

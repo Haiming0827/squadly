@@ -1,5 +1,6 @@
 import 'package:fpdart/fpdart.dart';
 import '../../../../core/error/failures.dart';
+import '../entities/issued_invitation.dart';
 import '../entities/squad.dart';
 import '../entities/squad_member.dart';
 
@@ -13,6 +14,14 @@ abstract class SquadRepository {
 
   /// 获取我的小队列表
   Future<Either<Failure, List<Squad>>> getMySquads();
+
+  /// Only the captain may issue both credentials for one invitation.
+  Future<Either<Failure, IssuedInvitation>> issueInvitation({
+    required String squadId,
+  });
+
+  /// Code and link token share the same server-side redemption transaction.
+  Future<Either<Failure, Squad>> redeemInvitation({required String credential});
 
   /// 通过邀请码加入小队
   Future<Either<Failure, Squad>> joinSquad({required String inviteCode});

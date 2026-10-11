@@ -44,3 +44,18 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local test-backend configuration. Keep real project details out of git.
+/config/test-backend.local.json
+/supabase/.branches/
+/supabase/.temp/
+
+# Local credentials and signing material are never package source.
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.mobileprovision
+# Xiaomi's authenticated/vendor SDK download is local-only and must not be redistributed.
+/android/app/libs/MiPush_SDK_Client*.aar

@@ -1,0 +1,4 @@
+[functions.push-deliveries]
+# This endpoint uses an independent high-entropy worker secret in its handler.
+# Never expose that secret or the service-role key to the Flutter app.
+verify_jwt = false

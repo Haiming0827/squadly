@@ -17,6 +17,36 @@ void main() {
       expect(store.state.currentSquad?.name, '周末行动组');
     });
 
+    test('nickname edit updates only the signed-in member', () {
+      final store = DemoAppStore();
+      final user = store.signInWithEmail(
+        email: 'haiming@example.com',
+        password: 'password1',
+      );
+      final teammate = store.state.users.firstWhere(
+        (candidate) => candidate.id != user.id,
+      );
+
+      final updated = store.updateNickname('晨跑海明');
+
+      expect(updated.nickname, '晨跑海明');
+      expect(store.state.currentUser?.nickname, '晨跑海明');
+      expect(
+        store.state.users.firstWhere((item) => item.id == user.id).nickname,
+        '晨跑海明',
+      );
+      expect(
+        store.state.members
+            .firstWhere((item) => item.userId == user.id)
+            .nickname,
+        '晨跑海明',
+      );
+      expect(
+        store.state.users.firstWhere((item) => item.id == teammate.id),
+        teammate,
+      );
+    });
+
     test('private assets are visible only for current user', () {
       final store = DemoAppStore();
       store.signInWithEmail(

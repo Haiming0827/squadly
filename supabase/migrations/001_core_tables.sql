@@ -45,34 +45,6 @@ CREATE TABLE squads (
 
 ALTER TABLE squads ENABLE ROW LEVEL SECURITY;
 
--- 小队成员可以查看小队信息
-CREATE POLICY "squads_select" ON squads
-  FOR SELECT USING (
-    id IN (SELECT squad_id FROM squad_members WHERE user_id = auth.uid())
-  );
-
--- 任何已认证用户可以创建小队
-CREATE POLICY "squads_insert" ON squads
-  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-
--- 只有队长可以更新小队信息
-CREATE POLICY "squads_update" ON squads
-  FOR UPDATE USING (
-    id IN (
-      SELECT squad_id FROM squad_members
-      WHERE user_id = auth.uid() AND role = 'captain'
-    )
-  );
-
--- 只有队长可以删除小队
-CREATE POLICY "squads_delete" ON squads
-  FOR DELETE USING (
-    id IN (
-      SELECT squad_id FROM squad_members
-      WHERE user_id = auth.uid() AND role = 'captain'
-    )
-  );
-
 -- ============================================
 -- 3. Squad Members 表
 -- ============================================
@@ -86,6 +58,32 @@ CREATE TABLE squad_members (
 );
 
 ALTER TABLE squad_members ENABLE ROW LEVEL SECURITY;
+
+-- These policies reference squad_members, so they must be created only after
+-- the table exists when this migration runs against an empty database.
+CREATE POLICY "squads_select" ON squads
+  FOR SELECT USING (
+    id IN (SELECT squad_id FROM squad_members WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "squads_insert" ON squads
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "squads_update" ON squads
+  FOR UPDATE USING (
+    id IN (
+      SELECT squad_id FROM squad_members
+      WHERE user_id = auth.uid() AND role = 'captain'
+    )
+  );
+
+CREATE POLICY "squads_delete" ON squads
+  FOR DELETE USING (
+    id IN (
+      SELECT squad_id FROM squad_members
+      WHERE user_id = auth.uid() AND role = 'captain'
+    )
+  );
 
 -- 小队成员可以查看同小队的成员列表
 CREATE POLICY "squad_members_select" ON squad_members

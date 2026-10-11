@@ -1,6 +1,11 @@
+import 'dart:async';
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/error/failures.dart';
 import '../../../../core/utils/validators.dart';
 import '../providers/auth_provider.dart';
 
@@ -22,9 +27,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isRegister = false;
   bool _isPhoneMode = false;
   bool _codeSent = false;
+  bool _awaitingEmailConfirmation = false;
+  int _cooldownSeconds = 0;
+  Timer? _resendTimer;
 
   @override
   void dispose() {
+    _resendTimer?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     _nicknameController.dispose();
@@ -79,6 +88,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   setState(() {
                     _isPhoneMode = selected.first;
                     _codeSent = false;
+                    _awaitingEmailConfirmation = false;
                   });
                 },
               ),
@@ -86,43 +96,53 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
               if (_isPhoneMode) ..._buildPhoneForm(isLoading),
               if (!_isPhoneMode) ..._buildEmailForm(isLoading),
+              if (_awaitingEmailConfirmation && !_isPhoneMode)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Text(
+                    '确认邮件已发送。请在邮箱中完成确认，然后返回这里登录。',
+                    style: theme.textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
 
               const SizedBox(height: 24),
 
-              // 分割线
-              Row(
-                children: [
-                  const Expanded(child: Divider()),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      '其他登录方式',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+              if (Platform.isIOS) ...[
+                Row(
+                  children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        '其他登录方式',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
-                  ),
-                  const Expanded(child: Divider()),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Apple 登录
-              OutlinedButton.icon(
-                onPressed: isLoading ? null : _handleAppleSignIn,
-                icon: const Icon(Icons.apple),
-                label: const Text('通过 Apple 登录'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
+                    const Expanded(child: Divider()),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: isLoading ? null : _handleAppleSignIn,
+                  icon: const Icon(Icons.apple),
+                  label: const Text('通过 Apple 登录'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                ),
+              ],
 
               // 错误提示
               if (authState is AsyncError)
                 Padding(
                   padding: const EdgeInsets.only(top: 16),
                   child: Text(
-                    '${authState.error}',
+                    authState.error is Failure
+                        ? authFailureMessage(authState.error as Failure)
+                        : '操作失败，请稍后重试',
                     style: TextStyle(color: theme.colorScheme.error),
                     textAlign: TextAlign.center,
                   ),
@@ -139,6 +159,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (_isRegister)
         TextField(
           controller: _nicknameController,
+          maxLength: 60,
           decoration: const InputDecoration(
             labelText: '昵称',
             prefixIcon: Icon(Icons.person_outline),
@@ -178,9 +199,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             : Text(_isRegister ? '注册' : '登录'),
       ),
       TextButton(
-        onPressed: () => setState(() => _isRegister = !_isRegister),
+        onPressed: () => setState(() {
+          _isRegister = !_isRegister;
+          _awaitingEmailConfirmation = false;
+        }),
         child: Text(_isRegister ? '已有账号？去登录' : '没有账号？去注册'),
       ),
+      if (!_isRegister &&
+          !const bool.fromEnvironment('USE_DEMO_BACKEND', defaultValue: true))
+        TextButton(
+          onPressed: isLoading ? null : () => context.go('/recover'),
+          child: const Text('忘记密码？'),
+        ),
     ];
   }
 
@@ -222,6 +252,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               )
             : Text(_codeSent ? '验证登录' : '发送验证码'),
       ),
+      if (_codeSent)
+        TextButton(
+          onPressed: isLoading || _cooldownSeconds > 0 ? null : _handleSendCode,
+          child: Text(
+            _cooldownSeconds > 0 ? '${_cooldownSeconds}s 后可重发' : '重新发送验证码',
+          ),
+        ),
     ];
   }
 
@@ -245,11 +282,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _showError('请输入昵称');
         return;
       }
-      notifier.signUpWithEmail(
-        email: email,
-        password: password,
-        nickname: nickname,
-      );
+      notifier
+          .signUpWithEmail(email: email, password: password, nickname: nickname)
+          .then((needsConfirmation) {
+            if (mounted && needsConfirmation) {
+              setState(() {
+                _awaitingEmailConfirmation = true;
+                _isRegister = false;
+              });
+            }
+          });
     } else {
       notifier.signInWithEmail(email: email, password: password);
     }
@@ -267,7 +309,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         .sendPhoneVerification(phone: phone)
         .then((success) {
           if (success && mounted) {
-            setState(() => _codeSent = true);
+            setState(() {
+              _codeSent = true;
+              _cooldownSeconds = 60;
+            });
+            _resendTimer?.cancel();
+            _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+              if (!mounted) {
+                timer.cancel();
+                return;
+              }
+              setState(() {
+                _cooldownSeconds--;
+                if (_cooldownSeconds <= 0) timer.cancel();
+              });
+            });
           }
         });
   }

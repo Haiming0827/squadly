@@ -3,13 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/demo/demo_store.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../finance/presentation/screens/finance_screen.dart';
-import '../../../fitness/presentation/screens/fitness_screen.dart';
-import '../../../food/presentation/screens/food_screen.dart';
-import '../../../squad/presentation/screens/squad_list_screen.dart';
-import '../../../travel/presentation/screens/travel_screen.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../social/presentation/screens/circle_screen.dart';
+import '../../../social/presentation/screens/data_workshop_screen.dart';
+import '../../../social/presentation/screens/share_composer_screen.dart';
+import 'plan_hub_screen.dart';
+import 'profile_screen.dart';
 
+/// The social-first shell. The existing activity flows remain under Plan.
 class HomeShellScreen extends ConsumerStatefulWidget {
   const HomeShellScreen({super.key});
 
@@ -18,42 +19,86 @@ class HomeShellScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeShellScreenState extends ConsumerState<HomeShellScreen> {
+  // NavigationBar index 2 is an action, not a persistent destination.
   int _index = 0;
+
+  Future<void> _openComposer([String? itemId]) async {
+    if (ref.read(demoAppStoreProvider).currentSquad == null) {
+      setState(() => _index = 3);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('先创建或加入小队，再与伙伴分享')));
+      return;
+    }
+
+    final published = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ShareComposerScreen(initialItemId: itemId),
+      ),
+    );
+    if (!mounted || published != true) return;
+    setState(() => _index = 0);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('已分享到小队')));
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(demoAppStoreProvider);
     final squad = state.currentSquad;
-    final tabs = [
-      const SquadListScreen(),
-      const FitnessScreen(),
-      const FinanceScreen(),
-      const TravelScreen(),
-      const FoodScreen(),
-    ];
+    final colors = Theme.of(context).colorScheme;
+    final palette = context.squadlyPalette;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(squad?.name ?? AppConstants.appName),
-        leading: const Icon(Icons.groups_rounded),
+        leadingWidth: 56,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: CircleAvatar(
+            backgroundColor: colors.surfaceContainerHigh,
+            foregroundColor: colors.onSurface,
+            child: squad == null
+                ? const Icon(Icons.groups_2_outlined, size: 20)
+                : Text(squad.name.characters.first),
+          ),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              squad?.name ?? AppConstants.appName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              '仅限邀请的小圈子 · 本地演示',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: colors.onSurfaceVariant,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
         actions: [
           if (state.mySquads.length > 1)
             PopupMenuButton<String>(
               tooltip: '切换小队',
               icon: const Icon(Icons.swap_horiz_rounded),
-              onSelected: (id) {
-                ref.read(demoAppStoreProvider.notifier).selectSquad(id);
-              },
-              itemBuilder: (context) => [
+              onSelected: (id) =>
+                  ref.read(demoAppStoreProvider.notifier).selectSquad(id),
+              itemBuilder: (_) => [
                 for (final item in state.mySquads)
-                  PopupMenuItem(
+                  PopupMenuItem<String>(
                     value: item.id,
                     child: Row(
                       children: [
-                        if (item.id == squad?.id)
-                          const Icon(Icons.check_rounded, size: 18)
-                        else
-                          const SizedBox(width: 18),
+                        Icon(
+                          item.id == squad?.id
+                              ? Icons.check_rounded
+                              : Icons.groups_outlined,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(child: Text(item.name)),
                       ],
@@ -61,65 +106,55 @@ class _HomeShellScreenState extends ConsumerState<HomeShellScreen> {
                   ),
               ],
             ),
-          PopupMenuButton<String>(
-            tooltip: '账号',
+          IconButton(
+            tooltip: '我的',
+            onPressed: () => setState(() => _index = 4),
             icon: const Icon(Icons.account_circle_outlined),
-            onSelected: (value) {
-              if (value == 'signOut') {
-                ref.read(authNotifierProvider.notifier).signOut();
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                enabled: false,
-                child: Text(state.currentUser?.nickname ?? '未登录'),
-              ),
-              const PopupMenuItem(
-                value: 'signOut',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout_rounded, size: 18),
-                    SizedBox(width: 8),
-                    Text('退出登录'),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 180),
-        child: KeyedSubtree(key: ValueKey(_index), child: tabs[_index]),
+      body: IndexedStack(
+        index: _index > 2 ? _index - 1 : _index,
+        children: [
+          CircleScreen(onCreatePost: _openComposer),
+          DataWorkshopScreen(onShareItem: _openComposer),
+          const PlanHubScreen(),
+          const ProfileScreen(),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (value) => setState(() => _index = value),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.groups_outlined),
-            selectedIcon: Icon(Icons.groups_rounded),
+        onDestinationSelected: (value) {
+          if (value == 2) {
+            _openComposer();
+          } else {
+            setState(() => _index = value);
+          }
+        },
+        destinations: [
+          const NavigationDestination(
+            icon: Icon(Icons.groups_2_outlined),
+            selectedIcon: Icon(Icons.groups_2_rounded),
             label: '小队',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.fitness_center_outlined),
-            selectedIcon: Icon(Icons.fitness_center_rounded),
-            label: '健身',
+          const NavigationDestination(
+            icon: Icon(Icons.auto_graph_outlined),
+            selectedIcon: Icon(Icons.auto_graph_rounded),
+            label: '数据',
           ),
           NavigationDestination(
-            icon: Icon(Icons.savings_outlined),
-            selectedIcon: Icon(Icons.savings_rounded),
-            label: '理财',
+            icon: Icon(Icons.add_circle_rounded, color: palette.accent),
+            label: '分享',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map_rounded),
-            label: '旅行',
+          const NavigationDestination(
+            icon: Icon(Icons.grid_view_outlined),
+            selectedIcon: Icon(Icons.grid_view_rounded),
+            label: '计划',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.restaurant_outlined),
-            selectedIcon: Icon(Icons.restaurant_rounded),
-            label: '美食',
+          const NavigationDestination(
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded),
+            label: '我的',
           ),
         ],
       ),

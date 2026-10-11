@@ -13,6 +13,10 @@ import '../../features/fitness/domain/entities/check_in.dart';
 import '../../features/fitness/domain/entities/daily_task.dart';
 import '../../features/fitness/domain/entities/health_snapshot.dart';
 import '../../features/fitness/domain/entities/workout_plan.dart';
+import '../../features/social/domain/entities/circle_message.dart';
+import '../../features/social/domain/entities/data_connection.dart';
+import '../../features/social/domain/entities/external_data_item.dart';
+import '../../features/social/domain/entities/social_post.dart';
 import '../../features/squad/domain/entities/squad.dart';
 import '../../features/squad/domain/entities/squad_member.dart';
 import 'demo_models.dart';
@@ -78,11 +82,32 @@ class DemoAppStore extends StateNotifier<DemoAppState> {
 
   User? getCurrentUser() => state.currentUser;
 
+  User updateNickname(String nickname) {
+    final current = _requireUser();
+    final updated = current.copyWith(nickname: nickname);
+    state = state.copyWith(
+      currentUser: updated,
+      users: [
+        for (final user in state.users)
+          if (user.id == current.id) updated else user,
+      ],
+      members: [
+        for (final member in state.members)
+          if (member.userId == current.id)
+            member.copyWith(nickname: nickname)
+          else
+            member,
+      ],
+    );
+    return updated;
+  }
+
   void signOut() {
     state = state.copyWith(clearCurrentUser: true);
   }
 
   void selectSquad(String squadId) {
+    _requireMember(squadId);
     state = state.copyWith(currentSquadId: squadId);
   }
 
@@ -520,6 +545,109 @@ class DemoAppStore extends StateNotifier<DemoAppState> {
     return options.first;
   }
 
+  SocialPost publishDataPost({
+    required String squadId,
+    required String dataItemId,
+    required String title,
+    required String body,
+    required String template,
+    required String visibility,
+    List<String> visibleToUserIds = const [],
+  }) {
+    final user = _requireUser();
+    _requireMember(squadId);
+    final item = state.externalDataItems.firstWhere(
+      (candidate) => candidate.id == dataItemId,
+    );
+    if (item.userId != user.id) {
+      throw StateError('不能分享其他成员的个人数据');
+    }
+    if (visibility != 'squad' && visibility != 'selected') {
+      throw StateError('不支持的分享范围');
+    }
+    final allowedRecipients = state
+        .membersFor(squadId)
+        .map((member) => member.userId)
+        .toSet();
+    final recipients = visibility == 'selected'
+        ? visibleToUserIds
+              .where(
+                (userId) =>
+                    userId != user.id && allowedRecipients.contains(userId),
+              )
+              .toSet()
+              .toList()
+        : const <String>[];
+    if (visibility == 'selected' && recipients.isEmpty) {
+      throw StateError('请选择至少一位接收成员');
+    }
+
+    final post = SocialPost(
+      id: _uuid.v4(),
+      squadId: squadId,
+      authorId: user.id,
+      authorName: user.nickname,
+      title: title.trim().isEmpty ? item.title : title.trim(),
+      body: body.trim(),
+      template: template,
+      visibility: visibility,
+      sourceLabel: item.sourceLabel,
+      metricValue: item.value,
+      metricUnit: item.unit,
+      rangeStart: item.rangeStart,
+      rangeEnd: item.rangeEnd,
+      createdAt: DateTime.now(),
+      trend: item.trend,
+      visibleToUserIds: recipients,
+    );
+    state = state.copyWith(socialPosts: [...state.socialPosts, post]);
+    return post;
+  }
+
+  void togglePostReaction(String postId) {
+    final user = _requireUser();
+    final post = state.socialPosts
+        .where((item) => item.id == postId)
+        .firstOrNull;
+    if (post == null) throw StateError('动态不存在');
+    _requireMember(post.squadId);
+    if (!state.postsFor(post.squadId).any((item) => item.id == postId)) {
+      throw StateError('不能操作未向你分享的动态');
+    }
+    state = state.copyWith(
+      socialPosts: state.socialPosts.map((post) {
+        if (post.id != postId) return post;
+        final reactions = post.reactionUserIds.toSet();
+        if (!reactions.add(user.id)) reactions.remove(user.id);
+        return post.copyWith(reactionUserIds: reactions.toList());
+      }).toList(),
+    );
+  }
+
+  CircleMessage sendCircleMessage({
+    required String squadId,
+    required String text,
+  }) {
+    final user = _requireUser();
+    _requireMember(squadId);
+    final normalized = text.trim();
+    if (normalized.isEmpty) throw StateError('消息不能为空');
+    final message = CircleMessage(
+      id: _uuid.v4(),
+      squadId: squadId,
+      authorId: user.id,
+      authorName: user.nickname,
+      text: normalized,
+      createdAt: DateTime.now(),
+    );
+    state = state.copyWith(circleMessages: [...state.circleMessages, message]);
+    return message;
+  }
+
+  void connectDataSource(String connectionId) {
+    throw UnsupportedError('演示版尚未接入真实数据源');
+  }
+
   User _createUser({required String nickname, String? email, String? phone}) {
     final user = User(
       id: _uuid.v4(),
@@ -855,6 +983,152 @@ DemoAppState _seedState() {
     ),
   ];
 
+  final externalDataItems = [
+    ExternalDataItem(
+      id: 'external-weekly-activity',
+      userId: 'user-haiming',
+      source: 'apple_health',
+      sourceLabel: 'Apple 健康 · 演示样本',
+      category: 'activity',
+      title: '本周运动摘要',
+      summary: '一周完成 4 次训练，周六状态最好。',
+      value: '286',
+      unit: '分钟',
+      rangeStart: today.subtract(const Duration(days: 6)),
+      rangeEnd: today,
+      importedAt: now.subtract(const Duration(minutes: 24)),
+      trend: const [32, 48, 24, 55, 36, 61, 30],
+    ),
+    ExternalDataItem(
+      id: 'external-evening-run',
+      userId: 'user-haiming',
+      source: 'mi_fitness',
+      sourceLabel: '小米运动健康 · 演示样本',
+      category: 'running',
+      title: '傍晚轻松跑',
+      summary: '沿江路线，后半程配速更加稳定。',
+      value: '5.2',
+      unit: '公里',
+      rangeStart: now.subtract(const Duration(days: 1, hours: 1)),
+      rangeEnd: now.subtract(const Duration(days: 1)),
+      importedAt: now.subtract(const Duration(hours: 3)),
+      trend: const [6.4, 6.2, 6.1, 5.9, 5.8, 5.7],
+    ),
+    ExternalDataItem(
+      id: 'external-sleep',
+      userId: 'user-haiming',
+      source: 'huawei_health',
+      sourceLabel: '华为运动健康 · 演示样本',
+      category: 'sleep',
+      title: '昨晚睡眠',
+      summary: '深睡 1 小时 42 分，入睡时间比平时早。',
+      value: '7:26',
+      unit: '小时',
+      rangeStart: now.subtract(const Duration(hours: 10)),
+      rangeEnd: now.subtract(const Duration(hours: 3)),
+      importedAt: now.subtract(const Duration(hours: 2)),
+      trend: const [6.8, 7.1, 6.5, 7.4, 7.2, 8.0, 7.43],
+    ),
+  ];
+
+  final dataConnections = [
+    DataConnection(
+      id: 'connection-apple-health',
+      userId: 'user-haiming',
+      provider: 'apple_health',
+      displayName: 'Apple 健康（演示）',
+      mode: 'sync',
+      isConnected: false,
+      enabledTypes: ['步数', '运动', '睡眠'],
+    ),
+    DataConnection(
+      id: 'connection-mi-fitness',
+      userId: 'user-haiming',
+      provider: 'mi_fitness',
+      displayName: '小米运动健康（演示）',
+      mode: 'file_import',
+      isConnected: false,
+      enabledTypes: ['跑步', '骑行'],
+    ),
+    DataConnection(
+      id: 'connection-huawei-health',
+      userId: 'user-haiming',
+      provider: 'huawei_health',
+      displayName: '华为运动健康（演示）',
+      mode: 'file_import',
+      isConnected: false,
+      enabledTypes: ['睡眠', '心率'],
+    ),
+  ];
+
+  final socialPosts = [
+    SocialPost(
+      id: 'post-run-lina',
+      squadId: 'squad-weekend',
+      authorId: 'user-lina',
+      authorName: '李娜',
+      title: '下班后的 5 公里',
+      body: '风刚刚好，最后一公里终于没有掉速。周六要不要一起跑？',
+      template: 'story',
+      visibility: 'squad',
+      sourceLabel: '小米运动健康 · 演示样本',
+      metricValue: '5.0',
+      metricUnit: '公里',
+      rangeStart: now.subtract(const Duration(hours: 20)),
+      rangeEnd: now.subtract(const Duration(hours: 19)),
+      createdAt: now.subtract(const Duration(hours: 18)),
+      trend: const [6.5, 6.3, 6.1, 6.0, 5.8],
+      reactionUserIds: const ['user-haiming', 'user-chen'],
+      commentCount: 3,
+    ),
+    SocialPost(
+      id: 'post-week-chen',
+      squadId: 'squad-weekend',
+      authorId: 'user-chen',
+      authorName: '陈晨',
+      title: '这周终于睡够了',
+      body: '连续三天没有熬夜，周末继续保持。',
+      template: 'minimal',
+      visibility: 'squad',
+      sourceLabel: 'Apple 健康 · 演示样本',
+      metricValue: '7.6',
+      metricUnit: '小时/晚',
+      rangeStart: today.subtract(const Duration(days: 6)),
+      rangeEnd: today,
+      createdAt: now.subtract(const Duration(days: 1, hours: 2)),
+      trend: const [6.2, 7.0, 7.4, 7.8, 8.1, 7.6, 7.3],
+      reactionUserIds: const ['user-lina'],
+      commentCount: 1,
+    ),
+  ];
+
+  final circleMessages = [
+    CircleMessage(
+      id: 'message-1',
+      squadId: 'squad-weekend',
+      authorId: 'user-lina',
+      authorName: '李娜',
+      text: '周六早上八点出发怎么样？路线已经放到计划里了。',
+      createdAt: now.subtract(const Duration(minutes: 42)),
+    ),
+    CircleMessage(
+      id: 'message-2',
+      squadId: 'squad-weekend',
+      authorId: 'user-chen',
+      authorName: '陈晨',
+      text: '可以，我带水和能量胶。',
+      createdAt: now.subtract(const Duration(minutes: 35)),
+    ),
+    CircleMessage(
+      id: 'message-3',
+      squadId: 'squad-weekend',
+      authorId: 'user-haiming',
+      authorName: '海明',
+      text: '没问题，跑完一起去吃早饭。',
+      createdAt: now.subtract(const Duration(minutes: 28)),
+    ),
+  ];
+
   return DemoAppState(
     users: users,
     squads: squads,
@@ -869,6 +1143,10 @@ DemoAppState _seedState() {
     sharedExpenses: sharedExpenses,
     travelPlans: travelPlans,
     foodSpots: foodSpots,
+    externalDataItems: externalDataItems,
+    dataConnections: dataConnections,
+    socialPosts: socialPosts,
+    circleMessages: circleMessages,
   );
 }
 

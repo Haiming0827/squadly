@@ -1,8 +1,26 @@
 # 小分队 (Squadly) — 开发方案
 
-> 版本：v1.0 | 日期：2026-04-26
+> 版本：v1.1 | 原始方案：2026-04-26 | 产品方向补充：2026-09-29
 
 ---
+
+## 产品方向补充（2026-09-29）
+
+Squadly 的首要体验调整为 **2–9 人邀请制小圈子的即时社交与真实内容分享**。健身、理财、旅行和美食保留为围绕同一个 `Squad` 的共同兴趣活动，统一从“计划”入口访问。个人从其他应用取得的数据先进入私密素材空间，用户经过选择、编辑、美化、预览和受众确认后，才可分享为小队内容卡片。此方向不改变既有角色、`PrivateAsset` 隔离和 Clean Architecture 约束。
+
+2026-10-11 实施状态：本地演示仍是默认运行方式；独立的真实后端路径已补邮箱／小队／会话／卡片与 Supabase Realtime 代码、Apple 健康跑步／徒步读取适配器、RLS 迁移和空库契约测试，但尚未连接 staging 或完成双机验收。小米／华为运动健康直接读取及小米推送仍依赖厂商 SDK／资格；原始健康记录只留本机。模块化交付与未完成门槛详见 [注册实施计划](modules/registration/delivery-plan.md)，UI 决策详见 [UI 设计规范](ui-design/ui-design-spec.md)。
+
+### 2026-10-11 首轮分享决策（优先于下方早期草案）
+
+- 首轮目标是跑步／徒步小队；A/B 从真实运动记录制作运动卡，也可从群聊制作内容卡。卡片与普通文字消息进入同一聊天时间线，回复明确关联卡片消息 ID。
+- 邀请码与邀请链接同时支持，统一由同一后端兑换规则处理。首轮先用两个邮箱账号；邀请真实朋友前必须验收 +86 短信正确码、错码、重发与国内送达。
+- 允许用户发布前逐字段确认的卡片快照上云供小队同步；心率、体重、睡眠等敏感字段默认不选。原始运动记录仅留本机，卡片 PNG 仅在本机生成／存储。
+- 精确路线可在队友卡片和用户本机导出图片中呈现。必须每卡单独确认，并采用端到端加密密文及按接收设备封装的密钥；服务器不得持有可读轨迹或任何私钥。Android 首轮测试设备为无 Google Play 服务的小米手机。
+- 后端继续采用 Supabase；真实双机包必须显式使用独立 staging 配置。当前演示后端不支持跨设备同步，不能用于真实用户入测。
+
+下面旧版 SQL 草图用于解释早期业务概念，不再作为数据库定义；它含有共享健康快照等与上述边界冲突的示例。实际结构、权限以 `supabase/migrations/`、`supabase/tests/` 和 [注册实施计划](modules/registration/README.md) 为准。
+
+代码生成临时例外：本机 Flutter 3.47 / Dart 3.13 与当前锁定的 `analyzer 7.6.0` / Riverpod 2 生成器组合不兼容。为避免破坏已有生成文件，本次新增的四个 `social` 领域实体使用纯 Dart 不可变实现；现有生成文件保持原样。后续升级整套生成链并验证后，再迁回统一的 `freezed` 约定。
 
 ## 一、技术架构总览
 
@@ -267,6 +285,7 @@ CREATE POLICY "fund_transactions_read" ON fund_transactions
 
 | 场景 | 订阅表 | 触发条件 |
 |------|--------|----------|
+| 小队文字／卡片时间线 | `squad_messages` | INSERT 提示刷新；离线正确性以游标补同步为准 |
 | 成员打卡通知 | `check_ins` | INSERT，同小队成员收到提醒 |
 | 基金余额变动 | `fund_transactions` | INSERT，全员看到进度更新 |
 | 新成员加入 | `squad_members` | INSERT，全员收到通知 |
@@ -282,6 +301,7 @@ CREATE POLICY "fund_transactions_read" ON fund_transactions
 | `generate-invite-code` | 生成小队邀请码并校验人数上限 |
 | `monthly-health-report` | 定时任务：生成小队月度健康报告 |
 | `approve-expense` | 大额支出审批逻辑（全员确认机制） |
+| `push-deliveries` | 服务角色领取逐设备通知任务、向 APNs 发通用提醒并记录回执；尚需 staging／真机验证 |
 | `sync-market-data` | 定时获取股票/基金行情数据 |
 
 ---
@@ -605,7 +625,7 @@ dev_dependencies:
 - [ ] 微信登录集成（`fluwx` + Edge Function）
 - [ ] 小队成长体系（积分、徽章——基础版）
 - [ ] 离线缓存（drift 本地同步）
-- [ ] 推送通知（FCM / APNs）
+- [ ] 后台推送真机验收（iPhone APNs；无 GMS 小米使用经审核的 Mi Push，不默认使用 FCM）
 - [ ] 错误监控（Sentry）
 - [ ] 性能优化、内存检查
 - [ ] App Store / Google Play 上架准备

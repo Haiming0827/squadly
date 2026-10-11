@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>仅在你主动选择时读取跑步、徒步记录及对应路线，供你制作小队卡片。</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Squadly 不会向 Apple 健康写入运动数据。</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

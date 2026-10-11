@@ -2,6 +2,7 @@ import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
+import '../../domain/entities/issued_invitation.dart';
 import '../../domain/entities/squad.dart';
 import '../../domain/entities/squad_member.dart';
 import '../../domain/repositories/squad_repository.dart';
@@ -46,8 +47,30 @@ class SquadRepositoryImpl implements SquadRepository {
 
   @override
   Future<Either<Failure, Squad>> joinSquad({required String inviteCode}) async {
+    return redeemInvitation(credential: inviteCode);
+  }
+
+  @override
+  Future<Either<Failure, IssuedInvitation>> issueInvitation({
+    required String squadId,
+  }) async {
     try {
-      final dto = await _remoteDatasource.joinSquad(inviteCode: inviteCode);
+      return Right(await _remoteDatasource.issueInvitation(squadId: squadId));
+    } on ServerException catch (e) {
+      return Left(Failure.server(message: e.message));
+    } on NetworkException {
+      return const Left(Failure.network());
+    }
+  }
+
+  @override
+  Future<Either<Failure, Squad>> redeemInvitation({
+    required String credential,
+  }) async {
+    try {
+      final dto = await _remoteDatasource.redeemInvitation(
+        credential: credential,
+      );
       return Right(dto.toEntity());
     } on ServerException catch (e) {
       if (e.message.contains('已满员')) {

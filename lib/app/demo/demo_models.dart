@@ -7,6 +7,10 @@ import '../../features/fitness/domain/entities/check_in.dart';
 import '../../features/fitness/domain/entities/daily_task.dart';
 import '../../features/fitness/domain/entities/health_snapshot.dart';
 import '../../features/fitness/domain/entities/workout_plan.dart';
+import '../../features/social/domain/entities/circle_message.dart';
+import '../../features/social/domain/entities/data_connection.dart';
+import '../../features/social/domain/entities/external_data_item.dart';
+import '../../features/social/domain/entities/social_post.dart';
 import '../../features/squad/domain/entities/squad.dart';
 import '../../features/squad/domain/entities/squad_member.dart';
 
@@ -139,6 +143,10 @@ class DemoAppState {
     required this.sharedExpenses,
     required this.travelPlans,
     required this.foodSpots,
+    required this.externalDataItems,
+    required this.dataConnections,
+    required this.socialPosts,
+    required this.circleMessages,
     this.currentUser,
     this.currentSquadId,
   });
@@ -158,6 +166,10 @@ class DemoAppState {
   final List<SharedExpense> sharedExpenses;
   final List<TravelPlan> travelPlans;
   final List<FoodSpot> foodSpots;
+  final List<ExternalDataItem> externalDataItems;
+  final List<DataConnection> dataConnections;
+  final List<SocialPost> socialPosts;
+  final List<CircleMessage> circleMessages;
 
   List<Squad> get mySquads {
     final user = currentUser;
@@ -170,13 +182,12 @@ class DemoAppState {
   }
 
   Squad? get currentSquad {
-    final id =
-        currentSquadId ?? (mySquads.isNotEmpty ? mySquads.first.id : null);
-    if (id == null) return null;
-    for (final squad in squads) {
-      if (squad.id == id) return squad;
+    final available = mySquads;
+    if (available.isEmpty) return null;
+    for (final squad in available) {
+      if (squad.id == currentSquadId) return squad;
     }
-    return mySquads.isNotEmpty ? mySquads.first : null;
+    return available.first;
   }
 
   SquadMember? get myCurrentMembership {
@@ -246,6 +257,54 @@ class DemoAppState {
     return items;
   }
 
+  List<ExternalDataItem> get myImportedData {
+    final user = currentUser;
+    if (user == null) return const [];
+    final items = externalDataItems
+        .where((item) => item.userId == user.id)
+        .toList();
+    items.sort((a, b) => b.importedAt.compareTo(a.importedAt));
+    return items;
+  }
+
+  List<DataConnection> get myDataConnections {
+    final user = currentUser;
+    if (user == null) return const [];
+    return dataConnections
+        .where((connection) => connection.userId == user.id)
+        .toList();
+  }
+
+  List<SocialPost> postsFor(String squadId) {
+    final user = currentUser;
+    if (user == null || !_isCurrentUserMemberOf(squadId)) return const [];
+    final posts = socialPosts.where((post) {
+      if (post.squadId != squadId) return false;
+      return post.visibility == 'squad' ||
+          post.authorId == user.id ||
+          post.visibleToUserIds.contains(user.id);
+    }).toList();
+    posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return posts;
+  }
+
+  List<CircleMessage> messagesFor(String squadId) {
+    if (!_isCurrentUserMemberOf(squadId)) return const [];
+    final messages = circleMessages
+        .where((message) => message.squadId == squadId)
+        .toList();
+    messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    return messages;
+  }
+
+  bool _isCurrentUserMemberOf(String squadId) {
+    final user = currentUser;
+    if (user == null) return false;
+    return members.any(
+      (member) => member.squadId == squadId && member.userId == user.id,
+    );
+  }
+
   int caloriesBurnedBy(String userId, DateTime date) {
     return healthSnapshots
         .where(
@@ -280,6 +339,10 @@ class DemoAppState {
     List<SharedExpense>? sharedExpenses,
     List<TravelPlan>? travelPlans,
     List<FoodSpot>? foodSpots,
+    List<ExternalDataItem>? externalDataItems,
+    List<DataConnection>? dataConnections,
+    List<SocialPost>? socialPosts,
+    List<CircleMessage>? circleMessages,
   }) {
     return DemoAppState(
       currentUser: clearCurrentUser ? null : currentUser ?? this.currentUser,
@@ -299,6 +362,10 @@ class DemoAppState {
       sharedExpenses: sharedExpenses ?? this.sharedExpenses,
       travelPlans: travelPlans ?? this.travelPlans,
       foodSpots: foodSpots ?? this.foodSpots,
+      externalDataItems: externalDataItems ?? this.externalDataItems,
+      dataConnections: dataConnections ?? this.dataConnections,
+      socialPosts: socialPosts ?? this.socialPosts,
+      circleMessages: circleMessages ?? this.circleMessages,
     );
   }
 }

@@ -91,10 +91,10 @@ dart format lib/ test/
 ## 关键技术选型
 
 - **语言**：Dart (Flutter 3.x)，单一代码库同时服务 iOS 和 Android
-- **后端**：Supabase (BaaS) — PostgreSQL + Auth + Realtime + Storage + Edge Functions
+- **后端目标**：腾讯云 CloudBase for Supabase 版（PostgreSQL 环境）；CloudBase Auth + PostgreSQL REST + RLS/GRANT + 云函数。切换状态以 `docs/modules/backend_cloudbase/README.md` 为准
 - **状态管理**：**Riverpod 2.x**（已确认），全局统一，不混用 Bloc/Provider
 - **路由**：`go_router`，声明式路由，支持深度链接
-- **网络层**：`supabase_flutter` 为主，`dio` 仅用于第三方 API
+- **网络层**：`cloudbase_flutter` 负责认证/会话；`dio` 由 data 层封装 CloudBase PG REST，并处理第三方 API
 - **本地存储**：`drift`（SQLite）存储结构化离线缓存，`shared_preferences` 存储设置项
 - **不可变性**：所有数据类（领域实体 + DTO）使用 `freezed`，禁止直接修改状态
 - **依赖注入**：使用 Riverpod 内置 DI，与状态管理统一
@@ -119,3 +119,10 @@ dart format lib/ test/
 ## 开发语言约定
 
 产品面向中文用户，UI 文案使用中文。代码（变量名、注释、commit message）使用英文。产品文档和用户可见内容使用中文。
+
+## 后端切换约束
+
+- 目标产品为腾讯云 CloudBase for Supabase 版 PostgreSQL 环境，不使用 CloudBase 传统文档数据库/MySQL 替代现有关系模型。
+- CloudBase PG 客户端必须通过受控 data 层封装；数据库 REST 请求使用 CloudBase 用户 JWT，不能把高权限 key 放入客户端。
+- 数据访问同时使用表级 GRANT 与 RLS。财务 `PrivateAsset` 必须保持本人独占。
+- `cloudbase/migrations/` 是 CloudBase PG 目标 SQL；旧 `supabase/` 目录仅是迁移来源和既有测试资产，禁止直接部署。真实后端切换状态以 `docs/modules/backend_cloudbase/README.md` 为准。

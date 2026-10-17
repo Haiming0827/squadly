@@ -6,12 +6,12 @@ import '../../domain/entities/issued_invitation.dart';
 import '../../domain/entities/squad.dart';
 import '../../domain/entities/squad_member.dart';
 import '../../domain/repositories/squad_repository.dart';
-import '../datasources/squad_remote_datasource.dart';
+import '../datasources/cloudbase_squad_remote_datasource.dart';
 import '../models/squad_mapper.dart';
 
 /// 小队仓库实现
 class SquadRepositoryImpl implements SquadRepository {
-  final SquadRemoteDatasource _remoteDatasource;
+  final CloudBaseSquadRemoteDatasource _remoteDatasource;
 
   SquadRepositoryImpl(this._remoteDatasource);
 

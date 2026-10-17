@@ -8,6 +8,8 @@ void main() {
         expect(Validators.isValidChinesePhone('13800138000'), isTrue);
         expect(Validators.isValidChinesePhone('15912345678'), isTrue);
         expect(Validators.isValidChinesePhone('18600001111'), isTrue);
+        expect(Validators.isValidChinesePhone('+86 17816862845'), isTrue);
+        expect(Validators.isValidChinesePhone(' +86-17816862845 '), isTrue);
       });
 
       test('invalid phone numbers', () {

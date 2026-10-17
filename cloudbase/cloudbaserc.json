@@ -1,0 +1,27 @@
+{
+  "functionRoot": "./functions",
+  "functions": [
+    {
+      "name": "push-deliveries",
+      "type": "HTTP",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 120,
+      "memorySize": 256
+    },
+    {
+      "name": "push-deliveries-cron",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 150,
+      "memorySize": 128,
+      "triggers": [
+        {
+          "name": "dispatch-pending-pushes-every-minute",
+          "type": "timer",
+          "config": "0 * * * * * *"
+        }
+      ]
+    }
+  ]
+}

@@ -3,7 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'squad_dto.freezed.dart';
 part 'squad_dto.g.dart';
 
-/// 小队 DTO（对应 Supabase squads 表）
+/// 小队 DTO（对应 CloudBase PostgreSQL squads 表）
 @freezed
 abstract class SquadDto with _$SquadDto {
   const factory SquadDto({

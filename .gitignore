@@ -47,6 +47,8 @@ app.*.map.json
 
 # Local test-backend configuration. Keep real project details out of git.
 /config/test-backend.local.json
+/config/test-backend.local.env
+/config/local-backend.tailscale.json
 /supabase/.branches/
 /supabase/.temp/
 

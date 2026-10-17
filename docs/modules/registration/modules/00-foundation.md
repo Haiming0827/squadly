@@ -1,5 +1,7 @@
 # F00 环境、迁移与安全底座
 
+> **后端迁移说明（2026-10-12）：** 本文中的 Supabase 接入、SQL/RLS、Realtime、Edge Function 和 staging 命令描述旧实现或历史验收记录，不是当前目标部署流程。目标已改为腾讯云 CloudBase PostgreSQL；迁移映射、未完成事项和 CloudBase 验收以 [CloudBase 后端方案](../../backend_cloudbase/README.md) 与 [迁移清单](../../backend_cloudbase/migration-inventory.md) 为准。
+
 ## 职责和接口
 
 确保真实模式只连接指定 staging／生产环境，迁移可复现，RLS 可被 A/B/C/匿名身份单独验证。对上层只暴露明确的运行模式、已初始化的客户端和可脱敏的错误分类；不承担登录、邀请码或聊天规则。

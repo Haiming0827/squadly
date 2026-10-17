@@ -1,6 +1,7 @@
 {
-  "SUPABASE_URL": "https://replace-with-staging-project.supabase.co",
-  "SUPABASE_ANON_KEY": "replace-with-staging-publishable-key",
+  "CLOUDBASE_ENV_ID": "replace-with-cloudbase-environment",
+  "CLOUDBASE_REGION": "ap-shanghai",
+  "CLOUDBASE_PUBLISHABLE_KEY": "replace-with-cloudbase-publishable-key",
   "INVITE_LINK_BASE_URL": "https://replace-with-your-link-domain.example",
   "USE_DEMO_BACKEND": "false",
   "MIPUSH_APP_ID": "",

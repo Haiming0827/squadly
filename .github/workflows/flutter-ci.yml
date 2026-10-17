@@ -136,7 +136,7 @@ jobs:
           path: build/ios/iphoneos
 
   backend-contracts:
-    name: Database and Push Worker Contracts
+    name: CloudBase Database and Push Worker Contracts
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -147,8 +147,8 @@ jobs:
         with:
           node-version: '26'
 
-      - name: PostgreSQL migration, RLS, and delivery contracts
-        run: bash supabase/tests/run_contracts.sh
+      - name: CloudBase PostgreSQL migrations and RLS contracts
+        run: bash scripts/check_cloudbase_migrations.sh
 
-      - name: APNs worker unit tests
-        run: node --experimental-strip-types --test supabase/functions/push-deliveries/*.test.mjs
+      - name: CloudBase push worker and scheduler tests
+        run: node --test cloudbase/functions/push-deliveries/*.test.js cloudbase/functions/push-deliveries-cron/*.test.js

@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fpdart/fpdart.dart';
 
 import '../../../../app/demo/demo_store.dart';
+import '../../../../core/error/failures.dart';
+import '../../../../core/network/cloudbase_client_provider.dart';
 import '../../../../shared/widgets/app_section.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../squad/presentation/providers/squad_provider.dart';
+import '../providers/fitness_provider.dart';
 
 class FitnessScreen extends ConsumerWidget {
   const FitnessScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(useDemoBackendProvider)) {
+      return const CloudBaseFitnessScreen();
+    }
     final state = ref.watch(demoAppStoreProvider);
     final store = ref.read(demoAppStoreProvider.notifier);
     final squad = state.currentSquad;
@@ -368,6 +377,355 @@ String _planTypeLabel(String value) {
 String _formatNumber(double value) {
   return value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
 }
+
+final class CloudBaseFitnessScreen extends ConsumerWidget {
+  const CloudBaseFitnessScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final squadState = ref.watch(currentSquadProvider);
+    return squadState.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => _fitnessError(context, error),
+      data: (squad) {
+        if (squad == null) {
+          return const EmptyState(
+            icon: Icons.fitness_center_outlined,
+            title: '先加入小队',
+          );
+        }
+        final snapshot = ref.watch(fitnessSnapshotProvider(squad.id));
+        return snapshot.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => _fitnessError(context, error),
+          data: (data) => _content(context, ref, squad.id, data),
+        );
+      },
+    );
+  }
+
+  Widget _content(
+    BuildContext context,
+    WidgetRef ref,
+    String squadId,
+    FitnessSnapshot data,
+  ) {
+    final userId = ref.watch(authNotifierProvider).valueOrNull?.id;
+    final completed = data.checkIns
+        .where((checkIn) => checkIn.userId == userId)
+        .map((checkIn) => checkIn.taskId)
+        .toSet();
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 24),
+      children: [
+        AppSection(
+          title: '今日概览',
+          child: Row(
+            children: [
+              MetricTile(
+                label: '任务',
+                value: '${completed.length}/${data.tasks.length}',
+                icon: Icons.task_alt_rounded,
+              ),
+              const SizedBox(width: 10),
+              MetricTile(
+                label: '消耗',
+                value: '${data.calories} kcal',
+                icon: Icons.local_fire_department_outlined,
+              ),
+            ],
+          ),
+        ),
+        AppSection(
+          title: '每日打卡',
+          trailing: IconButton(
+            tooltip: '新增任务',
+            icon: const Icon(Icons.add_rounded),
+            onPressed: () => _createTask(context, ref, squadId),
+          ),
+          child: data.tasks.isEmpty
+              ? const EmptyState(icon: Icons.checklist_rounded, title: '暂无打卡任务')
+              : Column(
+                  children: [
+                    for (final task in data.tasks)
+                      Card(
+                        child: ListTile(
+                          leading: Icon(
+                            completed.contains(task.id)
+                                ? Icons.check_circle_rounded
+                                : Icons.radio_button_unchecked_rounded,
+                          ),
+                          title: Text(task.title),
+                          subtitle: Text(
+                            '${_taskTypeLabel(task.taskType)}'
+                            '${task.targetValue == null ? '' : ' · ${_formatNumber(task.targetValue!)} ${task.targetUnit ?? ''}'}',
+                          ),
+                          trailing: FilledButton.tonal(
+                            onPressed: completed.contains(task.id)
+                                ? null
+                                : () =>
+                                      _checkIn(context, ref, squadId, task.id),
+                            child: const Text('打卡'),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+        AppSection(
+          title: '健康记录（仅自己可见）',
+          trailing: IconButton(
+            tooltip: '记录健康数据',
+            icon: const Icon(Icons.monitor_heart_outlined),
+            onPressed: () => _recordHealth(context, ref, squadId),
+          ),
+          child: const Text('体重和健康指标仅本人可读取。'),
+        ),
+        AppSection(
+          title: '训练计划',
+          child: data.plans.isEmpty
+              ? const EmptyState(
+                  icon: Icons.calendar_month_outlined,
+                  title: '暂无训练计划',
+                )
+              : Column(
+                  children: [
+                    for (final plan in data.plans)
+                      Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.calendar_month_outlined),
+                          title: Text(plan.name),
+                          subtitle: Text(
+                            plan.description ?? _planTypeLabel(plan.planType),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _createTask(
+    BuildContext context,
+    WidgetRef ref,
+    String squadId,
+  ) async {
+    final title = TextEditingController();
+    final target = TextEditingController(text: '15');
+    var type = 'stretch';
+    var unit = 'minutes';
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('新增打卡任务'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: title,
+                decoration: const InputDecoration(labelText: '任务名称'),
+              ),
+              TextField(
+                controller: target,
+                decoration: InputDecoration(labelText: '目标（$unit）'),
+                keyboardType: TextInputType.number,
+              ),
+              DropdownButtonFormField<String>(
+                initialValue: type,
+                items: const [
+                  DropdownMenuItem(value: 'stretch', child: Text('拉伸')),
+                  DropdownMenuItem(value: 'cardio', child: Text('有氧')),
+                  DropdownMenuItem(value: 'night_run', child: Text('夜跑')),
+                  DropdownMenuItem(value: 'home_training', child: Text('居家训练')),
+                  DropdownMenuItem(value: 'custom', child: Text('自定义')),
+                ],
+                onChanged: (value) => setState(() {
+                  type = value ?? type;
+                  unit = type == 'night_run' ? 'km' : 'minutes';
+                }),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('保存'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (accepted == true && title.text.trim().isNotEmpty) {
+      if (!context.mounted) return;
+      await _save(
+        context,
+        ref,
+        squadId,
+        ref
+            .read(fitnessRepositoryProvider)
+            .createDailyTask(
+              squadId: squadId,
+              title: title.text,
+              taskType: type,
+              targetValue: double.tryParse(target.text),
+              targetUnit: unit,
+            ),
+      );
+    }
+    title.dispose();
+    target.dispose();
+  }
+
+  Future<void> _checkIn(
+    BuildContext context,
+    WidgetRef ref,
+    String squadId,
+    String taskId,
+  ) async {
+    final value = TextEditingController();
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('完成打卡'),
+        content: TextField(
+          controller: value,
+          decoration: const InputDecoration(labelText: '实际完成量（可选）'),
+          keyboardType: TextInputType.number,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('打卡'),
+          ),
+        ],
+      ),
+    );
+    if (accepted == true) {
+      if (!context.mounted) return;
+      await _save(
+        context,
+        ref,
+        squadId,
+        ref
+            .read(fitnessRepositoryProvider)
+            .checkInTask(
+              taskId: taskId,
+              squadId: squadId,
+              value: double.tryParse(value.text),
+            ),
+      );
+    }
+    value.dispose();
+  }
+
+  Future<void> _recordHealth(
+    BuildContext context,
+    WidgetRef ref,
+    String squadId,
+  ) async {
+    final weight = TextEditingController();
+    final minutes = TextEditingController();
+    final calories = TextEditingController();
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('记录健康数据'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: weight,
+              decoration: const InputDecoration(labelText: '体重（kg，可选）'),
+              keyboardType: TextInputType.number,
+            ),
+            TextField(
+              controller: minutes,
+              decoration: const InputDecoration(labelText: '运动分钟数'),
+              keyboardType: TextInputType.number,
+            ),
+            TextField(
+              controller: calories,
+              decoration: const InputDecoration(labelText: '消耗热量（kcal）'),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+    if (accepted == true) {
+      if (!context.mounted) return;
+      await _save(
+        context,
+        ref,
+        squadId,
+        ref
+            .read(fitnessRepositoryProvider)
+            .recordHealthSnapshot(
+              squadId: squadId,
+              weight: double.tryParse(weight.text),
+              workoutMinutes: int.tryParse(minutes.text),
+              caloriesBurned: int.tryParse(calories.text),
+            ),
+      );
+    }
+    weight.dispose();
+    minutes.dispose();
+    calories.dispose();
+  }
+
+  Future<void> _save<T>(
+    BuildContext context,
+    WidgetRef ref,
+    String squadId,
+    Future<Either<Failure, T>> operation,
+  ) async {
+    final result = await operation;
+    if (!context.mounted) return;
+    result.fold(
+      (failure) => ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_fitnessFailureMessage(failure)))),
+      (_) => ref.invalidate(fitnessSnapshotProvider(squadId)),
+    );
+  }
+}
+
+String _fitnessFailureMessage(Failure failure) => switch (failure) {
+  ServerFailure(:final message) => message,
+  ValidationFailure(:final message) => message,
+  UnauthorizedFailure() => '请先登录',
+  PermissionDeniedFailure() => '没有操作权限',
+  NetworkFailure() => '网络连接失败，请稍后重试',
+  _ => '操作失败，请稍后重试',
+};
+
+Widget _fitnessError(BuildContext context, Object error) => Center(
+  child: Padding(
+    padding: const EdgeInsets.all(24),
+    child: Text('健身数据加载失败：$error', textAlign: TextAlign.center),
+  ),
+);
 
 void _showSnack(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));

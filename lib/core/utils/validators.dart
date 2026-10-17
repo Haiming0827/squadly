@@ -4,8 +4,9 @@ class Validators {
 
   /// 中国手机号校验
   static bool isValidChinesePhone(String phone) {
-    final regex = RegExp(r'^1[3-9]\d{9}$');
-    return regex.hasMatch(phone);
+    final compact = phone.trim().replaceAll(RegExp(r'[\s-]'), '');
+    final local = compact.startsWith('+86') ? compact.substring(3) : compact;
+    return RegExp(r'^1[3-9]\d{9}$').hasMatch(local);
   }
 
   /// 邮箱校验

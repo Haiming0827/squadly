@@ -2,6 +2,13 @@ import 'package:fpdart/fpdart.dart';
 import '../../../../core/error/failures.dart';
 import '../entities/user.dart';
 
+class PhoneAuthResult {
+  const PhoneAuthResult({required this.user, required this.needsPasswordSetup});
+
+  final User user;
+  final bool needsPasswordSetup;
+}
+
 /// 认证仓库接口
 abstract class AuthRepository {
   /// 邮箱密码登录
@@ -16,6 +23,11 @@ abstract class AuthRepository {
     required String email,
     required String password,
     required String nickname,
+  });
+
+  Future<Either<Failure, User>> verifyEmailSignup({
+    required String email,
+    required String code,
   });
 
   /// Always show the same user-facing result, whether or not the address is
@@ -34,14 +46,23 @@ abstract class AuthRepository {
   /// 手机号验证码登录
   Future<Either<Failure, Unit>> sendPhoneVerification({required String phone});
 
-  Future<Either<Failure, User>> verifyPhoneCode({
+  Future<Either<Failure, PhoneAuthResult>> verifyPhoneCode({
     required String phone,
     required String code,
+  });
+
+  Future<Either<Failure, Unit>> sendPasswordSetupVerification();
+
+  Future<Either<Failure, Unit>> setPassword({
+    required String code,
+    required String password,
   });
 
   /// Changes contacts on the existing authenticated account, never by
   /// signing in or guessing a second account's identity.
   Future<Either<Failure, Unit>> requestEmailChange({required String email});
+
+  Future<Either<Failure, User>> verifyEmailChange({required String code});
 
   Future<Either<Failure, Unit>> requestPhoneChange({required String phone});
 

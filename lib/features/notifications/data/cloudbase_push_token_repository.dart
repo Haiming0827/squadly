@@ -1,11 +1,17 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:postgrest/postgrest.dart';
 
+import '../../../core/network/cloudbase_pg_rest_client.dart';
 import '../domain/push_registration.dart';
 
-final class SupabasePushTokenRepository implements PushTokenRepository {
-  const SupabasePushTokenRepository(this._client);
+final class CloudBasePushTokenRepository implements PushTokenRepository {
+  const CloudBasePushTokenRepository({
+    required PostgrestClient client,
+    required AccessTokenReader accessTokenReader,
+  }) : _client = client,
+       _accessTokenReader = accessTokenReader;
 
-  final SupabaseClient _client;
+  final PostgrestClient _client;
+  final AccessTokenReader _accessTokenReader;
 
   @override
   Future<void> register({
@@ -13,7 +19,7 @@ final class SupabasePushTokenRepository implements PushTokenRepository {
     required String provider,
     required String token,
   }) async {
-    if (_client.auth.currentUser == null) throw StateError('Not signed in');
+    if (await _accessTokenReader() == null) throw StateError('Not signed in');
     final response = await _client.rpc(
       'register_push_token',
       params: {
@@ -32,7 +38,7 @@ final class SupabasePushTokenRepository implements PushTokenRepository {
     required String deviceId,
     required String provider,
   }) async {
-    if (_client.auth.currentUser == null) return;
+    if (await _accessTokenReader() == null) return;
     await _client.rpc(
       'unregister_push_token',
       params: {'p_device_id': deviceId, 'p_provider': provider},

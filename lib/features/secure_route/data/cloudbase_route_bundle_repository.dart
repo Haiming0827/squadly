@@ -1,14 +1,20 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:postgrest/postgrest.dart';
 
 import '../domain/route_bundle_repository.dart';
 import '../domain/route_models.dart';
 
-/// The RLS policies independently enforce current squad membership and
-/// recipient ownership. These filters avoid transferring other rows at all.
-final class SupabaseRouteBundleRepository implements RouteBundleRepository {
-  const SupabaseRouteBundleRepository(this._client);
+typedef RouteUserIdReader = Future<String?> Function();
 
-  final SupabaseClient _client;
+/// Reads route ciphertext and the signed-in device's envelope only.
+final class CloudBaseRouteBundleRepository implements RouteBundleRepository {
+  const CloudBaseRouteBundleRepository({
+    required PostgrestClient client,
+    required RouteUserIdReader userIdReader,
+  }) : _client = client,
+       _userIdReader = userIdReader;
+
+  final PostgrestClient _client;
+  final RouteUserIdReader _userIdReader;
 
   @override
   Future<EncryptedRouteBundle> loadForDevice({
@@ -17,7 +23,7 @@ final class SupabaseRouteBundleRepository implements RouteBundleRepository {
     required String userId,
     required String deviceId,
   }) async {
-    if (_client.auth.currentUser?.id != userId) {
+    if (await _userIdReader() != userId) {
       throw const RouteEnvelopeUnavailable();
     }
     final cipher = await _client

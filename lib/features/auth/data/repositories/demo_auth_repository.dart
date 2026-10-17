@@ -52,6 +52,12 @@ class DemoAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, User>> verifyEmailSignup({
+    required String email,
+    required String code,
+  }) async => const Left(Failure.server(message: '演示模式不需要邮箱验证码'));
+
+  @override
   Future<Either<Failure, Unit>> requestPasswordRecovery({
     required String email,
   }) async => const Left(Failure.server(message: '演示模式不发送找回密码邮件'));
@@ -75,7 +81,7 @@ class DemoAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, User>> verifyPhoneCode({
+  Future<Either<Failure, PhoneAuthResult>> verifyPhoneCode({
     required String phone,
     required String code,
   }) async {
@@ -85,12 +91,32 @@ class DemoAuthRepository implements AuthRepository {
     if (code.trim().isEmpty) {
       return const Left(Failure.validation(message: '请输入验证码'));
     }
-    return Right(_store.verifyPhoneCode(phone: phone, code: code));
+    return Right(
+      PhoneAuthResult(
+        user: _store.verifyPhoneCode(phone: phone, code: code),
+        needsPasswordSetup: false,
+      ),
+    );
   }
+
+  @override
+  Future<Either<Failure, Unit>> sendPasswordSetupVerification() async =>
+      const Right(unit);
+
+  @override
+  Future<Either<Failure, Unit>> setPassword({
+    required String code,
+    required String password,
+  }) async => const Right(unit);
 
   @override
   Future<Either<Failure, Unit>> requestEmailChange({
     required String email,
+  }) async => const Left(Failure.server(message: '演示模式不支持修改联系方式'));
+
+  @override
+  Future<Either<Failure, User>> verifyEmailChange({
+    required String code,
   }) async => const Left(Failure.server(message: '演示模式不支持修改联系方式'));
 
   @override

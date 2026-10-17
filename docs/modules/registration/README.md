@@ -1,6 +1,10 @@
 # Squadly 真实双账号与小队分享闭环
 
-> 状态：模块代码与本地自动化测试实施中；Supabase 迁移／RLS 契约及 iOS 模拟器冒烟已可验证，尚未连接 staging、完成双账号真机互通或 iPhone＋小米验收。更新：2026-10-11。适用范围：首批跑步／徒步小队。演示 UI 的可操作不代表真实云端同步。
+> **后端迁移说明（2026-10-12）：** 本文中的 Supabase 接入、SQL/RLS、Realtime、Edge Function 和 staging 命令描述旧实现或历史验收记录，不是当前目标部署流程。目标已改为腾讯云 CloudBase PostgreSQL；迁移映射、未完成事项和 CloudBase 验收以 [CloudBase 后端方案](../backend_cloudbase/README.md) 与 [迁移清单](../backend_cloudbase/migration-inventory.md) 为准。
+
+> 2026-10-12 状态：运行时依赖、启动入口、Auth/业务 adapters 和目标 SQL 已切换到 CloudBase；Fitness、Finance、Travel、Food 页面及真实模式导航也已接入 CloudBase repository。CloudBase SQL 空库/权限检查和本地自动化验证已通过，但没有 CloudBase staging 凭据，双账号云端互通、Realtime、真实短信和推送仍未验收。下方 2026-10-11 Supabase 双账号记录仅为旧实现的历史证据，不代表 CloudBase 环境通过。
+
+> 状态：模块代码与本地自动化测试实施中；CloudBase 目标 migration/RLS 本地契约已可验证，尚未连接 CloudBase staging、完成双账号真机互通或 iPhone＋小米验收。更新：2026-10-12。适用范围：首批跑步／徒步小队。演示 UI 的可操作不代表真实云端同步。
 
 ## 目标与阅读顺序
 

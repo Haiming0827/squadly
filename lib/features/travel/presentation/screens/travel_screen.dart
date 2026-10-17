@@ -3,13 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../app/demo/demo_store.dart';
+import '../../../../core/error/failures.dart';
+import '../../../../core/network/cloudbase_client_provider.dart';
 import '../../../../shared/widgets/app_section.dart';
+import '../../../finance/domain/entities/public_fund.dart';
+import '../../../squad/presentation/providers/squad_provider.dart';
+import '../providers/travel_provider.dart';
 
 class TravelScreen extends ConsumerWidget {
   const TravelScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(useDemoBackendProvider)) {
+      return const CloudBaseTravelScreen();
+    }
     final state = ref.watch(demoAppStoreProvider);
     final store = ref.read(demoAppStoreProvider.notifier);
     final squad = state.currentSquad;
@@ -190,6 +198,268 @@ class TravelScreen extends ConsumerWidget {
     noteController.dispose();
   }
 }
+
+final class CloudBaseTravelScreen extends ConsumerWidget {
+  const CloudBaseTravelScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final squadState = ref.watch(currentSquadProvider);
+    return squadState.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => _travelError(error),
+      data: (squad) {
+        if (squad == null) {
+          return const EmptyState(icon: Icons.map_outlined, title: '先加入小队');
+        }
+        final state = ref.watch(travelSnapshotProvider(squad.id));
+        return state.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => _travelError(error),
+          data: (snapshot) {
+            final plans = snapshot.plans;
+            final funds = snapshot.funds
+                .where((fund) => fund.fundType == 'travel')
+                .toList();
+            final totalBudget = plans.fold<double>(
+              0,
+              (sum, plan) => sum + plan.budget,
+            );
+            final totalFund = funds.fold<double>(
+              0,
+              (sum, fund) => sum + fund.currentAmount,
+            );
+            return ListView(
+              padding: const EdgeInsets.only(bottom: 24),
+              children: [
+                AppSection(
+                  title: '旅行预算',
+                  child: Row(
+                    children: [
+                      MetricTile(
+                        label: '旅行基金',
+                        value: _money(totalFund),
+                        icon: Icons.account_balance_wallet_outlined,
+                      ),
+                      const SizedBox(width: 10),
+                      MetricTile(
+                        label: '计划预算',
+                        value: _money(totalBudget),
+                        icon: Icons.flight_takeoff_rounded,
+                      ),
+                    ],
+                  ),
+                ),
+                AppSection(
+                  title: '心愿行程',
+                  trailing: IconButton(
+                    tooltip: '新增行程',
+                    icon: const Icon(Icons.add_rounded),
+                    onPressed: () => _createPlan(context, ref, squad.id, funds),
+                  ),
+                  child: plans.isEmpty
+                      ? const EmptyState(
+                          icon: Icons.map_outlined,
+                          title: '暂无行程',
+                        )
+                      : Column(
+                          children: [
+                            for (final plan in plans)
+                              Card(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.place_outlined),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              plan.title,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleMedium
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            ),
+                                          ),
+                                          Text(_money(plan.budget)),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '${plan.destination} · ${_date(plan.startDate)} - ${_date(plan.endDate)}',
+                                      ),
+                                      if (plan.notes != null) ...[
+                                        const SizedBox(height: 6),
+                                        Text(plan.notes!),
+                                      ],
+                                      const SizedBox(height: 12),
+                                      _BudgetLink(
+                                        fundName: snapshot.funds
+                                            .where(
+                                              (fund) =>
+                                                  fund.id == plan.linkedFundId,
+                                            )
+                                            .map((fund) => fund.name)
+                                            .firstOrNull,
+                                        fundBalance:
+                                            snapshot.funds
+                                                .where(
+                                                  (fund) =>
+                                                      fund.id ==
+                                                      plan.linkedFundId,
+                                                )
+                                                .map(
+                                                  (fund) => fund.currentAmount,
+                                                )
+                                                .firstOrNull ??
+                                            0,
+                                        budget: plan.budget,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _createPlan(
+    BuildContext context,
+    WidgetRef ref,
+    String squadId,
+    List<PublicFund> funds,
+  ) async {
+    final title = TextEditingController();
+    final destination = TextEditingController();
+    final budget = TextEditingController(text: '3000');
+    final notes = TextEditingController();
+    String? linkedFundId;
+    final now = DateTime.now();
+    final startDate = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).add(const Duration(days: 30));
+    final endDate = startDate.add(const Duration(days: 4));
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('新增行程'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: title,
+                  decoration: const InputDecoration(labelText: '标题'),
+                ),
+                TextField(
+                  controller: destination,
+                  decoration: const InputDecoration(labelText: '目的地'),
+                ),
+                TextField(
+                  controller: budget,
+                  decoration: const InputDecoration(labelText: '预算'),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: notes,
+                  decoration: const InputDecoration(labelText: '备注'),
+                ),
+                DropdownButtonFormField<String?>(
+                  initialValue: null,
+                  decoration: const InputDecoration(labelText: '关联旅行基金'),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('不关联'),
+                    ),
+                    for (final fund in funds)
+                      DropdownMenuItem<String?>(
+                        value: fund.id,
+                        child: Text(fund.name),
+                      ),
+                  ],
+                  onChanged: (value) => setState(() => linkedFundId = value),
+                ),
+                const SizedBox(height: 8),
+                Text('日期：${_date(startDate)} - ${_date(endDate)}'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('保存'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (accepted == true &&
+        title.text.trim().isNotEmpty &&
+        destination.text.trim().isNotEmpty) {
+      if (!context.mounted) return;
+      final result = await ref
+          .read(travelRepositoryProvider)
+          .createTravelPlan(
+            squadId: squadId,
+            title: title.text,
+            destination: destination.text,
+            startDate: startDate,
+            endDate: endDate,
+            budget: double.tryParse(budget.text) ?? 0,
+            linkedFundId: linkedFundId,
+            notes: notes.text,
+          );
+      if (!context.mounted) return;
+      result.fold(
+        (failure) => ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(_travelFailureMessage(failure)))),
+        (_) => ref.invalidate(travelSnapshotProvider(squadId)),
+      );
+    }
+    title.dispose();
+    destination.dispose();
+    budget.dispose();
+    notes.dispose();
+  }
+}
+
+String _travelFailureMessage(Failure failure) => switch (failure) {
+  ServerFailure(:final message) => message,
+  ValidationFailure(:final message) => message,
+  UnauthorizedFailure() => '请先登录',
+  PermissionDeniedFailure() => '没有操作权限',
+  NetworkFailure() => '网络连接失败，请稍后重试',
+  _ => '行程保存失败，请稍后重试',
+};
+
+Widget _travelError(Object error) => Center(
+  child: Padding(
+    padding: const EdgeInsets.all(24),
+    child: Text('旅行数据加载失败：$error', textAlign: TextAlign.center),
+  ),
+);
 
 class _BudgetLink extends StatelessWidget {
   const _BudgetLink({

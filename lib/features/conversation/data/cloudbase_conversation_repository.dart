@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:fpdart/fpdart.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:postgrest/postgrest.dart';
 
 import '../../../core/error/failures.dart';
 import '../../cards/domain/card_composer.dart';
@@ -10,12 +11,12 @@ import '../domain/conversation_repository.dart';
 import '../domain/timeline_entry.dart';
 import 'timeline_entry_mapper.dart';
 
-/// Production adapter for the guarded conversation RPCs. No direct table
-/// insert/update is allowed from the app; RLS and RPCs own membership checks.
-final class SupabaseConversationRepository implements ConversationRepository {
-  const SupabaseConversationRepository(this._client);
+/// CloudBase PG adapter for guarded conversation RPCs. No direct message
+/// insert/update is allowed from the app; database functions and RLS own access.
+final class CloudBaseConversationRepository implements ConversationRepository {
+  const CloudBaseConversationRepository(this._client);
 
-  final SupabaseClient _client;
+  final PostgrestClient _client;
 
   @override
   Future<Either<Failure, List<TimelineEntry>>> loadRecent(String squadId) =>
@@ -158,33 +159,18 @@ final class SupabaseConversationRepository implements ConversationRepository {
 
   @override
   Stream<void> watchTimeline(String squadId) {
-    RealtimeChannel? channel;
     late final StreamController<void> changes;
+    Timer? timer;
     changes = StreamController<void>.broadcast(
       onListen: () {
-        channel = _client
-            .channel('squad-messages:$squadId')
-            .onPostgresChanges(
-              event: PostgresChangeEvent.all,
-              schema: 'public',
-              table: 'squad_messages',
-              filter: PostgresChangeFilter(
-                type: PostgresChangeFilterType.eq,
-                column: 'squad_id',
-                value: squadId,
-              ),
-              callback: (_) {
-                if (!changes.isClosed) changes.add(null);
-              },
-            )
-            .subscribe();
+        changes.add(null);
+        timer = Timer.periodic(const Duration(seconds: 20), (_) {
+          if (!changes.isClosed) changes.add(null);
+        });
       },
       onCancel: () {
-        final activeChannel = channel;
-        if (activeChannel != null) {
-          unawaited(_client.removeChannel(activeChannel));
-          channel = null;
-        }
+        timer?.cancel();
+        timer = null;
       },
     );
     return changes.stream;

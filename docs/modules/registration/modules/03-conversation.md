@@ -1,5 +1,7 @@
 # F03 小队会话与统一时间线
 
+> **后端迁移说明（2026-10-12）：** 本文中的 Supabase 接入、SQL/RLS、Realtime、Edge Function 和 staging 命令描述旧实现或历史验收记录，不是当前目标部署流程。目标已改为腾讯云 CloudBase PostgreSQL；迁移映射、未完成事项和 CloudBase 验收以 [CloudBase 后端方案](../../backend_cloudbase/README.md) 与 [迁移清单](../../backend_cloudbase/migration-inventory.md) 为准。
+
 ## 职责和接口
 
 小队会话模块拥有普通文字、卡片消息、显式回复关系、服务端顺序、重试幂等、分页补取与前台实时订阅。小接口示意：`sendText`、`publishCardEntry`、`replyToEntry`、`pageTimeline`、`watchTimeline`。卡片消息只引用卡片 ID／预览摘要；不携带 PNG 或健康原始记录。

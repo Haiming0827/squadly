@@ -1,14 +1,18 @@
 # 小分队 (Squadly) — 开发方案
 
-> 版本：v1.1 | 原始方案：2026-04-26 | 产品方向补充：2026-09-29
+> 版本：v1.2 | 原始方案：2026-04-26 | 产品方向补充：2026-09-29 | 后端决策更新：2026-10-12
 
 ---
+
+> **后端方案已于 2026-10-12 切换为腾讯云 CloudBase for Supabase 版（PostgreSQL 环境）。** 本文后续仍保留的 Supabase schema、SDK、Auth、Realtime、Edge Function 和部署内容是历史方案/当前代码说明，不代表目标后端。CloudBase 的最终架构、功能映射、配置、迁移顺序、费用和验收以 [CloudBase 后端方案](modules/backend_cloudbase/README.md) 及[成本估算](modules/backend_cloudbase/cost-and-capacity.md)为准；迁移完成前不能连接真实用户或将旧 migrations 部署到 CloudBase。
 
 ## 产品方向补充（2026-09-29）
 
 Squadly 的首要体验调整为 **2–9 人邀请制小圈子的即时社交与真实内容分享**。健身、理财、旅行和美食保留为围绕同一个 `Squad` 的共同兴趣活动，统一从“计划”入口访问。个人从其他应用取得的数据先进入私密素材空间，用户经过选择、编辑、美化、预览和受众确认后，才可分享为小队内容卡片。此方向不改变既有角色、`PrivateAsset` 隔离和 Clean Architecture 约束。
 
-2026-10-11 实施状态：本地演示仍是默认运行方式；独立的真实后端路径已补邮箱／小队／会话／卡片与 Supabase Realtime 代码、Apple 健康跑步／徒步读取适配器、RLS 迁移和空库契约测试，但尚未连接 staging 或完成双机验收。小米／华为运动健康直接读取及小米推送仍依赖厂商 SDK／资格；原始健康记录只留本机。模块化交付与未完成门槛详见 [注册实施计划](modules/registration/delivery-plan.md)，UI 决策详见 [UI 设计规范](ui-design/ui-design-spec.md)。
+2026-10-11 实施状态：本地演示仍是默认运行方式；当时的独立真实后端路径使用 Supabase，已有邮箱／小队／会话／卡片与 Realtime 代码、RLS 迁移和空库契约测试，但尚未连接 staging 或完成双机验收。小米／华为运动健康直接读取及小米推送仍依赖厂商 SDK／资格；原始健康记录只留本机。模块化交付与未完成门槛详见 [注册实施计划](modules/registration/delivery-plan.md)，UI 决策详见 [UI 设计规范](ui-design/ui-design-spec.md)。
+
+2026-10-12 后端切换实施状态：目标方案、Flutter 运行依赖和真实模式入口已切换为 CloudBase for Supabase 版 PostgreSQL；Auth、会话/Squad、Fitness、Finance、Travel、Food、推送令牌和安全路线 adapters 已接入，真实模式首页可进入会话、小队、计划和个人中心。10 个版本化 SQL migrations 已应用到 `squadly-staging`。针对 staging 暴露的 `auth.users` 类型和字段差异，业务 profile 不再依赖系统表外键或 `user_metadata`；重试保护、本地 UUID/no-metadata auth fixture、PrivateAsset/健康快照隔离和基金余额检查均通过。`scripts/verify_all.sh` 的静态分析、Flutter 全量测试、Node worker 测试和 CloudBase SQL 检查通过。CloudBase 云函数仍未部署；真实注册/JWT/RLS 双用户验收、Realtime 和真机登录/推送尚未完成；Social 数据工坊/外部素材流仍未迁移；Apple 登录在 SDK 提供 nonce 校验前失败关闭。演示模式仍为默认值。详见 [CloudBase 迁移清单](modules/backend_cloudbase/migration-inventory.md)。
 
 ### 2026-10-11 首轮分享决策（优先于下方早期草案）
 
@@ -16,9 +20,9 @@ Squadly 的首要体验调整为 **2–9 人邀请制小圈子的即时社交与
 - 邀请码与邀请链接同时支持，统一由同一后端兑换规则处理。首轮先用两个邮箱账号；邀请真实朋友前必须验收 +86 短信正确码、错码、重发与国内送达。
 - 允许用户发布前逐字段确认的卡片快照上云供小队同步；心率、体重、睡眠等敏感字段默认不选。原始运动记录仅留本机，卡片 PNG 仅在本机生成／存储。
 - 精确路线可在队友卡片和用户本机导出图片中呈现。必须每卡单独确认，并采用端到端加密密文及按接收设备封装的密钥；服务器不得持有可读轨迹或任何私钥。Android 首轮测试设备为无 Google Play 服务的小米手机。
-- 后端继续采用 Supabase；真实双机包必须显式使用独立 staging 配置。当前演示后端不支持跨设备同步，不能用于真实用户入测。
+- 后端目标改为腾讯云 CloudBase PostgreSQL 模式；真实双机包必须显式使用独立 CloudBase staging 配置。当前演示后端不支持跨设备同步，不能用于真实用户入测。
 
-下面旧版 SQL 草图用于解释早期业务概念，不再作为数据库定义；它含有共享健康快照等与上述边界冲突的示例。实际结构、权限以 `supabase/migrations/`、`supabase/tests/` 和 [注册实施计划](modules/registration/README.md) 为准。
+下面旧版 SQL 草图用于解释早期业务概念，不再作为数据库定义；它含有共享健康快照等与上述边界冲突的示例。当前目标结构与权限以 `cloudbase/migrations/` 和 [CloudBase 迁移清单](modules/backend_cloudbase/migration-inventory.md) 为准；`supabase/` 目录保留旧实现及回滚参考，不应部署到目标环境。
 
 代码生成临时例外：本机 Flutter 3.47 / Dart 3.13 与当前锁定的 `analyzer 7.6.0` / Riverpod 2 生成器组合不兼容。为避免破坏已有生成文件，本次新增的四个 `social` 领域实体使用纯 Dart 不可变实现；现有生成文件保持原样。后续升级整套生成链并验证后，再迁回统一的 `freezed` 约定。
 
@@ -31,8 +35,8 @@ Squadly 的首要体验调整为 **2–9 人邀请制小圈子的即时社交与
 | 跨平台框架 | **Flutter 3.x + Dart** | 一套代码，iOS + Android |
 | 状态管理 | **Riverpod 2.x** | 全局统一，不混用其他方案 |
 | 路由 | **go_router** | 声明式路由，支持深度链接 |
-| 后端服务 | **Supabase** (BaaS) | PostgreSQL + Auth + Realtime + Storage + Edge Functions |
-| 网络层 | **supabase_flutter** + **dio** (辅助) | Supabase SDK 为主，dio 处理第三方 API |
+| 后端服务 | **腾讯云 CloudBase PG 模式** | PostgreSQL + CloudBase Auth + PG REST/RLS + 云函数；详见 CloudBase 后端方案 |
+| 网络层 | **cloudbase_flutter** + **dio** | Flutter SDK 负责身份/会话；Dio 经 data 层调用 CloudBase PG REST |
 | 本地存储 | **drift** (SQLite) + **shared_preferences** | 结构化离线缓存 + 轻量配置 |
 | 不可变数据 | **freezed** + **json_serializable** | 所有实体和 DTO |
 | 依赖注入 | **Riverpod 内置 DI** | 与状态管理统一，不再引入 get_it |
@@ -40,7 +44,7 @@ Squadly 的首要体验调整为 **2–9 人邀请制小圈子的即时社交与
 | 国际化 | **flutter_localizations** + **intl** | 初期中文为主，预留多语言 |
 | UI 基础 | **Material 3** | 先用默认组件快速搭建，后续迭代视觉 |
 
-### 1.2 架构分层图
+### 1.2 架构分层图（下方原图按 CloudBase 目标解释）
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -51,10 +55,10 @@ Squadly 的首要体验调整为 **2–9 人邀请制小圈子的即时社交与
 │   Entities / Use Cases / Repository接口       │
 ├─────────────────────────────────────────────┤
 │                   Data                       │
-│   Repository实现 / Supabase数据源 / DTO        │
+│   Repository实现 / CloudBase数据源 / DTO        │
 ├─────────────────────────────────────────────┤
 │               Infrastructure                 │
-│   Supabase Client / Drift DB / SharedPrefs   │
+│   CloudBase Client / Drift DB / SharedPrefs   │
 └─────────────────────────────────────────────┘
 ```
 
@@ -66,7 +70,9 @@ Squadly 的首要体验调整为 **2–9 人邀请制小圈子的即时社交与
 
 ---
 
-## 二、Supabase 后端设计
+## 二、历史 Supabase 后端设计（迁移目标已改为 CloudBase）
+
+> 本节 SQL 草图、RLS说明、Realtime/Edge Functions 及下方 Supabase 专用配置仅描述旧方案和已有代码，不得直接作为 CloudBase 部署说明。迁移后的数据源请以 [CloudBase 后端方案](modules/backend_cloudbase/README.md) 为准。
 
 ### 2.1 数据库 Schema（PostgreSQL）
 

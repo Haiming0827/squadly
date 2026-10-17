@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:postgrest/postgrest.dart';
 import 'package:squadly/core/error/failures.dart';
-import 'package:squadly/features/squad/data/datasources/squad_remote_datasource.dart';
+import 'package:squadly/features/squad/data/datasources/cloudbase_squad_remote_datasource.dart';
 import 'package:squadly/features/squad/data/repositories/squad_repository_impl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 const _linkToken =
     'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
@@ -27,12 +27,8 @@ void main() {
     'squad creation and invitation issuance only call controlled RPCs',
     () async {
       final requests = <http.Request>[];
-      final client = SupabaseClient(
-        'https://project.example.test',
-        'public-test-key',
-        authOptions: const AuthClientOptions(
-          authFlowType: AuthFlowType.implicit,
-        ),
+      final client = PostgrestClient(
+        'https://project.example.test/v1/rdb/rest',
         httpClient: MockClient((request) async {
           requests.add(request);
           final response = request.url.path.endsWith('/create_squad')
@@ -53,7 +49,7 @@ void main() {
         }),
       );
       addTearDown(client.dispose);
-      final source = SquadRemoteDatasource(client);
+      final source = CloudBaseSquadRemoteDatasource(client);
 
       final squad = await source.createSquad(name: '周末跑步');
       final invitation = await source.issueInvitation(squadId: squad.id);
@@ -62,8 +58,8 @@ void main() {
       expect(invitation.code, 'AB12CD3456');
       expect(invitation.linkToken, _linkToken);
       expect(requests.map((r) => r.url.path), [
-        '/rest/v1/rpc/create_squad',
-        '/rest/v1/rpc/issue_invitation',
+        '/v1/rdb/rest/rpc/create_squad',
+        '/v1/rdb/rest/rpc/issue_invitation',
       ]);
       expect(jsonDecode(requests.first.body)['p_name'], '周末跑步');
       expect(jsonDecode(requests.last.body)['p_squad_id'], 'squad-a');
@@ -74,12 +70,8 @@ void main() {
     'code and link redeem through the same RPC with distinct credentials',
     () async {
       final requests = <http.Request>[];
-      final client = SupabaseClient(
-        'https://project.example.test',
-        'public-test-key',
-        authOptions: const AuthClientOptions(
-          authFlowType: AuthFlowType.implicit,
-        ),
+      final client = PostgrestClient(
+        'https://project.example.test/v1/rdb/rest',
         httpClient: MockClient((request) async {
           requests.add(request);
           return http.Response(
@@ -91,7 +83,7 @@ void main() {
         }),
       );
       addTearDown(client.dispose);
-      final source = SquadRemoteDatasource(client);
+      final source = CloudBaseSquadRemoteDatasource(client);
 
       await source.redeemInvitation(credential: 'ab12cd3456');
       await source.redeemInvitation(
@@ -100,7 +92,7 @@ void main() {
 
       expect(
         requests.map((request) => request.url.path),
-        everyElement('/rest/v1/rpc/redeem_invitation'),
+        everyElement('/v1/rdb/rest/rpc/redeem_invitation'),
       );
       expect(jsonDecode(requests.first.body)['p_credential'], 'AB12CD3456');
       expect(jsonDecode(requests.last.body)['p_credential'], _linkToken);
@@ -108,10 +100,8 @@ void main() {
   );
 
   test('server capacity failure is exposed as squadFull', () async {
-    final client = SupabaseClient(
-      'https://project.example.test',
-      'public-test-key',
-      authOptions: const AuthClientOptions(authFlowType: AuthFlowType.implicit),
+    final client = PostgrestClient(
+      'https://project.example.test/v1/rdb/rest',
       httpClient: MockClient(
         (request) async => http.Response(
           jsonEncode({'error': 'squad_full'}),
@@ -124,7 +114,7 @@ void main() {
     addTearDown(client.dispose);
 
     final result = await SquadRepositoryImpl(
-      SquadRemoteDatasource(client),
+      CloudBaseSquadRemoteDatasource(client),
     ).redeemInvitation(credential: 'AB12CD3456');
 
     expect(result.swap().toNullable(), isA<SquadFullFailure>());
@@ -132,10 +122,8 @@ void main() {
 
   test('member projection never requests email or phone columns', () async {
     http.Request? captured;
-    final client = SupabaseClient(
-      'https://project.example.test',
-      'public-test-key',
-      authOptions: const AuthClientOptions(authFlowType: AuthFlowType.implicit),
+    final client = PostgrestClient(
+      'https://project.example.test/v1/rdb/rest',
       httpClient: MockClient((request) async {
         captured = request;
         return http.Response(
@@ -157,12 +145,12 @@ void main() {
     );
     addTearDown(client.dispose);
 
-    final members = await SquadRemoteDatasource(
+    final members = await CloudBaseSquadRemoteDatasource(
       client,
     ).getSquadMembers(squadId: 'squad-a');
 
     expect(members.single.profiles?['nickname'], '阿青');
-    expect(captured?.url.path, '/rest/v1/squad_members');
+    expect(captured?.url.path, '/v1/rdb/rest/squad_members');
     final selection = captured?.url.queryParameters['select'];
     expect(selection, contains('profiles(nickname,avatar_url)'));
     expect(selection, isNot(contains('email')));
@@ -170,10 +158,8 @@ void main() {
   });
 
   test('non-captain invitation denial is a domain failure', () async {
-    final client = SupabaseClient(
-      'https://project.example.test',
-      'public-test-key',
-      authOptions: const AuthClientOptions(authFlowType: AuthFlowType.implicit),
+    final client = PostgrestClient(
+      'https://project.example.test/v1/rdb/rest',
       httpClient: MockClient(
         (request) async => http.Response(
           jsonEncode({'error': 'not_captain'}),
@@ -186,7 +172,7 @@ void main() {
     addTearDown(client.dispose);
 
     final result = await SquadRepositoryImpl(
-      SquadRemoteDatasource(client),
+      CloudBaseSquadRemoteDatasource(client),
     ).issueInvitation(squadId: 'squad-a');
 
     expect(

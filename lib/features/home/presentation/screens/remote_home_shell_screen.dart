@@ -10,6 +10,7 @@ import '../../../notifications/push_registration_provider.dart';
 import '../../../secure_route/presentation/route_device_screen.dart';
 import '../../../squad/presentation/providers/squad_provider.dart';
 import '../../../squad/presentation/screens/squad_list_screen.dart';
+import 'plan_hub_screen.dart';
 import 'profile_screen.dart';
 
 /// The real-backend shell contains no DemoAppStore reads or demo content.
@@ -82,7 +83,7 @@ final class _RemoteHomeShellScreenState
             ),
           IconButton(
             tooltip: '我的',
-            onPressed: () => setState(() => _index = 2),
+            onPressed: () => setState(() => _index = 3),
             icon: const Icon(Icons.account_circle_outlined),
           ),
         ],
@@ -112,6 +113,7 @@ final class _RemoteHomeShellScreenState
                 ),
         ),
         1 => const RemoteSquadListScreen(),
+        2 => const CloudBasePlanHubScreen(),
         _ => const ProfileScreen(),
       },
       bottomNavigationBar: NavigationBar(
@@ -127,6 +129,11 @@ final class _RemoteHomeShellScreenState
             icon: Icon(Icons.groups_outlined),
             selectedIcon: Icon(Icons.groups_rounded),
             label: '小队',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.grid_view_outlined),
+            selectedIcon: Icon(Icons.grid_view_rounded),
+            label: '计划',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),

@@ -7,6 +7,7 @@ import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/auth/presentation/screens/account_contacts_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/password_recovery_screen.dart';
+import '../features/auth/presentation/screens/password_setup_screen.dart';
 import '../features/home/presentation/screens/home_shell_screen.dart';
 import '../features/home/presentation/screens/remote_home_shell_screen.dart';
 import '../features/squad/presentation/screens/invitation_landing_screen.dart';
@@ -44,6 +45,7 @@ GoRouter router(Ref ref) {
 
       final isOnLoginPage = state.matchedLocation == '/login';
       final isOnRecoveryPage = state.matchedLocation == '/recover';
+      final isOnPasswordSetupPage = state.matchedLocation == '/set-password';
 
       if (!isLoggedIn && !isOnLoginPage && !isOnRecoveryPage) {
         final returnPath = invitationReturnPath(state.uri.toString());
@@ -52,7 +54,14 @@ GoRouter router(Ref ref) {
         }
         return '/login';
       }
+      if (isOnPasswordSetupPage &&
+          !ref.read(phonePasswordSetupRequiredProvider)) {
+        return isLoggedIn ? '/' : '/login';
+      }
       if (isLoggedIn && isOnLoginPage) {
+        if (ref.read(phonePasswordSetupRequiredProvider)) {
+          return '/set-password';
+        }
         return invitationReturnPath(state.uri.queryParameters['from']);
       }
       return null;
@@ -80,6 +89,11 @@ GoRouter router(Ref ref) {
         path: '/recover',
         name: 'passwordRecovery',
         builder: (context, state) => const PasswordRecoveryScreen(),
+      ),
+      GoRoute(
+        path: '/set-password',
+        name: 'passwordSetup',
+        builder: (context, state) => const PasswordSetupScreen(),
       ),
       GoRoute(
         path: '/account/contacts',

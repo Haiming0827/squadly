@@ -1,5 +1,7 @@
 # 真实注册、邀请、聊天与制卡架构
 
+> **后端迁移说明（2026-10-12）：** 本文中的 Supabase 接入、SQL/RLS、Realtime、Edge Function 和 staging 命令描述旧实现或历史验收记录，不是当前目标部署流程。目标已改为腾讯云 CloudBase PostgreSQL；迁移映射、未完成事项和 CloudBase 验收以 [CloudBase 后端方案](../backend_cloudbase/README.md) 与 [迁移清单](../backend_cloudbase/migration-inventory.md) 为准。
+
 > 设计草案；本文件描述目标接口和候选数据模型，不表示表、代码或平台接入已经存在。剩余 D01、D04–D09 待决项见 [README](README.md#尚未确认不能当成已批准需求)。
 
 ## 一次完整的用户流程

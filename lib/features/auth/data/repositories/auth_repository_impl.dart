@@ -58,6 +58,25 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, User>> verifyEmailSignup({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      return Right(
+        (await _remoteDatasource.verifyEmailSignup(
+          email: email,
+          code: code,
+        )).toEntity(),
+      );
+    } on ServerException catch (error) {
+      return Left(Failure.server(message: error.message));
+    } on NetworkException {
+      return const Left(Failure.network());
+    }
+  }
+
+  @override
   Future<Either<Failure, Unit>> requestPasswordRecovery({
     required String email,
   }) async {
@@ -118,18 +137,56 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, User>> verifyPhoneCode({
+  Future<Either<Failure, PhoneAuthResult>> verifyPhoneCode({
     required String phone,
     required String code,
   }) async {
     try {
-      final dto = await _remoteDatasource.verifyPhoneCode(
+      final result = await _remoteDatasource.verifyPhoneCode(
         phone: phone,
         code: code,
       );
-      return Right(dto.toEntity());
+      return Right(
+        PhoneAuthResult(
+          user: result.$1.toEntity(),
+          needsPasswordSetup: result.$2,
+        ),
+      );
     } on ServerException catch (e) {
       return Left(Failure.server(message: e.message));
+    } on NetworkException {
+      return const Left(Failure.network());
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> sendPasswordSetupVerification() async {
+    try {
+      await _remoteDatasource.sendPasswordSetupVerification();
+      return const Right(unit);
+    } on ServerException catch (error) {
+      return Left(Failure.server(message: error.message));
+    } on NetworkException {
+      return const Left(Failure.network());
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> setPassword({
+    required String code,
+    required String password,
+  }) async {
+    if (!RegExp(r'^\d{6}$').hasMatch(code.trim())) {
+      return const Left(Failure.validation(message: '请输入 6 位验证码'));
+    }
+    if (!Validators.isValidPassword(password)) {
+      return const Left(Failure.validation(message: '密码至少 8 位，包含字母和数字'));
+    }
+    try {
+      await _remoteDatasource.setPassword(code: code, password: password);
+      return const Right(unit);
+    } on ServerException catch (error) {
+      return Left(Failure.server(message: error.message));
     } on NetworkException {
       return const Left(Failure.network());
     }
@@ -144,6 +201,21 @@ class AuthRepositoryImpl implements AuthRepository {
       return const Right(unit);
     } on ServerException catch (e) {
       return Left(Failure.server(message: e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, User>> verifyEmailChange({
+    required String code,
+  }) async {
+    try {
+      return Right(
+        (await _remoteDatasource.verifyEmailChange(code: code)).toEntity(),
+      );
+    } on ServerException catch (error) {
+      return Left(Failure.server(message: error.message));
+    } on NetworkException {
+      return const Left(Failure.network());
     }
   }
 

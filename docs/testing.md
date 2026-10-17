@@ -16,12 +16,14 @@ flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-默认本地演示模式不需要 Supabase 项目，适合产品和 UI 流程测试。真实后端联调时需要传入：
+默认本地演示模式不需要云环境，适合产品和 UI 流程测试。CloudBase 真实后端联调时需要传入：
 
 ```bash
---dart-define=USE_DEMO_BACKEND=false
---dart-define=SUPABASE_URL=<your-url>
---dart-define=SUPABASE_ANON_KEY=<your-anon-key>
+flutter run \
+  --dart-define=USE_DEMO_BACKEND=false \
+  --dart-define=CLOUDBASE_ENV_ID=<environment-id> \
+  --dart-define=CLOUDBASE_REGION=ap-shanghai \
+  --dart-define=CLOUDBASE_PUBLISHABLE_KEY=<publishable-key>
 ```
 
 ## 2. 标准本地测试
@@ -77,8 +79,9 @@ flutter build ios --debug --no-codesign
 ```bash
 flutter run -d ios \
   --dart-define=USE_DEMO_BACKEND=false \
-  --dart-define=SUPABASE_URL=<your-url> \
-  --dart-define=SUPABASE_ANON_KEY=<your-anon-key>
+  --dart-define=CLOUDBASE_ENV_ID=<environment-id> \
+--dart-define=CLOUDBASE_REGION=ap-shanghai
+--dart-define=CLOUDBASE_PUBLISHABLE_KEY=<publishable-key>
 ```
 
 ## 4. Android 模拟器测试
@@ -89,11 +92,13 @@ flutter run -d ios \
 flutter devices
 ```
 
-本仓库默认创建的 Android AVD 名称为 `squadly_api35`。启动：
+当前 Android 16（API 36）测试 AVD 名称为 `Squadly_Android_16`。启动脚本会冷启动该 AVD 并显式设置 DNS，避免旧运行态的 DNS 解析失效；已安装应用和用户数据保留。启动后保持终端打开：
 
 ```bash
 scripts/start_android_emulator.sh
 ```
+
+验证码请求超时时，可先按 [登录问题记录](issues/log-in/README.md) 运行不发送短信的网络诊断，区分模拟器 DNS/HTTPS 与服务端业务错误。
 
 运行 App：
 
@@ -112,13 +117,14 @@ flutter build apk --debug
 ```bash
 flutter run -d android \
   --dart-define=USE_DEMO_BACKEND=false \
-  --dart-define=SUPABASE_URL=<your-url> \
-  --dart-define=SUPABASE_ANON_KEY=<your-anon-key>
+  --dart-define=CLOUDBASE_ENV_ID=<environment-id> \
+  --dart-define=CLOUDBASE_REGION=ap-shanghai \
+  --dart-define=CLOUDBASE_PUBLISHABLE_KEY=<publishable-key>
 ```
 
 ## 5. 手工验收清单
 
-- 登录：邮箱登录、注册、手机号验证码、Apple 入口可触发。
+- 登录：CloudBase staging 验证邮箱登录、验证码注册和手机号验证码；Apple 登录待 SDK 支持 nonce 校验后验收。
 - 小队：创建小队、用邀请码加入、切换小队、队长移除成员、转让队长。
 - 健身：新增打卡任务、今日打卡、记录体重/运动分钟/卡路里。
 - 理财：创建公共基金、记基金流水、新增私密资产、记录共享支出。
@@ -127,16 +133,15 @@ flutter run -d android \
 - 美食：新增候选、投票、查看热量差。
 - 横竖屏与小屏：主要文本不溢出，底部导航可用。
 
-## 6. Supabase 迁移验证
+## 6. CloudBase PostgreSQL 迁移验证
 
-在 Supabase 项目中按顺序执行：
+本地检查：
 
-```text
-supabase/migrations/001_core_tables.sql
-supabase/migrations/002_feature_tables.sql
+```bash
+scripts/check_cloudbase_migrations.sh
 ```
 
-重点检查：
+腾讯云 staging 部署和权限验证步骤见 [CloudBase Migration Runbook](modules/backend_cloudbase/migration-runbook.md)。重点检查：
 
 - `private_assets` RLS 仅允许 `user_id = auth.uid()`。
 - 小队数据表均通过 `is_squad_member(squad_id)` 限制访问。

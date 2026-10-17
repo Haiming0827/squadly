@@ -1,5 +1,7 @@
 # F05 两类卡片、发布快照与本机渲染
 
+> **后端迁移说明（2026-10-12）：** 本文中的 Supabase 接入、SQL/RLS、Realtime、Edge Function 和 staging 命令描述旧实现或历史验收记录，不是当前目标部署流程。目标已改为腾讯云 CloudBase PostgreSQL；迁移映射、未完成事项和 CloudBase 验收以 [CloudBase 后端方案](../../backend_cloudbase/README.md) 与 [迁移清单](../../backend_cloudbase/migration-inventory.md) 为准。
+
 ## 职责和接口
 
 卡片模块拥有运动记录卡、群聊内容卡的草稿、模板版本、字段／受众确认、不可变发布快照和本机 PNG 渲染。小接口示意：`draftFromActivity`、`draftFromMessages`、`confirmAndPublish`、`renderLocalImage`。会话模块只拿到发布后的卡片 ID；来源模块不直接发群聊。

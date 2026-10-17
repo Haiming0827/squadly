@@ -1,91 +1,112 @@
 import 'dart:async';
-import 'dart:convert';
 
+import 'package:cloudbase_flutter/cloudbase_flutter.dart' hide CloudBaseConfig;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
-import 'package:squadly/core/network/supabase_client_provider.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:squadly/core/error/failures.dart';
+import 'package:squadly/core/network/cloudbase_client_provider.dart';
+import 'package:squadly/features/auth/domain/entities/user.dart' as domain;
+import 'package:squadly/features/auth/domain/repositories/auth_repository.dart';
 import 'package:squadly/features/auth/presentation/providers/auth_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
+class _CloudBaseMock extends Mock implements CloudBase {}
+
+class _CloudBaseAuthMock extends Mock implements CloudBaseAuth {}
+
+class _AuthRepositoryMock extends Mock implements AuthRepository {}
 
 void main() {
-  const useDemoBackend = bool.fromEnvironment(
-    'USE_DEMO_BACKEND',
-    defaultValue: true,
-  );
   test(
-    'late recovery profile response cannot revive a signed-out user',
+    'a missing CloudBase session leaves the login state signed out',
     () async {
-      final profileStarted = Completer<void>();
-      final releaseProfile = Completer<void>();
-      final client = SupabaseClient(
-        'https://project.example.test',
-        'public-test-key',
-        authOptions: const AuthClientOptions(
-          authFlowType: AuthFlowType.implicit,
-        ),
-        httpClient: MockClient((request) async {
-          if (request.url.path == '/auth/v1/verify') {
-            return http.Response(
-              jsonEncode({
-                'access_token': 'recovery-token',
-                'token_type': 'bearer',
-                'expires_in': 3600,
-                'refresh_token': 'recovery-refresh',
-                'user': {
-                  'id': 'user-a',
-                  'email': 'a@example.test',
-                  'created_at': '2026-10-08T00:00:00Z',
-                },
-              }),
-              200,
-              headers: {'content-type': 'application/json'},
-              request: request,
-            );
-          }
-          if (request.url.path == '/rest/v1/profiles') {
-            profileStarted.complete();
-            await releaseProfile.future;
-            return http.Response(
-              jsonEncode({
-                'id': 'user-a',
-                'nickname': '阿青',
-                'avatar_url': null,
-                'created_at': '2026-10-08T00:00:00Z',
-              }),
-              200,
-              headers: {'content-type': 'application/json'},
-              request: request,
-            );
-          }
-          if (request.url.path == '/auth/v1/logout') {
-            return http.Response('{}', 200);
-          }
-          return http.Response('unexpected request', 500);
-        }),
+      final authEvents = StreamController<CloudBaseAuthEvent>.broadcast();
+      final app = _CloudBaseMock();
+      final auth = _CloudBaseAuthMock();
+      when(() => app.auth).thenReturn(auth);
+      when(() => auth.getSession()).thenAnswer(
+        (_) async => SignInRes(error: AuthError(code: 'no_session')),
       );
-      addTearDown(client.dispose);
       final container = ProviderContainer(
-        overrides: [supabaseClientProvider.overrideWithValue(client)],
+        overrides: [
+          useDemoBackendProvider.overrideWithValue(false),
+          cloudBaseAppProvider.overrideWithValue(app),
+          cloudBaseAuthStateChangesProvider.overrideWith(
+            (ref) => authEvents.stream,
+          ),
+        ],
       );
       addTearDown(container.dispose);
+      addTearDown(authEvents.close);
       final subscription = container.listen(authNotifierProvider, (_, _) {});
       addTearDown(subscription.close);
-      expect(container.read(authNotifierProvider).valueOrNull, isNull);
 
-      await client.auth.verifyOTP(
-        email: 'a@example.test',
-        token: '123456',
-        type: OtpType.recovery,
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      expect(container.read(authNotifierProvider).valueOrNull, isNull);
+      expect(container.read(authNotifierProvider).hasError, isFalse);
+    },
+  );
+
+  test(
+    'late profile response cannot revive a signed-out CloudBase user',
+    () async {
+      final profileStarted = Completer<void>();
+      final releaseProfile = Completer<Either<Failure, domain.User>>();
+      final authEvents = StreamController<CloudBaseAuthEvent>.broadcast();
+      final app = _CloudBaseMock();
+      final auth = _CloudBaseAuthMock();
+      final repository = _AuthRepositoryMock();
+      var sessionReads = 0;
+
+      when(() => app.auth).thenReturn(auth);
+      when(() => auth.getSession()).thenAnswer((_) async {
+        sessionReads++;
+        return SignInRes(
+          data: SignInResData(
+            session: sessionReads == 1
+                ? Session(accessToken: 'temporary-token')
+                : null,
+          ),
+        );
+      });
+      when(() => repository.getCurrentUser()).thenAnswer((_) {
+        profileStarted.complete();
+        return releaseProfile.future;
+      });
+      final container = ProviderContainer(
+        overrides: [
+          useDemoBackendProvider.overrideWithValue(false),
+          cloudBaseAppProvider.overrideWithValue(app),
+          cloudBaseAuthStateChangesProvider.overrideWith(
+            (ref) => authEvents.stream,
+          ),
+          authRepositoryProvider.overrideWithValue(repository),
+        ],
       );
+      addTearDown(container.dispose);
+      addTearDown(authEvents.close);
+      final subscription = container.listen(authNotifierProvider, (_, _) {});
+      addTearDown(subscription.close);
+
       await profileStarted.future.timeout(const Duration(seconds: 3));
-      await client.auth.signOut(scope: SignOutScope.local);
-      releaseProfile.complete();
+      authEvents.add(
+        const CloudBaseAuthEvent(event: AuthStateChangeEvent.signedOut),
+      );
+      await Future<void>.delayed(Duration.zero);
+      releaseProfile.complete(
+        Right(
+          domain.User(
+            id: 'user-a',
+            nickname: '阿青',
+            createdAt: DateTime.utc(2026, 10, 8),
+          ),
+        ),
+      );
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(container.read(authNotifierProvider).valueOrNull, isNull);
     },
-    skip: useDemoBackend,
   );
 }

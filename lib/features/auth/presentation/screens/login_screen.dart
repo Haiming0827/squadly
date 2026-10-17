@@ -23,6 +23,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _nicknameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _codeController = TextEditingController();
+  final _emailCodeController = TextEditingController();
 
   bool _isRegister = false;
   bool _isPhoneMode = false;
@@ -39,6 +40,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _nicknameController.dispose();
     _phoneController.dispose();
     _codeController.dispose();
+    _emailCodeController.dispose();
     super.dispose();
   }
 
@@ -100,7 +102,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 16),
                   child: Text(
-                    '确认邮件已发送。请在邮箱中完成确认，然后返回这里登录。',
+                    '验证码已发送到邮箱，请输入验证码完成注册。',
                     style: theme.textTheme.bodyMedium,
                     textAlign: TextAlign.center,
                   ),
@@ -177,34 +179,54 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         textInputAction: TextInputAction.next,
       ),
       const SizedBox(height: 12),
-      TextField(
-        controller: _passwordController,
-        decoration: const InputDecoration(
-          labelText: '密码',
-          prefixIcon: Icon(Icons.lock_outline),
+      if (!_awaitingEmailConfirmation)
+        TextField(
+          controller: _passwordController,
+          decoration: const InputDecoration(
+            labelText: '密码',
+            prefixIcon: Icon(Icons.lock_outline),
+          ),
+          obscureText: true,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _handleEmailSubmit(),
         ),
-        obscureText: true,
-        textInputAction: TextInputAction.done,
-        onSubmitted: (_) => _handleEmailSubmit(),
-      ),
+      if (_awaitingEmailConfirmation) ...[
+        const SizedBox(height: 12),
+        TextField(
+          controller: _emailCodeController,
+          decoration: const InputDecoration(labelText: '邮箱验证码'),
+          keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _handleEmailVerify(),
+        ),
+      ],
       const SizedBox(height: 20),
       ElevatedButton(
-        onPressed: isLoading ? null : _handleEmailSubmit,
+        onPressed: isLoading
+            ? null
+            : (_awaitingEmailConfirmation
+                  ? _handleEmailVerify
+                  : _handleEmailSubmit),
         child: isLoading
             ? const SizedBox(
                 height: 20,
                 width: 20,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : Text(_isRegister ? '注册' : '登录'),
+            : Text(
+                _awaitingEmailConfirmation
+                    ? '验证邮箱'
+                    : (_isRegister ? '注册' : '登录'),
+              ),
       ),
-      TextButton(
-        onPressed: () => setState(() {
-          _isRegister = !_isRegister;
-          _awaitingEmailConfirmation = false;
-        }),
-        child: Text(_isRegister ? '已有账号？去登录' : '没有账号？去注册'),
-      ),
+      if (!_awaitingEmailConfirmation)
+        TextButton(
+          onPressed: () => setState(() {
+            _isRegister = !_isRegister;
+            _awaitingEmailConfirmation = false;
+          }),
+          child: Text(_isRegister ? '已有账号？去登录' : '没有账号？去注册'),
+        ),
       if (!_isRegister &&
           !const bool.fromEnvironment('USE_DEMO_BACKEND', defaultValue: true))
         TextButton(
@@ -212,6 +234,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: const Text('忘记密码？'),
         ),
     ];
+  }
+
+  void _handleEmailVerify() {
+    final email = _emailController.text.trim();
+    final code = _emailCodeController.text.trim();
+    if (!RegExp(r'^\d{4,8}$').hasMatch(code)) {
+      _showError('请输入邮箱中的验证码');
+      return;
+    }
+    ref
+        .read(authNotifierProvider.notifier)
+        .verifyEmailSignup(email: email, code: code);
   }
 
   List<Widget> _buildPhoneForm(bool isLoading) {

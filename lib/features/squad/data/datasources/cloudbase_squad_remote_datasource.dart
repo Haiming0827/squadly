@@ -1,6 +1,5 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:postgrest/postgrest.dart';
 
-import '../../../../core/constants/supabase_constants.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../domain/entities/issued_invitation.dart';
 import '../../domain/invitation_credential.dart';
@@ -8,18 +7,10 @@ import '../models/squad_dto.dart';
 import '../models/squad_member_dto.dart';
 
 /// 小队远程数据源
-class SquadRemoteDatasource {
-  final SupabaseClient _client;
+class CloudBaseSquadRemoteDatasource {
+  final PostgrestClient _client;
 
-  SquadRemoteDatasource(this._client);
-
-  String get _userId {
-    final id = _client.auth.currentUser?.id;
-    if (id == null) {
-      throw const ServerException(message: '请先登录', statusCode: 401);
-    }
-    return id;
-  }
+  CloudBaseSquadRemoteDatasource(this._client);
 
   SquadDto _squadFromRpc(Object? response) {
     if (response is! Map) {
@@ -69,11 +60,8 @@ class SquadRemoteDatasource {
   /// 获取我的小队列表
   Future<List<SquadDto>> getMySquads() async {
     try {
-      // 先获取我参与的 squad_id
-      final memberRows = await _client
-          .from(SupabaseConstants.squadMembers)
-          .select('squad_id')
-          .eq('user_id', _userId);
+      // RLS limits this query to squads for the authenticated identity.
+      final memberRows = await _client.from('squad_members').select('squad_id');
 
       final squadIds = (memberRows as List)
           .map((r) => r['squad_id'] as String)
@@ -82,7 +70,7 @@ class SquadRemoteDatasource {
       if (squadIds.isEmpty) return [];
 
       final data = await _client
-          .from(SupabaseConstants.squads)
+          .from('squads')
           .select(
             'id,name,description,avatar_url,max_members,created_by,created_at',
           )
@@ -145,7 +133,7 @@ class SquadRemoteDatasource {
   }) async {
     try {
       final data = await _client
-          .from(SupabaseConstants.squadMembers)
+          .from('squad_members')
           .select(
             'id,squad_id,user_id,role,joined_at,profiles(nickname,avatar_url)',
           )

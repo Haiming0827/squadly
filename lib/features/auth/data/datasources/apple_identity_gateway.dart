@@ -2,7 +2,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../../core/error/exceptions.dart';
 
-/// Native Apple authorization stays separate from the Supabase token exchange.
+/// Native Apple authorization stays separate from the CloudBase token exchange.
 abstract interface class AppleIdentityGateway {
   Future<String?> requestIdToken({required String hashedNonce});
 }

@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/error/failures.dart';
-import '../../../../core/network/supabase_client_provider.dart';
+import '../../../../core/network/cloudbase_client_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../data/datasources/squad_remote_datasource.dart';
+import '../../data/datasources/cloudbase_squad_remote_datasource.dart';
 import '../../data/repositories/squad_repository_impl.dart';
 import '../../domain/entities/squad.dart';
 import '../../domain/entities/squad_member.dart';
@@ -11,7 +11,9 @@ import '../../domain/repositories/squad_repository.dart';
 
 final squadRepositoryProvider = Provider<SquadRepository>((ref) {
   return SquadRepositoryImpl(
-    SquadRemoteDatasource(ref.watch(supabaseClientProvider)),
+    CloudBaseSquadRemoteDatasource(
+      ref.watch(cloudBasePostgresClientProvider).rest,
+    ),
   );
 });
 

@@ -1,5 +1,7 @@
 # F01 身份注册与资料可见性
 
+> **后端迁移说明（2026-10-12）：** 本文中的 Supabase 接入、SQL/RLS、Realtime、Edge Function 和 staging 命令描述旧实现或历史验收记录，不是当前目标部署流程。目标已改为腾讯云 CloudBase PostgreSQL；迁移映射、未完成事项和 CloudBase 验收以 [CloudBase 后端方案](../../backend_cloudbase/README.md) 与 [迁移清单](../../backend_cloudbase/migration-inventory.md) 为准。
+
 ## 职责和接口
 
 保留 `features/auth` 的 domain 仓库接口，扩展为可测试的注册／登录／会话恢复／手机号验证行为；公开资料仅昵称与头像，邮箱和手机号只由本人管理。演示与 Supabase 是同一 domain 接口的不同 adapter，不让页面直接建 profile 或读取整行私密字段。

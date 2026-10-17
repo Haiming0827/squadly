@@ -1,4 +1,4 @@
-/// Public to squad peers. Contact details remain in Supabase Auth only.
+/// Public to squad peers. Contact details remain in CloudBase Auth only.
 String? normalizePublicNickname(String input) {
   final nickname = input.trim();
   if (nickname.isEmpty ||

@@ -1,484 +1,315 @@
-import 'dart:convert';
-
-import 'package:cryptography/cryptography.dart';
+import 'package:cloudbase_flutter/cloudbase_flutter.dart' hide CloudBaseConfig;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:postgrest/postgrest.dart';
 import 'package:squadly/core/error/exceptions.dart';
-import 'package:squadly/features/auth/data/datasources/apple_identity_gateway.dart';
 import 'package:squadly/features/auth/data/datasources/auth_remote_datasource.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
+class _CloudBaseMock extends Mock implements CloudBase {}
+
+class _CloudBaseAuthMock extends Mock implements CloudBaseAuth {}
+
+class _SignInWithPasswordReqFake extends Fake
+    implements SignInWithPasswordReq {}
+
+class _SignUpReqFake extends Fake implements SignUpReq {}
+
+class _SignInWithOtpReqFake extends Fake implements SignInWithOtpReq {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_SignInWithPasswordReqFake());
+    registerFallbackValue(_SignUpReqFake());
+    registerFallbackValue(_SignInWithOtpReqFake());
+  });
+
   test(
-    'password recovery verifies email OTP before updating password',
+    'email signup verifies OTP then saves the requested nickname to profile',
     () async {
-      final requests = <http.Request>[];
-      final client = SupabaseClient(
-        'https://project.example.test',
-        'public-test-key',
-        authOptions: const AuthClientOptions(
-          authFlowType: AuthFlowType.implicit,
+      final app = _CloudBaseMock();
+      final auth = _CloudBaseAuthMock();
+      when(() => app.auth).thenReturn(auth);
+      VerifyOtpParams? verifiedParams;
+      when(() => auth.signUp(any())).thenAnswer((_) async {
+        return SignUpRes(
+          data: SignUpResData(
+            verifyOtp: (params) async {
+              verifiedParams = params;
+              return SignInRes(
+                data: SignInResData(
+                  user: User(
+                    id: 'user-a',
+                    email: 'a@example.test',
+                    createdAt: '2026-10-12T00:00:00Z',
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      });
+      when(() => auth.getSession()).thenAnswer(
+        (_) async => SignInRes(
+          data: SignInResData(
+            session: Session(
+              user: User(
+                id: 'user-a',
+                email: 'a@example.test',
+                createdAt: '2026-10-12T00:00:00Z',
+              ),
+            ),
+          ),
         ),
+      );
+      final client = PostgrestClient(
+        'https://pg.example.test/v1/rdb/rest',
         httpClient: MockClient((request) async {
-          requests.add(request);
-          if (request.url.path == '/auth/v1/recover') {
-            return http.Response('{}', 200);
-          }
-          if (request.url.path == '/auth/v1/verify') {
-            return http.Response(
-              jsonEncode({
-                'access_token': 'recovery-token',
-                'token_type': 'bearer',
-                'expires_in': 3600,
-                'refresh_token': 'recovery-refresh',
-                'user': {
-                  'id': 'user-a',
-                  'email': 'a@example.test',
-                  'created_at': '2026-10-08T00:00:00Z',
-                },
-              }),
-              200,
-              headers: {'content-type': 'application/json'},
-            );
-          }
-          if (request.url.path == '/auth/v1/user') {
-            return http.Response(
-              jsonEncode({
-                'id': 'user-a',
-                'email': 'a@example.test',
-                'created_at': '2026-10-08T00:00:00Z',
-              }),
-              200,
-              headers: {'content-type': 'application/json'},
-            );
-          }
-          if (request.url.path == '/auth/v1/logout') {
-            return http.Response('{}', 200);
-          }
-          return http.Response('unexpected request', 500);
+          expect(request.url.path, '/v1/rdb/rest/profiles');
+          expect(request.url.queryParameters['id'], 'eq.user-a');
+          expect(request.method, 'PATCH');
+          expect(request.body, contains('"nickname":"阿青"'));
+          return http.Response(
+            '{"id":"user-a","nickname":"阿青","avatar_url":null,"created_at":"2026-10-12T00:00:00Z"}',
+            200,
+            headers: {'content-type': 'application/json'},
+            request: request,
+          );
         }),
       );
       addTearDown(client.dispose);
+      final source = AuthRemoteDatasource(app, client);
 
-      final source = AuthRemoteDatasource(client);
+      expect(
+        await source.signUpWithEmail(
+          email: ' a@example.test ',
+          password: 'password1',
+          nickname: '阿青',
+        ),
+        isNull,
+      );
+      final profile = await source.verifyEmailSignup(
+        email: 'a@example.test',
+        code: ' 123456 ',
+      );
+
+      expect(verifiedParams?.token, '123456');
+      expect(profile.id, 'user-a');
+      expect(profile.nickname, '阿青');
+      expect(profile.email, 'a@example.test');
+      verify(() => auth.signUp(any(that: isA<SignUpReq>()))).called(1);
+    },
+  );
+
+  test(
+    'password recovery consumes its OTP then closes the temporary session',
+    () async {
+      final app = _CloudBaseMock();
+      final auth = _CloudBaseAuthMock();
+      when(() => app.auth).thenReturn(auth);
+      UpdateUserAttributes? receivedAttributes;
+      when(() => auth.resetPasswordForEmail(any())).thenAnswer((_) async {
+        return ResetPasswordForEmailRes(
+          data: ResetPasswordForEmailResData(
+            updateUser: (attributes) async {
+              receivedAttributes = attributes;
+              return SignInRes();
+            },
+          ),
+        );
+      });
+      when(() => auth.getSession()).thenAnswer(
+        (_) async => SignInRes(error: AuthError(code: 'no_session')),
+      );
+      when(() => auth.signOut()).thenAnswer((_) async => SignOutRes());
+      final client = PostgrestClient('https://pg.example.test/v1/rdb/rest');
+      addTearDown(client.dispose);
+      final source = AuthRemoteDatasource(app, client);
+
       await source.requestPasswordRecovery(email: ' a@example.test ');
       await source.completePasswordRecovery(
-        email: ' a@example.test ',
+        email: 'a@example.test',
         code: ' 123456 ',
         newPassword: 'newPassword1',
       );
 
-      expect(requests.map((request) => request.url.path), [
-        '/auth/v1/recover',
-        '/auth/v1/verify',
-        '/auth/v1/user',
-        '/auth/v1/logout',
-      ]);
-      expect(jsonDecode(requests[0].body)['email'], 'a@example.test');
-      final verification = jsonDecode(requests[1].body);
-      expect(verification['email'], 'a@example.test');
-      expect(verification['token'], '123456');
-      expect(verification['type'], 'recovery');
-      expect(jsonDecode(requests[2].body), {'password': 'newPassword1'});
-      expect(client.auth.currentSession, isNull);
+      expect(receivedAttributes?.nonce, '123456');
+      expect(receivedAttributes?.password, 'newPassword1');
+      verify(() => auth.signOut()).called(1);
     },
   );
 
-  test('wrong recovery code never sends a password update', () async {
-    final requests = <http.Request>[];
-    final client = SupabaseClient(
-      'https://project.example.test',
-      'public-test-key',
-      authOptions: const AuthClientOptions(authFlowType: AuthFlowType.implicit),
-      httpClient: MockClient((request) async {
-        requests.add(request);
-        return http.Response(
-          '{"msg":"Token has expired or is invalid"}',
-          403,
-          headers: {'content-type': 'application/json'},
-        );
-      }),
+  test('email login delegates to CloudBase Auth and maps its error', () async {
+    final app = _CloudBaseMock();
+    final auth = _CloudBaseAuthMock();
+    when(() => app.auth).thenReturn(auth);
+    when(() => auth.signInWithPassword(any())).thenAnswer(
+      (_) async => SignInRes(error: AuthError(message: 'invalid credentials')),
     );
+    final client = PostgrestClient('https://pg.example.test/v1/rdb/rest');
     addTearDown(client.dispose);
+    final source = AuthRemoteDatasource(app, client);
 
     await expectLater(
-      AuthRemoteDatasource(client).completePasswordRecovery(
-        email: 'a@example.test',
-        code: '000000',
-        newPassword: 'newPassword1',
+      source.signInWithEmail(email: '  a@example.test ', password: 'pass12345'),
+      throwsA(
+        isA<ServerException>().having(
+          (error) => error.message,
+          'message',
+          'invalid credentials',
+        ),
       ),
-      throwsA(isA<ServerException>()),
     );
-    expect(requests.map((request) => request.url.path), ['/auth/v1/verify']);
-    expect(client.auth.currentSession, isNull);
+    verify(
+      () => auth.signInWithPassword(any(that: isA<SignInWithPasswordReq>())),
+    ).called(1);
   });
 
-  test('password update failure closes the recovered session', () async {
-    final requests = <http.Request>[];
-    final client = SupabaseClient(
-      'https://project.example.test',
-      'public-test-key',
-      authOptions: const AuthClientOptions(authFlowType: AuthFlowType.implicit),
-      httpClient: MockClient((request) async {
-        requests.add(request);
-        if (request.url.path == '/auth/v1/verify') {
-          return http.Response(
-            jsonEncode({
-              'access_token': 'recovery-token',
-              'token_type': 'bearer',
-              'expires_in': 3600,
-              'refresh_token': 'recovery-refresh',
-              'user': {
-                'id': 'user-a',
-                'email': 'a@example.test',
-                'created_at': '2026-10-08T00:00:00Z',
-              },
-            }),
-            200,
-            headers: {'content-type': 'application/json'},
-          );
-        }
-        if (request.url.path == '/auth/v1/user') {
-          return http.Response(
-            '{"msg":"password rejected"}',
-            422,
-            headers: {'content-type': 'application/json'},
-          );
-        }
-        return http.Response('{}', 200);
-      }),
+  test(
+    'email signup explains when the CloudBase email provider is disabled',
+    () async {
+      final app = _CloudBaseMock();
+      final auth = _CloudBaseAuthMock();
+      when(() => app.auth).thenReturn(auth);
+      when(() => auth.signUp(any())).thenAnswer(
+        (_) async =>
+            SignUpRes(error: AuthError(message: 'provider email not found')),
+      );
+      final client = PostgrestClient('https://pg.example.test/v1/rdb/rest');
+      addTearDown(client.dispose);
+      final source = AuthRemoteDatasource(app, client);
+
+      await expectLater(
+        source.signUpWithEmail(
+          email: 'a@example.test',
+          password: 'password1',
+          nickname: '阿青',
+        ),
+        throwsA(
+          isA<ServerException>().having(
+            (error) => error.message,
+            'message',
+            contains('未启用邮箱登录'),
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'phone login explains when the CloudBase phone provider is disabled',
+    () async {
+      final app = _CloudBaseMock();
+      final auth = _CloudBaseAuthMock();
+      when(() => app.auth).thenReturn(auth);
+      when(() => auth.signInWithOtp(any())).thenAnswer(
+        (_) async => SignInWithOtpRes(
+          error: AuthError(message: '请联系开发者在身份源列表开启手机号验证码登录'),
+        ),
+      );
+      final client = PostgrestClient('https://pg.example.test/v1/rdb/rest');
+      addTearDown(client.dispose);
+      final source = AuthRemoteDatasource(app, client);
+
+      await expectLater(
+        source.sendPhoneVerification(phone: '17816862845'),
+        throwsA(
+          isA<ServerException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('未启用手机号验证码登录'), contains('上海地域')),
+          ),
+        ),
+      );
+    },
+  );
+
+  test('phone login preserves CloudBase connectivity error details', () async {
+    final app = _CloudBaseMock();
+    final auth = _CloudBaseAuthMock();
+    when(() => app.auth).thenReturn(auth);
+    when(() => auth.signInWithOtp(any())).thenAnswer(
+      (_) async => SignInWithOtpRes(
+        error: AuthError(code: 'unreachable', message: '网络连接失败，请检查网络设置'),
+      ),
     );
+    final client = PostgrestClient('https://pg.example.test/v1/rdb/rest');
     addTearDown(client.dispose);
+    final source = AuthRemoteDatasource(app, client);
 
     await expectLater(
-      AuthRemoteDatasource(client).completePasswordRecovery(
-        email: 'a@example.test',
+      source.sendPhoneVerification(phone: '17816862845'),
+      throwsA(
+        isA<ServerException>()
+            .having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains('连接 CloudBase 验证服务失败'),
+                contains('网络连接失败，请检查网络设置'),
+                contains('unreachable'),
+              ),
+            )
+            .having((error) => error.statusCode, 'statusCode', isNull),
+      ),
+    );
+  });
+
+  test(
+    'phone signup reports that a newly created account needs a password',
+    () async {
+      final app = _CloudBaseMock();
+      final auth = _CloudBaseAuthMock();
+      final authUser = User(
+        id: 'phone-user',
+        phone: '+8617816862845',
+        userMetadata: UserMetadata(hasPassword: false),
+      );
+      when(() => app.auth).thenReturn(auth);
+      when(() => auth.signInWithOtp(any())).thenAnswer(
+        (_) async => SignInWithOtpRes(
+          data: SignInWithOtpResData(
+            verifyOtp: (_) async =>
+                SignInRes(data: SignInResData(user: authUser)),
+          ),
+        ),
+      );
+      when(() => auth.getUser()).thenAnswer(
+        (_) async => GetUserRes(data: GetUserResData(user: authUser)),
+      );
+      final client = PostgrestClient(
+        'https://pg.example.test/v1/rdb/rest',
+        httpClient: MockClient((request) async {
+          return http.Response(
+            '{"id":"phone-user","nickname":"新成员","created_at":"2026-10-15T00:00:00Z"}',
+            200,
+            headers: {'content-type': 'application/json'},
+            request: request,
+          );
+        }),
+      );
+      addTearDown(client.dispose);
+      final source = AuthRemoteDatasource(app, client);
+
+      await source.sendPhoneVerification(phone: '17816862845');
+      final (_, needsPasswordSetup) = await source.verifyPhoneCode(
+        phone: '17816862845',
         code: '123456',
-        newPassword: 'newPassword1',
-      ),
-      throwsA(isA<ServerException>()),
-    );
-    expect(requests.map((request) => request.url.path), [
-      '/auth/v1/verify',
-      '/auth/v1/user',
-      '/auth/v1/logout',
-    ]);
-    expect(client.auth.currentSession, isNull);
-  });
-
-  test(
-    'native Apple ID token exchange binds a hashed nonce to raw nonce',
-    () async {
-      final requests = <http.Request>[];
-      final apple = _FakeAppleIdentityGateway('apple-id-token');
-      final client = SupabaseClient(
-        'https://project.example.test',
-        'public-test-key',
-        authOptions: const AuthClientOptions(
-          authFlowType: AuthFlowType.implicit,
-        ),
-        httpClient: MockClient((request) async {
-          requests.add(request);
-          if (request.url.path == '/auth/v1/token') {
-            return http.Response(
-              jsonEncode({
-                'access_token': 'test-token',
-                'token_type': 'bearer',
-                'expires_in': 3600,
-                'refresh_token': 'test-refresh',
-                'user': {
-                  'id': 'user-a',
-                  'email': 'a@example.test',
-                  'created_at': '2026-10-08T00:00:00Z',
-                },
-              }),
-              200,
-              headers: {'content-type': 'application/json'},
-              request: request,
-            );
-          }
-          if (request.url.path == '/rest/v1/profiles') {
-            return http.Response(
-              jsonEncode({
-                'id': 'user-a',
-                'nickname': '阿青',
-                'avatar_url': null,
-                'created_at': '2026-10-08T00:00:00Z',
-              }),
-              200,
-              headers: {'content-type': 'application/json'},
-              request: request,
-            );
-          }
-          return http.Response('unexpected request', 500, request: request);
-        }),
       );
-      addTearDown(client.dispose);
 
-      final user = await AuthRemoteDatasource(
-        client,
-        appleIdentity: apple,
-        isIOS: true,
-      ).signInWithApple();
-
-      expect(user.nickname, '阿青');
-      expect(requests, hasLength(2));
-      expect(requests.first.url.queryParameters['grant_type'], 'id_token');
-      final exchange = jsonDecode(requests.first.body) as Map<String, dynamic>;
-      expect(exchange['provider'], 'apple');
-      expect(exchange['id_token'], 'apple-id-token');
-      final rawNonce = exchange['nonce'] as String;
-      expect(rawNonce, isNotEmpty);
-      final digest = await Sha256().hash(utf8.encode(rawNonce));
-      expect(
-        apple.hashedNonce,
-        digest.bytes
-            .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
-            .join(),
-      );
-      expect(
-        requests.last.url.queryParameters['select'],
-        'id,nickname,avatar_url,created_at',
-      );
+      expect(needsPasswordSetup, isTrue);
     },
   );
 
   test(
-    'Apple login stays off Android and missing token never reaches Auth',
-    () async {
-      var requestCount = 0;
-      final client = SupabaseClient(
-        'https://project.example.test',
-        'public-test-key',
-        authOptions: const AuthClientOptions(
-          authFlowType: AuthFlowType.implicit,
-        ),
-        httpClient: MockClient((request) async {
-          requestCount++;
-          return http.Response('{}', 200, request: request);
-        }),
+    'Apple login fails closed until CloudBase supports nonce validation',
+    () {
+      final source = AuthRemoteDatasource(
+        _CloudBaseMock(),
+        PostgrestClient('https://pg.example.test/v1/rdb/rest'),
       );
-      addTearDown(client.dispose);
-      final apple = _FakeAppleIdentityGateway(null);
-      await expectLater(
-        AuthRemoteDatasource(
-          client,
-          appleIdentity: apple,
-          isIOS: false,
-        ).signInWithApple(),
-        throwsA(isA<ServerException>()),
-      );
-      expect(apple.hashedNonce, isNull);
-      await expectLater(
-        AuthRemoteDatasource(
-          client,
-          appleIdentity: apple,
-          isIOS: true,
-        ).signInWithApple(),
-        throwsA(isA<ServerException>()),
-      );
-      expect(requestCount, 0);
+      expect(source.signInWithApple(), throwsA(isA<ServerException>()));
     },
   );
-
-  test(
-    'unconfirmed email registration sends nickname but never writes profile',
-    () async {
-      final requests = <http.Request>[];
-      final client = SupabaseClient(
-        'https://project.example.test',
-        'public-test-key',
-        authOptions: const AuthClientOptions(
-          authFlowType: AuthFlowType.implicit,
-        ),
-        httpClient: MockClient((request) async {
-          requests.add(request);
-          if (request.url.path == '/auth/v1/signup') {
-            return http.Response(
-              jsonEncode({
-                'id': 'user-a',
-                'email': 'a@example.test',
-                'created_at': '2026-10-08T00:00:00Z',
-              }),
-              200,
-              headers: {'content-type': 'application/json'},
-            );
-          }
-          return http.Response('unexpected request', 500);
-        }),
-      );
-      addTearDown(client.dispose);
-
-      final registration = await AuthRemoteDatasource(client).signUpWithEmail(
-        email: 'a@example.test',
-        password: 'password1',
-        nickname: '阿青',
-      );
-
-      expect(registration, isNull);
-      expect(requests, hasLength(1));
-      expect(requests.single.url.path, '/auth/v1/signup');
-      expect(jsonDecode(requests.single.body)['data']['nickname'], '阿青');
-    },
-  );
-
-  test('phone code request uses mainland E.164 format', () async {
-    final requests = <http.Request>[];
-    final client = SupabaseClient(
-      'https://project.example.test',
-      'public-test-key',
-      authOptions: const AuthClientOptions(authFlowType: AuthFlowType.implicit),
-      httpClient: MockClient((request) async {
-        requests.add(request);
-        return http.Response(
-          '{}',
-          200,
-          headers: {'content-type': 'application/json'},
-        );
-      }),
-    );
-    addTearDown(client.dispose);
-
-    await AuthRemoteDatasource(
-      client,
-    ).sendPhoneVerification(phone: '13800138000');
-
-    expect(requests, hasLength(1));
-    expect(requests.single.url.path, '/auth/v1/otp');
-    expect(jsonDecode(requests.single.body)['phone'], '+8613800138000');
-  });
-
-  test('login reads only public profile fields and own Auth contact', () async {
-    final requests = <http.Request>[];
-    final client = SupabaseClient(
-      'https://project.example.test',
-      'public-test-key',
-      authOptions: const AuthClientOptions(authFlowType: AuthFlowType.implicit),
-      httpClient: MockClient((request) async {
-        requests.add(request);
-        if (request.url.path == '/auth/v1/token') {
-          return http.Response(
-            jsonEncode({
-              'access_token': 'test-token',
-              'token_type': 'bearer',
-              'expires_in': 3600,
-              'refresh_token': 'test-refresh',
-              'user': {
-                'id': 'user-a',
-                'email': 'a@example.test',
-                'phone': '+8613800138000',
-                'created_at': '2026-10-08T00:00:00Z',
-              },
-            }),
-            200,
-            headers: {'content-type': 'application/json'},
-            request: request,
-          );
-        }
-        return http.Response(
-          jsonEncode({
-            'id': 'user-a',
-            'nickname': '阿青',
-            'avatar_url': null,
-            'created_at': '2026-10-08T00:00:00Z',
-          }),
-          200,
-          headers: {'content-type': 'application/json'},
-          request: request,
-        );
-      }),
-    );
-    addTearDown(client.dispose);
-
-    final profile = await AuthRemoteDatasource(
-      client,
-    ).signInWithEmail(email: 'a@example.test', password: 'password1');
-
-    expect(profile.nickname, '阿青');
-    expect(profile.email, 'a@example.test');
-    expect(profile.phone, '+8613800138000');
-    final selection = requests.last.url.queryParameters['select'];
-    expect(selection, 'id,nickname,avatar_url,created_at');
-    expect(selection, isNot(contains('email')));
-    expect(selection, isNot(contains('phone')));
-  });
-
-  test(
-    'nickname update targets the authenticated profile and no contact field',
-    () async {
-      final requests = <http.Request>[];
-      final client = SupabaseClient(
-        'https://project.example.test',
-        'public-test-key',
-        authOptions: const AuthClientOptions(
-          authFlowType: AuthFlowType.implicit,
-        ),
-        httpClient: MockClient((request) async {
-          requests.add(request);
-          if (request.url.path == '/auth/v1/token') {
-            return http.Response(
-              jsonEncode({
-                'access_token': 'test-token',
-                'token_type': 'bearer',
-                'expires_in': 3600,
-                'refresh_token': 'test-refresh',
-                'user': {
-                  'id': 'user-a',
-                  'email': 'a@example.test',
-                  'created_at': '2026-10-08T00:00:00Z',
-                },
-              }),
-              200,
-              headers: {'content-type': 'application/json'},
-              request: request,
-            );
-          }
-          return http.Response(
-            jsonEncode({
-              'id': 'user-a',
-              'nickname': '晨跑阿青',
-              'avatar_url': null,
-              'created_at': '2026-10-08T00:00:00Z',
-            }),
-            200,
-            headers: {'content-type': 'application/json'},
-            request: request,
-          );
-        }),
-      );
-      addTearDown(client.dispose);
-      await client.auth.signInWithPassword(
-        email: 'a@example.test',
-        password: 'password1',
-      );
-
-      final updated = await AuthRemoteDatasource(
-        client,
-      ).updateNickname(nickname: '晨跑阿青');
-
-      expect(updated.nickname, '晨跑阿青');
-      expect(updated.email, 'a@example.test');
-      expect(requests.last.method, 'PATCH');
-      expect(requests.last.url.queryParameters['id'], 'eq.user-a');
-      expect(
-        requests.last.url.queryParameters['select'],
-        'id,nickname,avatar_url,created_at',
-      );
-      expect(jsonDecode(requests.last.body), {'nickname': '晨跑阿青'});
-    },
-  );
-}
-
-final class _FakeAppleIdentityGateway implements AppleIdentityGateway {
-  _FakeAppleIdentityGateway(this.token);
-
-  final String? token;
-  String? hashedNonce;
-
-  @override
-  Future<String?> requestIdToken({required String hashedNonce}) async {
-    this.hashedNonce = hashedNonce;
-    return token;
-  }
 }

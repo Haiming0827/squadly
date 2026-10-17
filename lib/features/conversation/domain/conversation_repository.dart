@@ -5,7 +5,7 @@ import '../../cards/domain/card_composer.dart';
 import '../../secure_route/domain/route_models.dart';
 import 'timeline_entry.dart';
 
-/// The seam shared by in-memory tests and the remote Supabase adapter.
+/// The seam shared by in-memory tests and the remote CloudBase adapter.
 abstract interface class ConversationRepository {
   Future<Either<Failure, List<TimelineEntry>>> loadRecent(String squadId);
 

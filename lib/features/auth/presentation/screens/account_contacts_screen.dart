@@ -18,11 +18,13 @@ class AccountContactsScreen extends ConsumerStatefulWidget {
 
 class _AccountContactsScreenState extends ConsumerState<AccountContactsScreen> {
   final _emailController = TextEditingController();
+  final _emailCodeController = TextEditingController();
   final _phoneController = TextEditingController();
   final _codeController = TextEditingController();
   Timer? _resendTimer;
   int _cooldownSeconds = 0;
   bool _codeSent = false;
+  bool _emailCodeSent = false;
   bool _busy = false;
   String? _message;
 
@@ -30,6 +32,7 @@ class _AccountContactsScreenState extends ConsumerState<AccountContactsScreen> {
   void dispose() {
     _resendTimer?.cancel();
     _emailController.dispose();
+    _emailCodeController.dispose();
     _phoneController.dispose();
     _codeController.dispose();
     super.dispose();
@@ -62,9 +65,23 @@ class _AccountContactsScreenState extends ConsumerState<AccountContactsScreen> {
             ),
             const SizedBox(height: 8),
             OutlinedButton(
-              onPressed: _busy ? null : _requestEmailChange,
-              child: const Text('发送邮箱修改确认'),
+              onPressed: _busy || _emailCodeSent ? null : _requestEmailChange,
+              child: Text(_emailCodeSent ? '验证邮箱' : '发送邮箱修改确认'),
             ),
+            if (_emailCodeSent) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _emailCodeController,
+                decoration: const InputDecoration(labelText: '邮箱验证码'),
+                keyboardType: TextInputType.number,
+                enabled: !_busy,
+              ),
+              const SizedBox(height: 8),
+              FilledButton(
+                onPressed: _busy ? null : _verifyEmailChange,
+                child: const Text('确认新邮箱'),
+              ),
+            ],
             const Divider(height: 40),
             Text('手机号', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
@@ -135,8 +152,36 @@ class _AccountContactsScreenState extends ConsumerState<AccountContactsScreen> {
       if (!mounted) return;
       result.fold(
         (failure) => setState(() => _message = authFailureMessage(failure)),
-        (_) => setState(() => _message = '确认邮件已发送。完成验证前，原邮箱仍用于登录。'),
+        (_) => setState(() {
+          _emailCodeSent = true;
+          _message = '验证码已发送到新邮箱';
+        }),
       );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _verifyEmailChange() async {
+    final code = _emailCodeController.text.trim();
+    if (!RegExp(r'^\d{4,8}$').hasMatch(code)) {
+      setState(() => _message = '请输入邮箱中的验证码');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      final failure = await ref
+          .read(authNotifierProvider.notifier)
+          .verifyEmailChange(code: code);
+      if (!mounted) return;
+      setState(() {
+        _emailCodeSent = failure != null;
+        _message = failure == null ? '邮箱已验证' : authFailureMessage(failure);
+        if (failure == null) _emailCodeController.clear();
+      });
     } finally {
       if (mounted) setState(() => _busy = false);
     }

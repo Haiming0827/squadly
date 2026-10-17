@@ -8,25 +8,31 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite;
 
-import '../../../core/config/backend_config.dart';
-import '../../../core/network/supabase_client_provider.dart';
+import '../../../core/network/cloudbase_client_provider.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
+import '../data/cloudbase_conversation_repository.dart';
 import '../data/conversation_outbox_database.dart';
 import '../data/drift_conversation_outbox.dart';
 import '../data/memory_conversation_outbox.dart';
 import '../data/outbox_key_vault.dart';
-import '../data/supabase_conversation_repository.dart';
 import '../domain/conversation_outbox.dart';
 import '../domain/conversation_repository.dart';
 import '../domain/timeline_entry.dart';
 import 'conversation_controller.dart';
 
 final conversationRepositoryProvider = Provider<ConversationRepository>((ref) {
-  return SupabaseConversationRepository(ref.watch(supabaseClientProvider));
+  if (ref.watch(cloudBaseConfigProvider).useDemo) {
+    throw StateError(
+      'Conversation remote repository is unavailable in demo mode',
+    );
+  }
+  return CloudBaseConversationRepository(
+    ref.watch(cloudBasePostgresClientProvider).rest,
+  );
 });
 
 final conversationOutboxProvider = Provider<ConversationOutbox>((ref) {
-  if (BackendConfig.fromEnvironment().useDemo) {
+  if (ref.watch(cloudBaseConfigProvider).useDemo) {
     return MemoryConversationOutbox();
   }
   final database = ConversationOutboxDatabase(

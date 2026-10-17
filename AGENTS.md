@@ -29,8 +29,8 @@
 - Flutter 3.x + Dart。
 - Riverpod 2.x + `riverpod_annotation`，依赖注入使用 Riverpod 内置机制。
 - `go_router` 负责声明式路由和登录重定向。
-- Supabase 作为后端服务，包含 PostgreSQL、Auth、Realtime、Storage 和 Edge Functions。
-- `supabase_flutter` 是主要网络入口，`dio` 仅用于第三方 API。
+- 腾讯云 CloudBase for Supabase 版（PostgreSQL 环境）作为目标后端；身份认证使用 `cloudbase_flutter`，PostgreSQL 使用 CloudBase PG REST API（由 data 层封装）。
+- `dio` 用于 CloudBase PG REST 和第三方 API；presentation/domain 层不得直连 SDK。
 - `freezed` + `json_serializable` 用于实体、DTO 和不可变数据。
 - `fpdart` 的 `Either` 用于业务错误传递。
 - `drift` + `shared_preferences` 用于本地结构化缓存和轻量配置。
@@ -51,7 +51,7 @@ lib/
       presentation/     # 页面、组件、Riverpod provider
   shared/               # 跨功能共享组件和模型
 test/                   # 与 lib/ 对应的单元/组件测试
-supabase/migrations/    # Supabase SQL migration
+supabase/migrations/    # 旧 Supabase migrations（迁移完成前仅作转换来源/本地回归，不部署到 CloudBase）
 docs/                   # 产品和开发设计文档
 ```
 
@@ -59,13 +59,13 @@ docs/                   # 产品和开发设计文档
 
 ## 架构规则
 
-- Domain 层必须保持纯 Dart；不要引入 Flutter、Supabase、Riverpod UI 依赖。
+- Domain 层必须保持纯 Dart；不要引入 Flutter、CloudBase/Supabase SDK、Riverpod UI 依赖。
 - Repository 接口定义在 domain，具体实现放在 data。
-- DTO 与 Supabase 表结构对应；domain entity 表达业务语义。
+- DTO 与所选后端表结构对应；domain entity 表达业务语义。
 - Presentation 层只通过 provider/use case/repository 接口访问业务能力。
 - 跨模块联动只通过 domain 用例，例如 finance 暴露基金余额给 travel，fitness 暴露卡路里消耗给 food。
 - 不要混用 Bloc、Provider、get_it 或其他状态管理/DI 方案。
-- 不要绕过 Supabase RLS 设计读取其他成员的私密数据。
+- CloudBase PG 必须同时配置表级 GRANT 和 RLS policy；用户身份列需与 CloudBase Auth `VARCHAR(64)`/`text` 主键及 `auth.uid()` 类型对齐；不允许绕过数据库权限读取其他成员的私密数据。
 - 生成文件如 `*.freezed.dart`、`*.g.dart` 应由 build_runner 生成，不手工维护复杂逻辑。
 
 ## 隐私与权限红线
@@ -83,8 +83,8 @@ docs/                   # 产品和开发设计文档
 
 实现新功能时优先按这个顺序推进：
 
-1. 阅读相关 feature 的 domain/entity/repository，以及 Supabase migration。
-2. 明确数据边界和隐私权限，必要时先补 SQL/RLS。
+1. 阅读相关 feature 的 domain/entity/repository，以及 `docs/modules/backend_cloudbase/` 中的方案和迁移状态。
+2. 明确数据边界和隐私权限，必要时先补 CloudBase PG SQL、GRANT 和 RLS。
 3. 在 domain 定义实体、repository 接口和 use case。
 4. 在 data 实现 datasource、DTO、mapper 和 repository。
 5. 在 presentation 接入 Riverpod provider、screen 和 widget。
@@ -105,21 +105,22 @@ flutter test
 flutter run
 ```
 
-使用 Supabase 环境变量启动：
+使用 CloudBase 环境变量启动：
 
 ```bash
 flutter run \
-  --dart-define=SUPABASE_URL=<your-url> \
-  --dart-define=SUPABASE_ANON_KEY=<your-anon-key>
+  --dart-define=CLOUDBASE_ENV_ID=<your-environment-id> \
+  --dart-define=CLOUDBASE_REGION=ap-shanghai \
+  --dart-define=CLOUDBASE_PUBLISHABLE_KEY=<your-publishable-key>
 ```
 
-不要把真实 Supabase URL、anon key、service role key、短信服务密钥、OAuth secret 或 GitHub token 写入仓库。服务端高权限密钥只允许在 Supabase/CI secret 配置中出现。
+不要把 CloudBase SecretId/SecretKey、service-role/API 高权限 key、短信服务密钥、OAuth secret 或 GitHub token 写入仓库。高权限密钥只允许在服务端/CI secret 配置中出现；客户端只允许使用 CloudBase Publishable Key。
 
 ## 测试要求
 
 - core 工具函数、validators、常量边界必须有单元测试。
 - domain use case 应覆盖成功、失败、权限不足和边界条件。
-- repository/data 层应 mock Supabase 或 datasource，不依赖真实生产后端。
+- repository/data 层应 mock datasource/transport，不依赖真实生产后端。
 - UI 组件应优先覆盖关键状态：loading、empty、error、success。
 - 涉及 2-9 人小队限制、邀请码、队长权限、私密资产隔离的逻辑必须有测试。
 
@@ -137,20 +138,21 @@ flutter run \
 
 - Flutter iOS/Android 基础工程。
 - `app/router.dart` 中的登录态重定向骨架。
-- Supabase 初始化入口，使用 `SUPABASE_URL` 和 `SUPABASE_ANON_KEY` 的 `--dart-define` 占位配置。
+- 真实后端目标为腾讯云 CloudBase PostgreSQL；运行时配置使用 `CLOUDBASE_ENV_ID`、`CLOUDBASE_REGION`、`CLOUDBASE_PUBLISHABLE_KEY`。旧 `supabase/` migrations 与 functions 是转换来源/回滚材料，不进入 CloudBase 发布路径。
 - 默认启用 `USE_DEMO_BACKEND=true` 的本地演示数据层，支持无后端运行。
 - `auth`、`squad`、`fitness`、`finance`、`travel`、`food` 的核心 UI 闭环。
 - 小队创建/加入/切换、健身打卡、理财记账、旅行预算、美食投票等 MVP 流程。
-- `supabase/migrations/001_core_tables.sql` 和 `002_feature_tables.sql`。
+- `cloudbase/migrations/` 下 14 位 UTC 时间戳前缀的有序 SQL 文件是 CloudBase PG 目标 migration；修改后运行 `scripts/check_cloudbase_migrations.sh` 做本地空库语法/对象和敏感数据 RLS 检查，并按 CloudBase CLI migration 命令部署到 staging。
+- 旧 `supabase/migrations/001`–`007` 只作为转换来源；不要直接向 CloudBase 部署旧目录。
 - `test/core`、`test/app`、`test/features` 下的基础单元/组件测试。
 - `integration_test/app_smoke_test.dart` 端到端冒烟测试。
 - `.github/workflows/flutter-ci.yml` CI 工作流。
 
 优先补齐方向：
 
-1. 配置真实 Supabase 项目，使用 migration 建表并验证 RLS。
-2. 将本地演示 store 逐模块替换为 Supabase repository 实现。
-3. 补齐真实手机号短信、Apple 登录、微信登录和 Edge Functions。
+1. 按 `docs/modules/backend_cloudbase/migration-runbook.md` 使用 CloudBase CLI 部署版本化 migration，并在独立 staging 验证 GRANT/RLS。
+2. 对每个 CloudBase adapter 完成 staging 与双账号权限验收；不得把本地 PostgreSQL 模拟检查当作云端通过。
+3. 补齐尚未迁移的社交素材 API、CloudBase Realtime 验收和安全 Apple 登录，再启用生产真实模式。
 4. 接入 drift 离线缓存、推送通知和 Sentry。
 5. 完成 release 签名、TestFlight 和 Google Play 内测发布。
 

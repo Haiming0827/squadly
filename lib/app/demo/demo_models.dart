@@ -7,126 +7,14 @@ import '../../features/fitness/domain/entities/check_in.dart';
 import '../../features/fitness/domain/entities/daily_task.dart';
 import '../../features/fitness/domain/entities/health_snapshot.dart';
 import '../../features/fitness/domain/entities/workout_plan.dart';
+import '../../features/food/domain/entities/food_spot.dart';
 import '../../features/social/domain/entities/circle_message.dart';
 import '../../features/social/domain/entities/data_connection.dart';
 import '../../features/social/domain/entities/external_data_item.dart';
 import '../../features/social/domain/entities/social_post.dart';
 import '../../features/squad/domain/entities/squad.dart';
 import '../../features/squad/domain/entities/squad_member.dart';
-
-class TravelPlan {
-  const TravelPlan({
-    required this.id,
-    required this.squadId,
-    required this.title,
-    required this.destination,
-    required this.startDate,
-    required this.endDate,
-    required this.budget,
-    required this.linkedFundId,
-    required this.createdBy,
-    required this.createdAt,
-    this.notes,
-  });
-
-  final String id;
-  final String squadId;
-  final String title;
-  final String destination;
-  final DateTime startDate;
-  final DateTime endDate;
-  final double budget;
-  final String? linkedFundId;
-  final String createdBy;
-  final DateTime createdAt;
-  final String? notes;
-
-  TravelPlan copyWith({
-    String? id,
-    String? squadId,
-    String? title,
-    String? destination,
-    DateTime? startDate,
-    DateTime? endDate,
-    double? budget,
-    String? linkedFundId,
-    String? createdBy,
-    DateTime? createdAt,
-    String? notes,
-  }) {
-    return TravelPlan(
-      id: id ?? this.id,
-      squadId: squadId ?? this.squadId,
-      title: title ?? this.title,
-      destination: destination ?? this.destination,
-      startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
-      budget: budget ?? this.budget,
-      linkedFundId: linkedFundId ?? this.linkedFundId,
-      createdBy: createdBy ?? this.createdBy,
-      createdAt: createdAt ?? this.createdAt,
-      notes: notes ?? this.notes,
-    );
-  }
-}
-
-class FoodSpot {
-  const FoodSpot({
-    required this.id,
-    required this.squadId,
-    required this.name,
-    required this.category,
-    required this.averageCost,
-    required this.caloriesEstimate,
-    required this.addedBy,
-    required this.createdAt,
-    this.address,
-    this.note,
-    this.votes = const {},
-  });
-
-  final String id;
-  final String squadId;
-  final String name;
-  final String category;
-  final double averageCost;
-  final int caloriesEstimate;
-  final String addedBy;
-  final DateTime createdAt;
-  final String? address;
-  final String? note;
-  final Map<String, int> votes;
-
-  int get score => votes.values.fold(0, (sum, vote) => sum + vote);
-
-  FoodSpot copyWith({
-    String? id,
-    String? squadId,
-    String? name,
-    String? category,
-    double? averageCost,
-    int? caloriesEstimate,
-    String? addedBy,
-    DateTime? createdAt,
-    String? address,
-    String? note,
-    Map<String, int>? votes,
-  }) {
-    return FoodSpot(
-      id: id ?? this.id,
-      squadId: squadId ?? this.squadId,
-      name: name ?? this.name,
-      category: category ?? this.category,
-      averageCost: averageCost ?? this.averageCost,
-      caloriesEstimate: caloriesEstimate ?? this.caloriesEstimate,
-      addedBy: addedBy ?? this.addedBy,
-      createdAt: createdAt ?? this.createdAt,
-      address: address ?? this.address,
-      note: note ?? this.note,
-      votes: votes ?? this.votes,
-    );
-  }
-}
+import '../../features/travel/domain/entities/travel_plan.dart';
 
 class DemoAppState {
   const DemoAppState({

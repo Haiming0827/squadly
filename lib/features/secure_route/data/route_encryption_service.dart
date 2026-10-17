@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:postgrest/postgrest.dart';
 
 import '../domain/route_key_directory.dart';
 import 'route_crypto.dart';
@@ -89,14 +89,21 @@ final class RouteEncryptionService {
 }
 
 /// Uses narrow RPCs instead of direct INSERT on key or membership tables.
-final class SupabaseRouteKeyDirectory implements RouteKeyDirectory {
-  const SupabaseRouteKeyDirectory(this._client);
+typedef RouteSessionUserIdReader = Future<String?> Function();
 
-  final SupabaseClient _client;
+final class CloudBaseRouteKeyDirectory implements RouteKeyDirectory {
+  const CloudBaseRouteKeyDirectory({
+    required PostgrestClient client,
+    required RouteSessionUserIdReader userIdReader,
+  }) : _client = client,
+       _userIdReader = userIdReader;
+
+  final PostgrestClient _client;
+  final RouteSessionUserIdReader _userIdReader;
 
   @override
   Future<void> registerDevice(RouteRecipient device) async {
-    if (_client.auth.currentUser?.id != device.userId) {
+    if (await _userIdReader() != device.userId) {
       throw StateError('Route key owner does not match the session');
     }
     final response = await _client.rpc(

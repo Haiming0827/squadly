@@ -1,5 +1,7 @@
 # 验收与调试矩阵
 
+> **后端迁移说明（2026-10-12）：** 本文中的 Supabase 接入、SQL/RLS、Realtime、Edge Function 和 staging 命令描述旧实现或历史验收记录，不是当前目标部署流程。目标已改为腾讯云 CloudBase PostgreSQL；迁移映射、未完成事项和 CloudBase 验收以 [CloudBase 后端方案](../backend_cloudbase/README.md) 与 [迁移清单](../backend_cloudbase/migration-inventory.md) 为准。
+
 > 这是一组将来执行的用例，**目前没有真实后端或两机通过记录**。A：iPhone 队长；B：无 GMS 的小米成员；C：不同小队／陌生测试账号；另含匿名身份。C 可用测试客户端，不要求第三台真机。
 
 | ID | 模块 | 操作与预期 | 证据／失败归属 |

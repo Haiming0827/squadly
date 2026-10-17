@@ -13,12 +13,14 @@ import '../../features/fitness/domain/entities/check_in.dart';
 import '../../features/fitness/domain/entities/daily_task.dart';
 import '../../features/fitness/domain/entities/health_snapshot.dart';
 import '../../features/fitness/domain/entities/workout_plan.dart';
+import '../../features/food/domain/entities/food_spot.dart';
 import '../../features/social/domain/entities/circle_message.dart';
 import '../../features/social/domain/entities/data_connection.dart';
 import '../../features/social/domain/entities/external_data_item.dart';
 import '../../features/social/domain/entities/social_post.dart';
 import '../../features/squad/domain/entities/squad.dart';
 import '../../features/squad/domain/entities/squad_member.dart';
+import '../../features/travel/domain/entities/travel_plan.dart';
 import 'demo_models.dart';
 
 final demoAppStoreProvider = StateNotifierProvider<DemoAppStore, DemoAppState>((

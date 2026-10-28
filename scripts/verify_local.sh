@@ -18,16 +18,18 @@ dart format --set-exit-if-changed lib/ test/ integration_test/
 echo "==> Static analysis"
 flutter analyze
 
+echo "==> Integration test host analysis"
+(cd integration_test && flutter pub get && flutter analyze)
+
 echo "==> Unit and widget tests"
 flutter test
 
 if [[ "${RUN_INTEGRATION_TESTS:-0}" == "1" ]]; then
   echo "==> Integration tests"
-  flutter test integration_test
+  (cd integration_test && flutter pub get && flutter test integration_test)
 fi
 
 if [[ "${BUILD_ANDROID_DEBUG:-0}" == "1" ]]; then
   echo "==> Android debug build"
   flutter build apk --debug
 fi
-

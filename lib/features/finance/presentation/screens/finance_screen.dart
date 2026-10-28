@@ -3,10 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../app/demo/demo_store.dart';
+import '../../../../app/providers/squad_context_providers.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/cloudbase_client_provider.dart';
+import '../../../../shared/widgets/app_loading_state.dart';
 import '../../../../shared/widgets/app_section.dart';
-import '../../../squad/presentation/providers/squad_provider.dart';
 import '../providers/finance_provider.dart';
 
 class FinanceScreen extends ConsumerWidget {
@@ -58,11 +59,13 @@ class FinanceScreen extends ConsumerWidget {
         ),
         AppSection(
           title: '公共基金',
-          trailing: IconButton(
-            tooltip: '创建基金',
-            icon: const Icon(Icons.add_rounded),
-            onPressed: () => _showFundDialog(context, store, squad.id),
-          ),
+          trailing: state.isCaptain
+              ? IconButton(
+                  tooltip: '创建基金',
+                  icon: const Icon(Icons.add_rounded),
+                  onPressed: () => _showFundDialog(context, store, squad.id),
+                )
+              : null,
           child: funds.isEmpty
               ? const EmptyState(icon: Icons.savings_outlined, title: '暂无基金')
               : Column(
@@ -195,42 +198,54 @@ class FinanceScreen extends ConsumerWidget {
     DemoAppStore store,
     String squadId,
   ) async {
-    final nameController = TextEditingController();
-    final targetController = TextEditingController(text: '1000');
+    final formKey = GlobalKey<FormState>();
+    var name = '';
+    var target = '1000';
     var fundType = 'travel';
     await showDialog<void>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: const Text('创建公共基金'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: '基金名称'),
-                autofocus: true,
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: fundType,
-                decoration: const InputDecoration(labelText: '类型'),
-                items: const [
-                  DropdownMenuItem(value: 'travel', child: Text('旅行')),
-                  DropdownMenuItem(value: 'dining', child: Text('聚餐')),
-                  DropdownMenuItem(value: 'team_building', child: Text('团建')),
-                  DropdownMenuItem(value: 'custom', child: Text('自定义')),
-                ],
-                onChanged: (value) =>
-                    setState(() => fundType = value ?? fundType),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: targetController,
-                decoration: const InputDecoration(labelText: '目标金额'),
-                keyboardType: TextInputType.number,
-              ),
-            ],
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: name,
+                  decoration: const InputDecoration(labelText: '基金名称'),
+                  autofocus: true,
+                  onSaved: (value) => name = value ?? '',
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty ? '请输入基金名称' : null,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: fundType,
+                  decoration: const InputDecoration(labelText: '类型'),
+                  items: const [
+                    DropdownMenuItem(value: 'travel', child: Text('旅行')),
+                    DropdownMenuItem(value: 'dining', child: Text('聚餐')),
+                    DropdownMenuItem(value: 'team_building', child: Text('团建')),
+                    DropdownMenuItem(value: 'custom', child: Text('自定义')),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => fundType = value ?? fundType),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  initialValue: target,
+                  decoration: const InputDecoration(labelText: '目标金额'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                  validator: _validateNonNegativeAmount,
+                  onSaved: (value) => target = value ?? '',
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -239,12 +254,13 @@ class FinanceScreen extends ConsumerWidget {
             ),
             FilledButton(
               onPressed: () {
-                if (nameController.text.trim().isEmpty) return;
+                if (!formKey.currentState!.validate()) return;
+                formKey.currentState!.save();
                 store.createFund(
                   squadId: squadId,
-                  name: nameController.text,
+                  name: name,
                   fundType: fundType,
-                  targetAmount: double.tryParse(targetController.text) ?? 0,
+                  targetAmount: double.parse(target),
                 );
                 Navigator.pop(context);
               },
@@ -254,8 +270,6 @@ class FinanceScreen extends ConsumerWidget {
         ),
       ),
     );
-    nameController.dispose();
-    targetController.dispose();
   }
 
   Future<void> _showTransactionDialog(
@@ -263,27 +277,37 @@ class FinanceScreen extends ConsumerWidget {
     DemoAppStore store,
     String fundId,
   ) async {
-    final amountController = TextEditingController(text: '100');
-    final descriptionController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    var amount = '100';
+    var description = '';
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('基金流水'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: amountController,
-              decoration: const InputDecoration(labelText: '金额（支出填负数）'),
-              keyboardType: TextInputType.number,
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(labelText: '说明'),
-            ),
-          ],
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                initialValue: amount,
+                decoration: const InputDecoration(labelText: '金额（支出填负数）'),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                  signed: true,
+                ),
+                autofocus: true,
+                validator: _validateNonZeroAmount,
+                onSaved: (value) => amount = value ?? '',
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                initialValue: description,
+                decoration: const InputDecoration(labelText: '说明'),
+                onSaved: (value) => description = value ?? '',
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -292,10 +316,12 @@ class FinanceScreen extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () {
+              if (!formKey.currentState!.validate()) return;
+              formKey.currentState!.save();
               store.addFundTransaction(
                 fundId: fundId,
-                amount: double.tryParse(amountController.text) ?? 0,
-                description: descriptionController.text,
+                amount: double.parse(amount),
+                description: description,
               );
               Navigator.pop(context);
             },
@@ -304,50 +330,60 @@ class FinanceScreen extends ConsumerWidget {
         ],
       ),
     );
-    amountController.dispose();
-    descriptionController.dispose();
   }
 
   Future<void> _showAssetDialog(
     BuildContext context,
     DemoAppStore store,
   ) async {
-    final nameController = TextEditingController();
-    final amountController = TextEditingController(text: '1000');
+    final formKey = GlobalKey<FormState>();
+    var name = '';
+    var amount = '1000';
     var assetType = 'savings';
     await showDialog<void>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: const Text('新增私密资产'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: '资产名称'),
-                autofocus: true,
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: assetType,
-                decoration: const InputDecoration(labelText: '类型'),
-                items: const [
-                  DropdownMenuItem(value: 'savings', child: Text('存款')),
-                  DropdownMenuItem(value: 'stock', child: Text('股票')),
-                  DropdownMenuItem(value: 'fund', child: Text('基金')),
-                  DropdownMenuItem(value: 'other', child: Text('其他')),
-                ],
-                onChanged: (value) =>
-                    setState(() => assetType = value ?? assetType),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: amountController,
-                decoration: const InputDecoration(labelText: '金额'),
-                keyboardType: TextInputType.number,
-              ),
-            ],
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: name,
+                  decoration: const InputDecoration(labelText: '资产名称'),
+                  autofocus: true,
+                  onSaved: (value) => name = value ?? '',
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty ? '请输入资产名称' : null,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: assetType,
+                  decoration: const InputDecoration(labelText: '类型'),
+                  items: const [
+                    DropdownMenuItem(value: 'savings', child: Text('存款')),
+                    DropdownMenuItem(value: 'stock', child: Text('股票')),
+                    DropdownMenuItem(value: 'fund', child: Text('基金')),
+                    DropdownMenuItem(value: 'other', child: Text('其他')),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => assetType = value ?? assetType),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  initialValue: amount,
+                  decoration: const InputDecoration(labelText: '金额'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                  validator: _validateNonNegativeAmount,
+                  onSaved: (value) => amount = value ?? '',
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -356,11 +392,12 @@ class FinanceScreen extends ConsumerWidget {
             ),
             FilledButton(
               onPressed: () {
-                if (nameController.text.trim().isEmpty) return;
+                if (!formKey.currentState!.validate()) return;
+                formKey.currentState!.save();
                 store.createPrivateAsset(
                   assetType: assetType,
-                  name: nameController.text,
-                  amount: double.tryParse(amountController.text) ?? 0,
+                  name: name,
+                  amount: double.parse(amount),
                 );
                 Navigator.pop(context);
               },
@@ -370,8 +407,6 @@ class FinanceScreen extends ConsumerWidget {
         ),
       ),
     );
-    nameController.dispose();
-    amountController.dispose();
   }
 
   Future<void> _showExpenseDialog(
@@ -379,42 +414,52 @@ class FinanceScreen extends ConsumerWidget {
     DemoAppStore store,
     String squadId,
   ) async {
-    final amountController = TextEditingController(text: '80');
-    final descriptionController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    var amount = '80';
+    var description = '';
     var category = 'dining';
     await showDialog<void>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: const Text('记录共享支出'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: amountController,
-                decoration: const InputDecoration(labelText: '金额'),
-                keyboardType: TextInputType.number,
-                autofocus: true,
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: category,
-                decoration: const InputDecoration(labelText: '分类'),
-                items: const [
-                  DropdownMenuItem(value: 'dining', child: Text('餐饮')),
-                  DropdownMenuItem(value: 'transport', child: Text('交通')),
-                  DropdownMenuItem(value: 'entertainment', child: Text('娱乐')),
-                  DropdownMenuItem(value: 'other', child: Text('其他')),
-                ],
-                onChanged: (value) =>
-                    setState(() => category = value ?? category),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descriptionController,
-                decoration: const InputDecoration(labelText: '说明'),
-              ),
-            ],
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: amount,
+                  decoration: const InputDecoration(labelText: '金额'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                  autofocus: true,
+                  validator: _validatePositiveAmount,
+                  onSaved: (value) => amount = value ?? '',
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: category,
+                  decoration: const InputDecoration(labelText: '分类'),
+                  items: const [
+                    DropdownMenuItem(value: 'dining', child: Text('餐饮')),
+                    DropdownMenuItem(value: 'transport', child: Text('交通')),
+                    DropdownMenuItem(value: 'entertainment', child: Text('娱乐')),
+                    DropdownMenuItem(value: 'other', child: Text('其他')),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => category = value ?? category),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  initialValue: description,
+                  decoration: const InputDecoration(labelText: '说明'),
+                  onSaved: (value) => description = value ?? '',
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -423,11 +468,13 @@ class FinanceScreen extends ConsumerWidget {
             ),
             FilledButton(
               onPressed: () {
+                if (!formKey.currentState!.validate()) return;
+                formKey.currentState!.save();
                 store.recordSharedExpense(
                   squadId: squadId,
-                  amount: double.tryParse(amountController.text) ?? 0,
+                  amount: double.parse(amount),
                   category: category,
-                  description: descriptionController.text,
+                  description: description,
                 );
                 Navigator.pop(context);
               },
@@ -437,8 +484,6 @@ class FinanceScreen extends ConsumerWidget {
         ),
       ),
     );
-    amountController.dispose();
-    descriptionController.dispose();
   }
 }
 
@@ -450,16 +495,23 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final squadState = ref.watch(currentSquadProvider);
     return squadState.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => _financeError(context, error),
+      loading: () => const Center(child: AppLoadingState(label: '正在加载小队…')),
+      error: (_, _) => _financeError(
+        context,
+        onRetry: () => ref.invalidate(mySquadsProvider),
+      ),
       data: (squad) {
         if (squad == null) {
           return const EmptyState(icon: Icons.savings_outlined, title: '先加入小队');
         }
         final snapshot = ref.watch(financeSnapshotProvider(squad.id));
         return snapshot.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => _financeError(context, error),
+          loading: () =>
+              const Center(child: AppLoadingState(label: '正在加载理财数据…')),
+          error: (_, _) => _financeError(
+            context,
+            onRetry: () => ref.invalidate(financeSnapshotProvider(squad.id)),
+          ),
           data: (data) => _content(context, ref, squad.id, data),
         );
       },
@@ -503,11 +555,13 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
         ),
         AppSection(
           title: '公共基金',
-          trailing: IconButton(
-            tooltip: '创建基金',
-            icon: const Icon(Icons.add_rounded),
-            onPressed: () => _createFund(context, ref, squadId),
-          ),
+          trailing: ref.watch(canManagePublicFundsProvider(squadId))
+              ? IconButton(
+                  tooltip: '创建基金',
+                  icon: const Icon(Icons.add_rounded),
+                  onPressed: () => _createFund(context, ref, squadId),
+                )
+              : null,
           child: data.funds.isEmpty
               ? const EmptyState(icon: Icons.savings_outlined, title: '暂无基金')
               : Column(
@@ -599,37 +653,48 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
     WidgetRef ref,
     String squadId,
   ) async {
-    final name = TextEditingController();
-    final target = TextEditingController(text: '1000');
+    final formKey = GlobalKey<FormState>();
+    var name = '';
+    var target = '1000';
     var type = 'travel';
     final accepted = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: const Text('创建公共基金'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: name,
-                decoration: const InputDecoration(labelText: '基金名称'),
-              ),
-              TextField(
-                controller: target,
-                decoration: const InputDecoration(labelText: '目标金额'),
-                keyboardType: TextInputType.number,
-              ),
-              DropdownButtonFormField<String>(
-                initialValue: type,
-                items: const [
-                  DropdownMenuItem(value: 'travel', child: Text('旅行')),
-                  DropdownMenuItem(value: 'dining', child: Text('聚餐')),
-                  DropdownMenuItem(value: 'team_building', child: Text('团建')),
-                  DropdownMenuItem(value: 'custom', child: Text('自定义')),
-                ],
-                onChanged: (value) => setState(() => type = value ?? type),
-              ),
-            ],
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: name,
+                  decoration: const InputDecoration(labelText: '基金名称'),
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty ? '请输入基金名称' : null,
+                  onSaved: (value) => name = value ?? '',
+                ),
+                TextFormField(
+                  initialValue: target,
+                  decoration: const InputDecoration(labelText: '目标金额'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: _validateNonNegativeAmount,
+                  onSaved: (value) => target = value ?? '',
+                ),
+                DropdownButtonFormField<String>(
+                  initialValue: type,
+                  items: const [
+                    DropdownMenuItem(value: 'travel', child: Text('旅行')),
+                    DropdownMenuItem(value: 'dining', child: Text('聚餐')),
+                    DropdownMenuItem(value: 'team_building', child: Text('团建')),
+                    DropdownMenuItem(value: 'custom', child: Text('自定义')),
+                  ],
+                  onChanged: (value) => setState(() => type = value ?? type),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -637,14 +702,18 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
               child: const Text('取消'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () {
+                if (!formKey.currentState!.validate()) return;
+                formKey.currentState!.save();
+                Navigator.pop(context, true);
+              },
               child: const Text('保存'),
             ),
           ],
         ),
       ),
     );
-    if (accepted == true && name.text.trim().isNotEmpty) {
+    if (accepted == true && name.trim().isNotEmpty) {
       if (!context.mounted) return;
       await _save(
         context,
@@ -654,14 +723,12 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
             .read(financeRepositoryProvider)
             .createFund(
               squadId: squadId,
-              name: name.text,
+              name: name,
               fundType: type,
-              targetAmount: double.tryParse(target.text) ?? 0,
+              targetAmount: double.parse(target),
             ),
       );
     }
-    name.dispose();
-    target.dispose();
   }
 
   Future<void> _addTransaction(
@@ -669,25 +736,35 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
     WidgetRef ref,
     String fundId,
   ) async {
-    final amount = TextEditingController(text: '100');
-    final description = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    var amount = '100';
+    var description = '';
     final accepted = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('基金流水'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: amount,
-              decoration: const InputDecoration(labelText: '金额（支出填负数）'),
-              keyboardType: TextInputType.number,
-            ),
-            TextField(
-              controller: description,
-              decoration: const InputDecoration(labelText: '说明'),
-            ),
-          ],
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                initialValue: amount,
+                decoration: const InputDecoration(labelText: '金额（支出填负数）'),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                  signed: true,
+                ),
+                validator: _validateNonZeroAmount,
+                onSaved: (value) => amount = value ?? '',
+              ),
+              TextFormField(
+                initialValue: description,
+                decoration: const InputDecoration(labelText: '说明'),
+                onSaved: (value) => description = value ?? '',
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -695,7 +772,11 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
             child: const Text('取消'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              if (!formKey.currentState!.validate()) return;
+              formKey.currentState!.save();
+              Navigator.pop(context, true);
+            },
             child: const Text('保存'),
           ),
         ],
@@ -711,47 +792,56 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
             .read(financeRepositoryProvider)
             .addFundTransaction(
               fundId: fundId,
-              amount: double.tryParse(amount.text) ?? 0,
-              description: description.text,
+              amount: double.parse(amount),
+              description: description,
             ),
       );
     }
-    amount.dispose();
-    description.dispose();
   }
 
   Future<void> _createAsset(BuildContext context, WidgetRef ref) async {
-    final name = TextEditingController();
-    final amount = TextEditingController(text: '1000');
+    final formKey = GlobalKey<FormState>();
+    var name = '';
+    var amount = '1000';
     var type = 'savings';
     final accepted = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: const Text('新增私密资产'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: name,
-                decoration: const InputDecoration(labelText: '资产名称'),
-              ),
-              TextField(
-                controller: amount,
-                decoration: const InputDecoration(labelText: '金额'),
-                keyboardType: TextInputType.number,
-              ),
-              DropdownButtonFormField<String>(
-                initialValue: type,
-                items: const [
-                  DropdownMenuItem(value: 'savings', child: Text('存款')),
-                  DropdownMenuItem(value: 'stock', child: Text('股票')),
-                  DropdownMenuItem(value: 'fund', child: Text('基金')),
-                  DropdownMenuItem(value: 'other', child: Text('其他')),
-                ],
-                onChanged: (value) => setState(() => type = value ?? type),
-              ),
-            ],
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: name,
+                  decoration: const InputDecoration(labelText: '资产名称'),
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty ? '请输入资产名称' : null,
+                  onSaved: (value) => name = value ?? '',
+                ),
+                TextFormField(
+                  initialValue: amount,
+                  decoration: const InputDecoration(labelText: '金额'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: _validateNonNegativeAmount,
+                  onSaved: (value) => amount = value ?? '',
+                ),
+                DropdownButtonFormField<String>(
+                  initialValue: type,
+                  items: const [
+                    DropdownMenuItem(value: 'savings', child: Text('存款')),
+                    DropdownMenuItem(value: 'stock', child: Text('股票')),
+                    DropdownMenuItem(value: 'fund', child: Text('基金')),
+                    DropdownMenuItem(value: 'other', child: Text('其他')),
+                  ],
+                  onChanged: (value) => setState(() => type = value ?? type),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -759,14 +849,18 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
               child: const Text('取消'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () {
+                if (!formKey.currentState!.validate()) return;
+                formKey.currentState!.save();
+                Navigator.pop(context, true);
+              },
               child: const Text('保存'),
             ),
           ],
         ),
       ),
     );
-    if (accepted == true && name.text.trim().isNotEmpty) {
+    if (accepted == true && name.trim().isNotEmpty) {
       if (!context.mounted) return;
       await _save(
         context,
@@ -776,13 +870,11 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
             .read(financeRepositoryProvider)
             .createPrivateAsset(
               assetType: type,
-              name: name.text,
-              amount: double.tryParse(amount.text) ?? 0,
+              name: name,
+              amount: double.parse(amount),
             ),
       );
     }
-    name.dispose();
-    amount.dispose();
   }
 
   Future<void> _createExpense(
@@ -790,38 +882,47 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
     WidgetRef ref,
     String squadId,
   ) async {
-    final amount = TextEditingController(text: '80');
-    final description = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    var amount = '80';
+    var description = '';
     var category = 'dining';
     final accepted = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: const Text('记录共享支出'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: amount,
-                decoration: const InputDecoration(labelText: '金额'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: description,
-                decoration: const InputDecoration(labelText: '说明'),
-              ),
-              DropdownButtonFormField<String>(
-                initialValue: category,
-                items: const [
-                  DropdownMenuItem(value: 'dining', child: Text('餐饮')),
-                  DropdownMenuItem(value: 'transport', child: Text('交通')),
-                  DropdownMenuItem(value: 'entertainment', child: Text('娱乐')),
-                  DropdownMenuItem(value: 'other', child: Text('其他')),
-                ],
-                onChanged: (value) =>
-                    setState(() => category = value ?? category),
-              ),
-            ],
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: amount,
+                  decoration: const InputDecoration(labelText: '金额'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: _validatePositiveAmount,
+                  onSaved: (value) => amount = value ?? '',
+                ),
+                TextFormField(
+                  initialValue: description,
+                  decoration: const InputDecoration(labelText: '说明'),
+                  onSaved: (value) => description = value ?? '',
+                ),
+                DropdownButtonFormField<String>(
+                  initialValue: category,
+                  items: const [
+                    DropdownMenuItem(value: 'dining', child: Text('餐饮')),
+                    DropdownMenuItem(value: 'transport', child: Text('交通')),
+                    DropdownMenuItem(value: 'entertainment', child: Text('娱乐')),
+                    DropdownMenuItem(value: 'other', child: Text('其他')),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => category = value ?? category),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -829,7 +930,11 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
               child: const Text('取消'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () {
+                if (!formKey.currentState!.validate()) return;
+                formKey.currentState!.save();
+                Navigator.pop(context, true);
+              },
               child: const Text('保存'),
             ),
           ],
@@ -846,14 +951,12 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
             .read(financeRepositoryProvider)
             .recordSharedExpense(
               squadId: squadId,
-              amount: double.tryParse(amount.text) ?? 0,
+              amount: double.parse(amount),
               category: category,
-              description: description.text,
+              description: description,
             ),
       );
     }
-    amount.dispose();
-    description.dispose();
   }
 
   Future<void> _save<T>(
@@ -867,12 +970,12 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
     result.fold(
       (failure) => ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(failure.toString()))),
+      ).showSnackBar(SnackBar(content: Text(financeFailureMessage(failure)))),
       (_) {
         if (squadId != null) {
           ref.invalidate(financeSnapshotProvider(squadId));
         } else {
-          final squad = ref.read(currentSquadProvider).valueOrNull;
+          final squad = ref.read(currentSquadProvider).value;
           if (squad != null) ref.invalidate(financeSnapshotProvider(squad.id));
         }
       },
@@ -880,12 +983,47 @@ final class CloudBaseFinanceScreen extends ConsumerWidget {
   }
 }
 
-Widget _financeError(BuildContext context, Object error) => Center(
-  child: Padding(
-    padding: const EdgeInsets.all(24),
-    child: Text('理财数据加载失败：$error', textAlign: TextAlign.center),
-  ),
-);
+Widget _financeError(BuildContext context, {required VoidCallback onRetry}) =>
+    Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('理财数据暂时无法加载'),
+            const SizedBox(height: 12),
+            FilledButton.tonal(onPressed: onRetry, child: const Text('重试')),
+          ],
+        ),
+      ),
+    );
+
+double? _parseFiniteAmount(String? value) {
+  if (value == null || value.trim().isEmpty) return null;
+  final amount = double.tryParse(value.trim());
+  return amount != null && amount.isFinite ? amount : null;
+}
+
+String? _validateNonNegativeAmount(String? value) {
+  final amount = _parseFiniteAmount(value);
+  if (amount == null) return '请输入有效金额';
+  if (amount < 0) return '金额不能小于 0';
+  return null;
+}
+
+String? _validatePositiveAmount(String? value) {
+  final amount = _parseFiniteAmount(value);
+  if (amount == null) return '请输入有效金额';
+  if (amount <= 0) return '金额需大于 0';
+  return null;
+}
+
+String? _validateNonZeroAmount(String? value) {
+  final amount = _parseFiniteAmount(value);
+  if (amount == null) return '请输入有效金额';
+  if (amount == 0) return '金额不能为 0';
+  return null;
+}
 
 String _money(double value) => '¥${value.toStringAsFixed(0)}';
 

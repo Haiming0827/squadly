@@ -24,6 +24,7 @@ void main() {
       final authEvents = StreamController<CloudBaseAuthEvent>.broadcast();
       final app = _CloudBaseMock();
       final auth = _CloudBaseAuthMock();
+      final repository = _AuthRepositoryMock();
       when(() => app.auth).thenReturn(auth);
       when(() => auth.getSession()).thenAnswer(
         (_) async => SignInRes(error: AuthError(code: 'no_session')),
@@ -32,19 +33,20 @@ void main() {
         overrides: [
           useDemoBackendProvider.overrideWithValue(false),
           cloudBaseAppProvider.overrideWithValue(app),
+          authRepositoryProvider.overrideWithValue(repository),
           cloudBaseAuthStateChangesProvider.overrideWith(
             (ref) => authEvents.stream,
           ),
         ],
       );
-      addTearDown(container.dispose);
       addTearDown(authEvents.close);
+      addTearDown(container.dispose);
       final subscription = container.listen(authNotifierProvider, (_, _) {});
       addTearDown(subscription.close);
 
       await Future<void>.delayed(const Duration(milliseconds: 30));
 
-      expect(container.read(authNotifierProvider).valueOrNull, isNull);
+      expect(container.read(authNotifierProvider).value, isNull);
       expect(container.read(authNotifierProvider).hasError, isFalse);
     },
   );
@@ -85,8 +87,8 @@ void main() {
           authRepositoryProvider.overrideWithValue(repository),
         ],
       );
-      addTearDown(container.dispose);
       addTearDown(authEvents.close);
+      addTearDown(container.dispose);
       final subscription = container.listen(authNotifierProvider, (_, _) {});
       addTearDown(subscription.close);
 
@@ -106,7 +108,7 @@ void main() {
       );
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      expect(container.read(authNotifierProvider).valueOrNull, isNull);
+      expect(container.read(authNotifierProvider).value, isNull);
     },
   );
 }

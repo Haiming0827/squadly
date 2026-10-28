@@ -5,13 +5,25 @@ final class _Source implements PushTokenSource {
   _Source(this.token);
 
   String? token;
+  bool available = true;
+  bool authorized = true;
+  int requestCalls = 0;
   int unregisterCalls = 0;
 
   @override
   String get provider => 'apns';
 
   @override
-  Future<String?> requestToken() async => token;
+  Future<bool> isAvailable() async => available;
+
+  @override
+  Future<bool> isAuthorized() async => authorized;
+
+  @override
+  Future<String?> requestToken() async {
+    requestCalls++;
+    return token;
+  }
 
   @override
   Future<void> unregister() async => unregisterCalls++;
@@ -86,6 +98,65 @@ void main() {
       expect(repository.registrations, isEmpty);
       expect(repository.unregistrations, isEmpty);
       expect((registration.source as _Source).unregisterCalls, 1);
+    },
+  );
+
+  test(
+    'does not prompt for notification permission during silent sync',
+    () async {
+      final source = _Source(null)..authorized = false;
+      final ids = _Ids();
+      final repository = _Repository();
+      final registration = PushRegistration(
+        source: source,
+        deviceIds: ids,
+        repository: repository,
+      );
+
+      expect(
+        await registration.register(),
+        PushRegistrationResult.permissionRequired,
+      );
+      expect(source.requestCalls, 0);
+      expect(ids.created, 0);
+      expect(repository.registrations, isEmpty);
+    },
+  );
+
+  test('permission is requested only after explicit user action', () async {
+    final source = _Source(null)..authorized = false;
+    final registration = PushRegistration(
+      source: source,
+      deviceIds: _Ids(),
+      repository: _Repository(),
+    );
+
+    expect(
+      await registration.register(requestPermission: true),
+      PushRegistrationResult.permissionRequired,
+    );
+    expect(source.requestCalls, 1);
+  });
+
+  test(
+    'unsupported build does not request permission or create device id',
+    () async {
+      final source = _Source(null)..available = false;
+      final ids = _Ids();
+      final repository = _Repository();
+      final registration = PushRegistration(
+        source: source,
+        deviceIds: ids,
+        repository: repository,
+      );
+
+      expect(
+        await registration.register(requestPermission: true),
+        PushRegistrationResult.unavailable,
+      );
+      expect(source.requestCalls, 0);
+      expect(ids.created, 0);
+      expect(repository.registrations, isEmpty);
     },
   );
 }

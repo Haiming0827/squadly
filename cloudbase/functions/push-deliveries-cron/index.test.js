@@ -7,10 +7,16 @@ test('scheduled worker calls the HTTPS endpoint with the private worker secret',
   const originalSecret = process.env.PUSH_WORKER_SECRET;
   const originalApiKey = process.env.CLOUDBASE_APIKEY;
   const originalFetch = globalThis.fetch;
+  const originalTimeout = AbortSignal.timeout;
   let request;
+  let requestedTimeout;
   process.env.PUSH_WORKER_URL = 'https://push.example.test/deliver';
   process.env.PUSH_WORKER_SECRET = 'scheduler-secret-with-at-least-32-characters';
   process.env.CLOUDBASE_APIKEY = 'server-only-api-key';
+  AbortSignal.timeout = (milliseconds) => {
+    requestedTimeout = milliseconds;
+    return originalTimeout(milliseconds);
+  };
   globalThis.fetch = async (url, init) => {
     request = { url, init };
     return Response.json({ claimed: 2 });
@@ -18,6 +24,8 @@ test('scheduled worker calls the HTTPS endpoint with the private worker secret',
   try {
     assert.deepEqual(await main(), { claimed: 2 });
     assert.equal(request.url, process.env.PUSH_WORKER_URL);
+    assert.ok(request.init.signal instanceof AbortSignal);
+    assert.equal(requestedTimeout, 130_000);
     assert.equal(
       request.init.headers['x-squadly-worker-secret'],
       process.env.PUSH_WORKER_SECRET,
@@ -28,6 +36,7 @@ test('scheduled worker calls the HTTPS endpoint with the private worker secret',
     );
   } finally {
     globalThis.fetch = originalFetch;
+    AbortSignal.timeout = originalTimeout;
     if (originalUrl === undefined) delete process.env.PUSH_WORKER_URL;
     else process.env.PUSH_WORKER_URL = originalUrl;
     if (originalSecret === undefined) delete process.env.PUSH_WORKER_SECRET;

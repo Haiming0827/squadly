@@ -1,10 +1,12 @@
 import 'package:cloudbase_flutter/cloudbase_flutter.dart'
     hide CloudBaseConfig, User;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../app/demo/demo_store.dart';
+import '../../../../app/providers/conversation_cache_provider.dart';
+import '../../../../app/providers/offline_access_provider.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/cloudbase_client_provider.dart';
 import '../../../notifications/push_registration_provider.dart';
@@ -51,8 +53,14 @@ AuthRepository authRepository(Ref ref) {
 /// 认证状态 Notifier
 @riverpod
 class AuthNotifier extends _$AuthNotifier {
+  int _profileRequestVersion = 0;
+
   @override
   AsyncValue<User?> build() {
+    // Any authoritative auth update supersedes an older background profile
+    // lookup, including a successful login or nickname edit.
+    listenSelf((previous, next) => _profileRequestVersion++);
+    ref.onDispose(() => _profileRequestVersion++);
     final useDemoBackend = ref.watch(useDemoBackendProvider);
     if (useDemoBackend) {
       final demoState = ref.watch(demoAppStoreProvider);
@@ -81,11 +89,33 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   Future<void> _loadCurrentUser() async {
+    if (!ref.mounted) return;
+    final requestVersion = ++_profileRequestVersion;
+    try {
+      if (ref.read(useDemoBackendProvider)) {
+        final result = await ref.read(authRepositoryProvider).getCurrentUser();
+        if (!_isCurrentProfileRequest(requestVersion)) return;
+        state = result.fold(
+          (failure) => AsyncError(failure, StackTrace.current),
+          (user) => AsyncData(user),
+        );
+        return;
+      }
+      await _restoreRemoteProfile(requestVersion);
+    } catch (_, stackTrace) {
+      if (_isCurrentProfileRequest(requestVersion)) {
+        state = AsyncError(const Failure.network(), stackTrace);
+      }
+    }
+  }
+
+  Future<void> _restoreRemoteProfile(int requestVersion) async {
     final app = ref.read(cloudBaseAppProvider);
     final sessionResponse = await app.auth.getSession().timeout(
       const Duration(seconds: 8),
       onTimeout: () => SignInRes(error: AuthError(code: 'session_timeout')),
     );
+    if (!_isCurrentProfileRequest(requestVersion)) return;
     if (!sessionResponse.isSuccess) {
       if (sessionResponse.error?.code == 'no_session') {
         ref.read(phonePasswordSetupRequiredProvider.notifier).state = false;
@@ -99,7 +129,7 @@ class AuthNotifier extends _$AuthNotifier {
       return;
     }
     final sessionToken = sessionResponse.data?.session?.accessToken;
-    if (sessionToken == null) {
+    if (sessionToken == null || sessionToken.trim().isEmpty) {
       ref.read(phonePasswordSetupRequiredProvider.notifier).state = false;
       state = const AsyncData(null);
       return;
@@ -113,27 +143,52 @@ class AuthNotifier extends _$AuthNotifier {
     } catch (_) {
       // Password setup status must never prevent a valid session from loading.
     }
-    ref.read(phonePasswordSetupRequiredProvider.notifier).state =
-        needsPasswordSetup;
+    if (!_isCurrentProfileRequest(requestVersion)) return;
     final repo = ref.read(authRepositoryProvider);
     final result = await repo.getCurrentUser().timeout(
       const Duration(seconds: 8),
       onTimeout: () => const Left(Failure.network()),
     );
+    if (!_isCurrentProfileRequest(requestVersion)) return;
     // A recovery OTP signs in briefly. Its profile request may finish after
     // the recovery session has been closed; never revive that stale identity.
     final currentSession = await app.auth.getSession().timeout(
       const Duration(seconds: 8),
       onTimeout: () => SignInRes(error: AuthError(code: 'session_timeout')),
     );
-    if (currentSession.data?.session?.accessToken != sessionToken) return;
-    state = result.fold(
-      (failure) => AsyncError(failure, StackTrace.current),
-      (user) => AsyncData(user),
-    );
+    if (!_isCurrentProfileRequest(requestVersion) ||
+        !currentSession.isSuccess ||
+        currentSession.data?.session?.accessToken != sessionToken) {
+      return;
+    }
+    state = result.fold((failure) => AsyncError(failure, StackTrace.current), (
+      user,
+    ) {
+      if (user.id != currentSession.data?.session?.user?.id) {
+        return AsyncError(
+          const Failure.unauthorized(message: '账号状态已变化，请重新登录'),
+          StackTrace.current,
+        );
+      }
+      ref.read(phonePasswordSetupRequiredProvider.notifier).state =
+          needsPasswordSetup;
+      return AsyncData(user);
+    });
   }
 
+  bool _isCurrentProfileRequest(int version) =>
+      ref.mounted && _profileRequestVersion == version;
+
   Future<void> refreshCurrentUser() => _loadCurrentUser();
+
+  /// Expiry locks local viewing without deleting retained records or signing
+  /// out the SDK. A new online login must establish an authenticated profile.
+  void requireOnlineLogin() {
+    state = AsyncError(
+      const Failure.unauthorized(message: '登录已过期，请联网重新登录'),
+      StackTrace.current,
+    );
+  }
 
   /// Preserve the signed-in session state when a profile edit fails.
   Future<Failure?> updateNickname(String nickname) async {
@@ -281,7 +336,7 @@ class AuthNotifier extends _$AuthNotifier {
         );
     return result.fold((_) => false, (_) {
       ref.read(phonePasswordSetupRequiredProvider.notifier).state = false;
-      state = AsyncData(state.valueOrNull);
+      state = AsyncData(state.value);
       return true;
     });
   }
@@ -298,7 +353,19 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   /// 退出登录
-  Future<void> signOut() async {
+  Future<Failure?> signOut() async {
+    final userId =
+        state.asData?.value?.id ??
+        ref.read(offlineAccessProvider).session?.userId;
+    final cache = userId == null ? null : ref.read(conversationCacheProvider);
+    if (userId != null && cache != null) {
+      try {
+        await cache.clearUser(userId, suspend: true);
+      } catch (_) {
+        cache.resumeUser(userId);
+        return const Failure.unknown(message: '本机聊天记录清理失败，请重试退出');
+      }
+    }
     const useDemoBackend = bool.fromEnvironment(
       'USE_DEMO_BACKEND',
       defaultValue: true,
@@ -312,10 +379,24 @@ class AuthNotifier extends _$AuthNotifier {
       }
     }
     final repo = ref.read(authRepositoryProvider);
+    final currentId =
+        state.asData?.value?.id ??
+        ref.read(offlineAccessProvider).session?.userId;
+    if (currentId != null && currentId != userId) {
+      return const Failure.unauthorized(message: '账号已变化，请重试退出');
+    }
     final result = await repo.signOut();
-    result.fold(
-      (failure) => state = AsyncError(failure, StackTrace.current),
-      (_) => state = const AsyncData(null),
+    if (!ref.mounted) return null;
+    return result.fold<Failure?>(
+      (failure) {
+        if (userId != null) cache?.resumeUser(userId);
+        return failure;
+      },
+      (_) {
+        ref.read(phonePasswordSetupRequiredProvider.notifier).state = false;
+        state = const AsyncData(null);
+        return null;
+      },
     );
   }
 }

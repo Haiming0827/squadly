@@ -5,10 +5,9 @@ import '../domain/push_registration.dart';
 
 final class CloudBasePushTokenRepository implements PushTokenRepository {
   const CloudBasePushTokenRepository({
-    required PostgrestClient client,
-    required AccessTokenReader accessTokenReader,
-  }) : _client = client,
-       _accessTokenReader = accessTokenReader;
+    required this._client,
+    required this._accessTokenReader,
+  });
 
   final PostgrestClient _client;
   final AccessTokenReader _accessTokenReader;

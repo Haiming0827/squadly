@@ -6,10 +6,21 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: flutter-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.47.4'
+
 jobs:
   analyze-test:
     name: Analyze and Test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,11 +28,15 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.9'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Install integration test host dependencies
+        run: flutter pub get
+        working-directory: integration_test
 
       - name: Generate code
         run: dart run build_runner build --delete-conflicting-outputs
@@ -32,11 +47,19 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
+      - name: Analyze integration test host
+        run: flutter analyze
+        working-directory: integration_test
+
       - name: Unit and widget tests
         run: flutter test --coverage
 
       - name: Real-backend auth and routing tests
-        run: flutter test --dart-define=USE_DEMO_BACKEND=false test/app/real_mode_router_test.dart test/features/auth/presentation/auth_recovery_state_test.dart
+        run: >-
+          flutter test --dart-define=USE_DEMO_BACKEND=false
+          test/app/real_mode_router_test.dart
+          test/features/auth/presentation/auth_async_state_test.dart
+          test/features/auth/presentation/auth_recovery_state_test.dart
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4
@@ -46,9 +69,18 @@ jobs:
           if-no-files-found: ignore
 
   android-integration:
-    name: Android Integration Test
+    name: Android Integration Test (API ${{ matrix.api-level }})
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     needs: analyze-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - api-level: 33
+            provider-mode: unavailable
+          - api-level: 35
+            provider-mode: available
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,24 +94,158 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.9'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Install integration test host dependencies
+        run: flutter pub get
+        working-directory: integration_test
 
       - name: Run integration tests on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           profile: pixel_6
-          script: flutter test integration_test
+          script: |
+            cd integration_test
+            if [[ "${{ matrix.provider-mode }}" == "unavailable" ]]; then
+              flutter test integration_test/app_smoke_test.dart \
+                --dart-define=USE_DEMO_BACKEND=true \
+                --dart-define=VERIFY_HEALTH_CONNECT_UNAVAILABLE=true \
+                --plain-name "Android Health Connect bridge reports unavailable when provider is missing"
+            else
+              flutter test integration_test/app_smoke_test.dart \
+                --dart-define=USE_DEMO_BACKEND=true \
+                --dart-define=VERIFY_HEALTH_CONNECT=true
+            fi
+
+  ios-integration:
+    name: iOS Simulator Integration Test
+    runs-on: macos-latest
+    timeout-minutes: 45
+    needs: analyze-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Install integration test host dependencies
+        run: flutter pub get
+        working-directory: integration_test
+
+      - name: Boot an available iPhone simulator
+        id: ios-simulator
+        shell: bash
+        run: |
+          simulator_id="$(xcrun simctl list devices available --json | python3 -c 'import json,sys; data=json.load(sys.stdin); devices=data.get("devices",{}); print(next((d["udid"] for runtime, items in devices.items() if runtime.startswith("com.apple.CoreSimulator.SimRuntime.iOS") for d in items if d.get("isAvailable") and d.get("name", "").startswith("iPhone")), ""))')"
+          test -n "$simulator_id"
+          echo "udid=$simulator_id" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "$simulator_id" || true
+          xcrun simctl bootstatus "$simulator_id" -b
+
+      - name: Run integration tests on iOS Simulator
+        run: >-
+          cd integration_test && flutter test integration_test
+          -d "${{ steps.ios-simulator.outputs.udid }}"
+          --dart-define=USE_DEMO_BACKEND=true
+          --dart-define=VERIFY_PHOTO_BRIDGE_SIMULATOR=true
+
+      - name: Persist encrypted photo in native SQLite and Keychain
+        working-directory: integration_test
+        run: >-
+          flutter test integration_test/photo_outbox_cold_start_test.dart
+          -d "${{ steps.ios-simulator.outputs.udid }}" --no-uninstall
+          --dart-define=RUN_PHOTO_OUTBOX_NATIVE=true
+          --dart-define=PHOTO_OUTBOX_PHASE=seed
+
+      - name: Verify real widget App Group bridge and consent expiry
+        working-directory: integration_test
+        run: >-
+          flutter test integration_test/photo_widget_bridge_test.dart
+          -d "${{ steps.ios-simulator.outputs.udid }}" --no-uninstall
+          --dart-define=VERIFY_PHOTO_WIDGET_SIMULATOR=true
+          --dart-define=SQUADLY_WIDGET_URL_SCHEME=squadly-test
+
+      - name: Restore encrypted photo in another app process
+        working-directory: integration_test
+        run: >-
+          flutter test integration_test/photo_outbox_cold_start_test.dart
+          -d "${{ steps.ios-simulator.outputs.udid }}" --no-uninstall
+          --dart-define=RUN_PHOTO_OUTBOX_NATIVE=true
+          --dart-define=PHOTO_OUTBOX_PHASE=read
+
+      - name: Seed private widget credentials in main app Keychain
+        working-directory: integration_test
+        run: >-
+          flutter test integration_test/photo_background_credentials_test.dart
+          -d "${{ steps.ios-simulator.outputs.udid }}" --no-uninstall
+          --dart-define=VERIFY_PHOTO_BACKGROUND_CREDENTIALS_SIMULATOR=true
+          --dart-define=PHOTO_BACKGROUND_CREDENTIAL_PHASE=seed
+          --dart-define=SQUADLY_WIDGET_URL_SCHEME=squadly-test
+
+      - name: Verify private widget credentials in another app process and clear
+        working-directory: integration_test
+        run: >-
+          flutter test integration_test/photo_background_credentials_test.dart
+          -d "${{ steps.ios-simulator.outputs.udid }}" --no-uninstall
+          --dart-define=VERIFY_PHOTO_BACKGROUND_CREDENTIALS_SIMULATOR=true
+          --dart-define=PHOTO_BACKGROUND_CREDENTIAL_PHASE=verify
+          --dart-define=SQUADLY_WIDGET_URL_SCHEME=squadly-test
+
+      - name: Verify widget binary excludes private credential code
+        working-directory: integration_test
+        run: python3 ../scripts/ios/check_widget_credential_isolation.py build/ios/iphonesimulator/Runner.app
+
+      - name: Verify iOS photo preview and retry UI
+        working-directory: integration_test
+        run: >-
+          flutter drive -d "${{ steps.ios-simulator.outputs.udid }}"
+          --driver=test_driver/photo_ui_driver.dart
+          --target=integration_test/photo_ui_test.dart
+          --dart-define=VERIFY_PHOTO_UI_SIMULATOR=true
+          --dart-define=USE_DEMO_BACKEND=true
+
+      - name: Upload iOS photo UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: squadly-ios-photo-ui
+          path: /tmp/squadly-photo-ui-device/*.png
+
+      - name: Verify iOS widget settings and camera entry UI
+        working-directory: integration_test
+        run: >-
+          flutter drive -d "${{ steps.ios-simulator.outputs.udid }}"
+          --driver=test_driver/photo_ui_driver.dart
+          --target=integration_test/photo_widget_ui_test.dart
+          --dart-define=VERIFY_PHOTO_WIDGET_UI_SIMULATOR=true
+          --dart-define=USE_DEMO_BACKEND=true
+          --dart-define=SQUADLY_WIDGET_URL_SCHEME=squadly-test
+
+      - name: Upload iOS widget UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: squadly-ios-widget-ui
+          path: /tmp/squadly-photo-ui-device/photo-ui-widget-*.png
 
   android-debug:
-    name: Android Debug Build
+    name: Android Build and Release Manifest Contracts
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: analyze-test
     steps:
       - name: Checkout
@@ -94,14 +260,23 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.9'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Test Health Connect API compatibility
+        run: bash scripts/test_health_connect_bridge.sh
+
       - name: Build debug APK
         run: flutter build apk --debug
+
+      - name: Build unsigned release APK
+        run: flutter build apk --release
+
+      - name: Verify release package, network policy, and signing state
+        run: bash scripts/check_android_release_contract.sh
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -112,6 +287,7 @@ jobs:
   ios-debug:
     name: iOS Debug Build
     runs-on: macos-latest
+    timeout-minutes: 30
     needs: analyze-test
     steps:
       - name: Checkout
@@ -120,7 +296,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.4'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
       - name: Install dependencies
@@ -129,6 +305,12 @@ jobs:
       - name: Build iOS debug without codesign
         run: flutter build ios --debug --no-codesign
 
+      - name: Test native photo sanitization
+        run: bash scripts/test_ios_photo_bridge.sh
+
+      - name: Test native widget privacy rules
+        run: bash scripts/test_ios_widget_bridge.sh
+
       - name: Upload iOS build
         uses: actions/upload-artifact@v4
         with:
@@ -136,8 +318,9 @@ jobs:
           path: build/ios/iphoneos
 
   backend-contracts:
-    name: CloudBase Database and Push Worker Contracts
+    name: CloudBase Database, Photos and Push Contracts
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -150,5 +333,11 @@ jobs:
       - name: CloudBase PostgreSQL migrations and RLS contracts
         run: bash scripts/check_cloudbase_migrations.sh
 
-      - name: CloudBase push worker and scheduler tests
-        run: node --test cloudbase/functions/push-deliveries/*.test.js cloudbase/functions/push-deliveries-cron/*.test.js
+      - name: CloudBase worker and acceptance tool tests
+        run: node --test cloudbase/functions/push-deliveries/*.test.js cloudbase/functions/push-deliveries-cron/*.test.js scripts/verify_cloudbase_access.test.mjs
+
+      - name: Install photo decoder dependencies
+        run: npm ci --prefix cloudbase/functions/photos --ignore-scripts --no-audit --no-fund
+
+      - name: Photo decoding and private media gateway tests
+        run: node --test cloudbase/functions/photos/*.test.js cloudbase/functions/photos-cleanup-cron/*.test.js

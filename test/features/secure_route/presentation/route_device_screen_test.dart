@@ -5,7 +5,8 @@ import 'package:squadly/features/auth/domain/entities/user.dart';
 import 'package:squadly/features/auth/presentation/providers/auth_provider.dart';
 import 'package:squadly/features/secure_route/data/route_crypto.dart';
 import 'package:squadly/features/secure_route/data/route_device_key_store.dart';
-import 'package:squadly/features/secure_route/data/route_encryption_service.dart';
+import 'package:squadly/features/secure_route/domain/route_key_directory.dart';
+import 'package:squadly/features/secure_route/domain/route_sharing.dart';
 import 'package:squadly/features/secure_route/presentation/route_device_screen.dart';
 import 'package:squadly/features/secure_route/presentation/route_reader_provider.dart';
 

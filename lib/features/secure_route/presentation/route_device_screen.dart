@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../auth/presentation/providers/auth_provider.dart';
+import '../../../app/providers/current_user_provider.dart';
 import '../data/route_crypto.dart';
 import '../domain/route_fingerprint.dart';
 import 'route_reader_provider.dart';
@@ -29,7 +29,7 @@ final class _RouteDeviceScreenState extends ConsumerState<RouteDeviceScreen> {
   }
 
   Future<void> _loadExisting() async {
-    final userId = ref.read(authNotifierProvider).valueOrNull?.id;
+    final userId = ref.read(currentUserProvider).value?.id;
     if (userId == null) return;
     try {
       final key = await ref
@@ -50,7 +50,7 @@ final class _RouteDeviceScreenState extends ConsumerState<RouteDeviceScreen> {
   }
 
   Future<void> _register() async {
-    final userId = ref.read(authNotifierProvider).valueOrNull?.id;
+    final userId = ref.read(currentUserProvider).value?.id;
     if (userId == null || _busy) return;
     setState(() {
       _busy = true;

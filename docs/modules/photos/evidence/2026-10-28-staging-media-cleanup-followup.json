@@ -1,0 +1,29 @@
+{
+  "scope": "service-cleanup-only",
+  "passed": true,
+  "checks": [
+    {
+      "check": "revoked_fixture_object_existed_before_cleanup",
+      "status": "pass",
+      "httpStatus": 200
+    },
+    {
+      "check": "cleanup_gateway_batch_1",
+      "status": "pass",
+      "httpStatus": 200
+    },
+    {
+      "check": "revoked_fixture_object_missing_after_cleanup",
+      "status": "pass",
+      "httpStatus": 404
+    },
+    {
+      "check": "published_widget_fixture_preserved",
+      "status": "pass",
+      "httpStatus": 200
+    }
+  ],
+  "acknowledgedCleanupAttempts": 4,
+  "ordinaryUserAuthorizationProvenHere": false,
+  "publishedFixtureRetainedForWidgetAcceptance": true
+}

@@ -1,0 +1,47 @@
+{
+  "verifiedAt": 1793164108,
+  "scope": "versioned-photo-head-and-foreground-widget",
+  "local": {
+    "flutter": {
+      "passed": 570,
+      "skipped": 3
+    },
+    "realMode": 14,
+    "photoSwift": 5,
+    "widgetSwift": 18,
+    "pgMigrations": 19,
+    "pgConcurrentPublicationAndRevocation": true,
+    "nativeIOSGroupBridge": 1,
+    "simulatorDebugBuild": true,
+    "unsignedDeviceDebugBuild": true,
+    "remoteCI": false
+  },
+  "staging": {
+    "migrationsLocal": 19,
+    "migrationsRemote": 19,
+    "pending": 0,
+    "taskId": "task-d3808fa44bf24db3",
+    "taskStatus": "Succeed",
+    "ordinaryUserChecks": 72,
+    "userReport": "../../photos/evidence/2026-10-28-staging-versioned-photo-heads.json"
+  },
+  "notVerified": [
+    "private_native_credentials_bridge",
+    "native_background_fetch",
+    "APNs_provider_delivery",
+    "actual_desktop_paint",
+    "signed_physical_device",
+    "background_revoke_event"
+  ],
+  "completePhotoLoop": false,
+  "sourceSHA256": {
+    "cloudbase/migrations/20261028000300_versioned_photo_heads.sql": "1bb18b293d312333fc1644a36ae0b6b6d23bb5fc2407d0843d45d2fdb0f2abd8",
+    "lib/features/conversation/domain/photo_head.dart": "0e666c7727c77ab2c9712bab48fdce1cd7966fc02f6d971fbe52594828fc0ad4",
+    "lib/features/conversation/data/cloudbase_conversation_repository.dart": "e9096d3dd60c7ffbedc418e6a80e7df1e52d1ec2e8854c9567a1a7ea89167c8f",
+    "lib/features/photo_widget/domain/photo_widget_service.dart": "03744759b20f3d32e1c1813d3948e6b9e5b189d39eb559886b2e361869c6b43d",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/SquadlyWidgetCore/WidgetStore.swift": "eb01f5635d0bc78298867172d8986c84988221c93207314b39f776d8bdb2e326",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/squadly_widget_bridge/SquadlyWidgetBridgePlugin.swift": "ac1df4001233e575351a47117d9a3525fb8c7fdce9cf3454e531258f7b0935b0",
+    "scripts/verify_photo_staging.py": "94b00d4ff5604e0ef6930713ef762ff407e39f912ad20a24e1ea616faf0c647c",
+    "scripts/sql/check_photo_head_concurrency.py": "b0850d574eb0be1447bae8ed342c359be8d5ce86602dae360117bedb7b2e5e14"
+  }
+}

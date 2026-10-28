@@ -1,4 +1,5 @@
 const { apnsRequest, classifyApnsResponse, createApnsJwt } = require('./apns');
+const { sendApns } = require('./apns-transport');
 const { classifyMiPushResponse, miPushRequest } = require('./mipush');
 
 function required(name) {
@@ -28,7 +29,10 @@ function response(statusCode, payload) {
 
 async function rpc(name, body) {
   const baseUrl = required('CLOUDBASE_PG_REST_URL').replace(/\/$/, '');
-  if (!baseUrl.startsWith('https://') || !baseUrl.endsWith('/v1/rdb/rest')) {
+  const parsed = new URL(baseUrl);
+  if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.port
+    || parsed.search || parsed.hash || parsed.pathname !== '/v1/rdb/rest'
+    || !/^[A-Za-z0-9-]+\.api\.(?:intl\.)?tcloudbasegateway\.com$/.test(parsed.hostname)) {
     throw new Error('Invalid CloudBase PG REST URL');
   }
   const apiKey = required('CLOUDBASE_APIKEY');
@@ -39,23 +43,29 @@ async function rpc(name, body) {
       'content-type': 'application/json',
     },
     body: JSON.stringify(body),
+    redirect: 'error',
     signal: AbortSignal.timeout(15000),
   });
   if (!result.ok) throw new Error(`RPC ${name} returned ${result.status}`);
   return result.json();
 }
 
-async function dispatch(provider, claims, configuration, counters) {
+async function dispatch(provider, claims, configuration, counters, apnsTransport) {
+  if (!Array.isArray(claims) || claims.length > 20) throw new Error('Invalid claim batch');
   const completed = await Promise.allSettled(claims.map(async (claim) => {
     let outcome = 'retry';
     let reason = null;
     try {
+      if (claim.provider !== provider || !['text', 'card', 'photo'].includes(claim.message_kind)) {
+        throw new Error('Invalid claim');
+      }
       const push = provider === 'apns'
         ? apnsRequest(
           claim.token,
           configuration.jwt,
           required('APNS_BUNDLE_ID'),
           configuration.environment,
+          claim.message_kind,
         )
         : miPushRequest(
           claim.token,
@@ -63,10 +73,11 @@ async function dispatch(provider, claims, configuration, counters) {
           required('MIPUSH_PACKAGE_NAME'),
           required('MIPUSH_CHANNEL_ID'),
         );
-      const result = await fetch(push.url, {
-        ...push.init,
-        signal: AbortSignal.timeout(10000),
-      });
+      const result = provider === 'apns'
+        ? await apnsTransport(push)
+        : await fetch(push.url, {
+          ...push.init, redirect: 'error', signal: AbortSignal.timeout(10000),
+        });
       if (provider === 'mipush') {
         const value = await result.json().catch(() => null);
         const parsed = value && typeof value === 'object' ? value : null;
@@ -78,22 +89,20 @@ async function dispatch(provider, claims, configuration, counters) {
           reason = `MiPushCode${parsed.code}`;
         }
       } else {
-        if (!result.ok) {
-          const value = await result.json().catch(() => null);
-          if (typeof value?.reason === 'string') reason = value.reason.slice(0, 100);
-        }
+        reason = result.reason;
         outcome = classifyApnsResponse(result.status, reason);
       }
     } catch (_) {
       reason = 'transport_error';
     }
-    await rpc('complete_push_delivery', {
+    const acknowledged = await rpc('complete_push_delivery', {
       p_delivery_id: claim.delivery_id,
       p_claim_id: claim.claim_id,
       p_outcome: outcome,
       p_error_code: reason,
       p_token: outcome === 'dead' ? claim.token : null,
     });
+    if (acknowledged !== true) throw new Error('Delivery completion not confirmed');
     if (outcome === 'sent') counters.accepted++;
     else counters.failed++;
   }));
@@ -101,7 +110,7 @@ async function dispatch(provider, claims, configuration, counters) {
   if (failedCompletion) throw failedCompletion.reason;
 }
 
-async function handle(event) {
+async function handle(event, apnsTransport) {
   const method = event?.httpMethod ?? event?.method;
   if (method !== 'POST') return response(405, null);
   const expectedSecret = process.env.PUSH_WORKER_SECRET;
@@ -123,54 +132,46 @@ async function handle(event) {
       process.env.APNS_BUNDLE_ID,
     ];
     const apnsConfigured = apnsSettings.every(Boolean);
-    if (apnsSettings.some(Boolean) && !apnsConfigured) {
-      throw new Error('APNs configuration is incomplete');
-    }
+    const apnsEnabled = apnsSettings.some(Boolean);
     const miPushSettings = [
       process.env.MIPUSH_APP_SECRET,
       process.env.MIPUSH_PACKAGE_NAME,
       process.env.MIPUSH_CHANNEL_ID,
     ];
     const miPushConfigured = miPushSettings.every(Boolean);
-    if (miPushSettings.some(Boolean) && !miPushConfigured) {
-      throw new Error('Mi Push configuration is incomplete');
-    }
-    if (!apnsConfigured && !miPushConfigured) {
+    const miPushEnabled = miPushSettings.some(Boolean);
+    if (!apnsEnabled && !miPushEnabled) {
       throw new Error('No push provider is configured');
-    }
-
-    let configuration = null;
-    if (apnsConfigured) {
-      const environment = required('APNS_ENVIRONMENT');
-      if (environment !== 'sandbox' && environment !== 'production') {
-        throw new Error('Invalid APNS_ENVIRONMENT');
-      }
-      configuration = {
-        environment,
-        jwt: await createApnsJwt(
-          required('APNS_TEAM_ID'),
-          required('APNS_KEY_ID'),
-          required('APNS_PRIVATE_KEY'),
-        ),
-      };
     }
 
     const counters = { accepted: 0, failed: 0 };
     let apnsClaims = [];
     let miPushClaims = [];
-    if (apnsConfigured) {
-      apnsClaims = await rpc('claim_push_deliveries', {
+    const channels = [];
+    if (apnsEnabled) channels.push((async () => {
+      if (!apnsConfigured) throw new Error('APNs configuration is incomplete');
+      const environment = required('APNS_ENVIRONMENT');
+      if (environment !== 'sandbox' && environment !== 'production') throw new Error('Invalid APNS_ENVIRONMENT');
+      const configuration = { environment, jwt: await createApnsJwt(
+        required('APNS_TEAM_ID'), required('APNS_KEY_ID'), required('APNS_PRIVATE_KEY'),
+      ) };
+      apnsClaims = await rpc('claim_push_deliveries_v2', {
         p_limit: 20,
         p_provider: 'apns',
       });
-      await dispatch('apns', apnsClaims, configuration, counters);
-    }
-    if (miPushConfigured) {
-      miPushClaims = await rpc('claim_push_deliveries', {
+      await dispatch('apns', apnsClaims, configuration, counters, apnsTransport);
+    })());
+    if (miPushEnabled) channels.push((async () => {
+      if (!miPushConfigured) throw new Error('Mi Push configuration is incomplete');
+      miPushClaims = await rpc('claim_push_deliveries_v2', {
         p_limit: 20,
         p_provider: 'mipush',
       });
-      await dispatch('mipush', miPushClaims, null, counters);
+      await dispatch('mipush', miPushClaims, null, counters, apnsTransport);
+    })());
+    const finished = await Promise.allSettled(channels);
+    if (finished.some((value) => value.status === 'rejected')) {
+      throw new Error('Channel completion not confirmed');
     }
     return response(200, {
       claimed: apnsClaims.length + miPushClaims.length,
@@ -185,4 +186,6 @@ async function handle(event) {
   }
 }
 
-exports.main = handle;
+exports.main = (event) => handle(event, sendApns);
+exports.createHandler = ({ apnsTransport = sendApns } = {}) =>
+  (event) => handle(event, apnsTransport);

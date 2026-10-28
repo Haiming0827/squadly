@@ -6,6 +6,7 @@ import 'package:http/testing.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:squadly/features/secure_route/data/route_encryption_service.dart';
 import 'package:squadly/features/secure_route/domain/route_models.dart';
+import 'package:squadly/features/secure_route/domain/route_sharing.dart';
 
 void main() {
   test('device registration RPC error fails closed', () async {

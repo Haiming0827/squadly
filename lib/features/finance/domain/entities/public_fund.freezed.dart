@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'public_fund.dart';
@@ -9,14 +9,14 @@ part of 'public_fund.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$PublicFund {
 
- String get id; String get squadId; String get name; String get fundType;// 'travel' | 'dining' | 'team_building' | 'custom'
- double get targetAmount; double get currentAmount; String get createdBy; DateTime get createdAt;
+ String get id; String get squadId; String get name; String get fundType; double get targetAmount; double get currentAmount; String get createdBy; DateTime get createdAt;
 /// Create a copy of PublicFund
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +29,21 @@ $PublicFundCopyWith<PublicFund> get copyWith => _$PublicFundCopyWithImpl<PublicF
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PublicFund&&(identical(other.id, id) || other.id == id)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.name, name) || other.name == name)&&(identical(other.fundType, fundType) || other.fundType == fundType)&&(identical(other.targetAmount, targetAmount) || other.targetAmount == targetAmount)&&(identical(other.currentAmount, currentAmount) || other.currentAmount == currentAmount)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as PublicFund;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PublicFund&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.squadId, _this.squadId) || other.squadId == _this.squadId)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.fundType, _this.fundType) || other.fundType == _this.fundType)&&(identical(other.targetAmount, _this.targetAmount) || other.targetAmount == _this.targetAmount)&&(identical(other.currentAmount, _this.currentAmount) || other.currentAmount == _this.currentAmount)&&(identical(other.createdBy, _this.createdBy) || other.createdBy == _this.createdBy)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,squadId,name,fundType,targetAmount,currentAmount,createdBy,createdAt);
+int get hashCode {
+  final _this = this as PublicFund;
+  return Object.hash(runtimeType,_this.id,_this.squadId,_this.name,_this.fundType,_this.targetAmount,_this.currentAmount,_this.createdBy,_this.createdAt);
+}
 
 @override
 String toString() {
-  return 'PublicFund(id: $id, squadId: $squadId, name: $name, fundType: $fundType, targetAmount: $targetAmount, currentAmount: $currentAmount, createdBy: $createdBy, createdAt: $createdAt)';
+  final _this = this as PublicFund;
+  return 'PublicFund(id: ${_this.id}, squadId: ${_this.squadId}, name: ${_this.name}, fundType: ${_this.fundType}, targetAmount: ${_this.targetAmount}, currentAmount: ${_this.currentAmount}, createdBy: ${_this.createdBy}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -67,7 +72,7 @@ class _$PublicFundCopyWithImpl<$Res>
 /// Create a copy of PublicFund
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? squadId = null,Object? name = null,Object? fundType = null,Object? targetAmount = null,Object? currentAmount = null,Object? createdBy = null,Object? createdAt = null,}) {
-  return _then(_self.copyWith(
+  return _then(PublicFund(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,squadId: null == squadId ? _self.squadId : squadId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -224,7 +229,6 @@ class _PublicFund implements PublicFund {
 @override final  String squadId;
 @override final  String name;
 @override final  String fundType;
-// 'travel' | 'dining' | 'team_building' | 'custom'
 @override@JsonKey() final  double targetAmount;
 @override@JsonKey() final  double currentAmount;
 @override final  String createdBy;
@@ -243,16 +247,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PublicFund&&(identical(other.id, id) || other.id == id)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.name, name) || other.name == name)&&(identical(other.fundType, fundType) || other.fundType == fundType)&&(identical(other.targetAmount, targetAmount) || other.targetAmount == targetAmount)&&(identical(other.currentAmount, currentAmount) || other.currentAmount == currentAmount)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PublicFund&&(identical(other.id, id) || other.id == id)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.name, name) || other.name == name)&&(identical(other.fundType, fundType) || other.fundType == fundType)&&(identical(other.targetAmount, targetAmount) || other.targetAmount == targetAmount)&&(identical(other.currentAmount, currentAmount) || other.currentAmount == currentAmount)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,squadId,name,fundType,targetAmount,currentAmount,createdBy,createdAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,squadId,name,fundType,targetAmount,currentAmount,createdBy,createdAt);
+}
 
 @override
 String toString() {
-  return 'PublicFund(id: $id, squadId: $squadId, name: $name, fundType: $fundType, targetAmount: $targetAmount, currentAmount: $currentAmount, createdBy: $createdBy, createdAt: $createdAt)';
+    return 'PublicFund(id: $id, squadId: $squadId, name: $name, fundType: $fundType, targetAmount: $targetAmount, currentAmount: $currentAmount, createdBy: $createdBy, createdAt: $createdAt)';
 }
 
 

@@ -11,9 +11,8 @@ void main() {
     final repository = AuthRepositoryImpl(remote);
 
     expect(
-      (await repository.requestPasswordRecovery(
-        email: 'not-an-email',
-      )).isLeft(),
+      (await repository.requestPasswordRecovery(email: 'not-an-email'))
+          .isLeft(),
       isTrue,
     );
     expect(
@@ -37,9 +36,8 @@ void main() {
 
   test('valid recovery data passes only to Auth', () async {
     final remote = _Remote();
-    when(
-      () => remote.requestPasswordRecovery(email: 'a@example.test'),
-    ).thenAnswer((_) async {});
+    when(() => remote.requestPasswordRecovery(email: 'a@example.test'))
+        .thenAnswer((_) async {});
     when(
       () => remote.completePasswordRecovery(
         email: 'a@example.test',
@@ -50,9 +48,8 @@ void main() {
     final repository = AuthRepositoryImpl(remote);
 
     expect(
-      (await repository.requestPasswordRecovery(
-        email: ' a@example.test ',
-      )).isRight(),
+      (await repository.requestPasswordRecovery(email: ' a@example.test '))
+          .isRight(),
       isTrue,
     );
     expect(
@@ -63,9 +60,8 @@ void main() {
       )).isRight(),
       isTrue,
     );
-    verify(
-      () => remote.requestPasswordRecovery(email: 'a@example.test'),
-    ).called(1);
+    verify(() => remote.requestPasswordRecovery(email: 'a@example.test'))
+        .called(1);
     verify(
       () => remote.completePasswordRecovery(
         email: 'a@example.test',

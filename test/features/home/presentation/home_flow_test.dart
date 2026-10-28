@@ -16,28 +16,73 @@ void main() {
       'haiming@example.com',
     );
     await tester.enterText(find.widgetWithText(TextField, '密码'), 'password1');
-    await tester.tap(find.widgetWithText(ElevatedButton, '登录'));
+    await tester.tap(find.widgetWithText(FilledButton, '登录'));
     await tester.pumpAndSettle();
 
-    expect(find.text('小队'), findsWidgets);
-    expect(find.text('数据'), findsOneWidget);
-    expect(find.text('分享'), findsOneWidget);
+    expect(find.text('会话'), findsWidgets);
+    expect(find.text('小队'), findsOneWidget);
     expect(find.text('计划'), findsOneWidget);
     expect(find.text('我的'), findsOneWidget);
+    expect(find.text('数据'), findsNothing);
+    expect(find.text('分享'), findsNothing);
     expect(find.text('周末行动组'), findsWidgets);
 
-    await tester.tap(find.text('数据'));
+    expect(find.text('夜跑搭子'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('conversation-search-field')),
+      '周末行动组',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('周末行动组'), findsWidgets);
+    expect(find.text('夜跑搭子'), findsNothing);
+    await tester.tap(find.byTooltip('清除搜索'));
+    await tester.pumpAndSettle();
+    expect(find.text('夜跑搭子'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ChoiceChip, '暂无消息'));
+    await tester.pumpAndSettle();
+    expect(find.text('夜跑搭子'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('demo-conversation-squad-weekend')),
+      findsNothing,
+    );
+    await tester.tap(find.widgetWithText(ChoiceChip, '全部'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('demo-conversation-squad-weekend')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('小队'));
+    await tester.pumpAndSettle();
+    expect(find.text('共同计划'), findsOneWidget);
+    await tester.tap(find.text('共同计划'));
+    await tester.pumpAndSettle();
+    expect(find.text('把周末安排好'), findsOneWidget);
+
+    await tester.tap(find.text('我的'));
     await tester.pumpAndSettle();
     expect(find.text('数据工坊'), findsOneWidget);
+    await tester.tap(find.text('数据工坊'));
+    await tester.pumpAndSettle();
+    expect(find.text('数据工坊'), findsWidgets);
     expect(find.textContaining('演示导入样本'), findsOneWidget);
 
+    await tester.pageBack();
+    await tester.pumpAndSettle();
     await tester.tap(find.text('计划'));
     await tester.pumpAndSettle();
-    expect(find.text('一起做点什么'), findsOneWidget);
-    expect(find.text('健身'), findsOneWidget);
+    expect(find.text('计划'), findsWidgets);
+    expect(find.text('把周末安排好'), findsOneWidget);
+    expect(find.text('仅自己可见'), findsOneWidget);
+    expect(find.text('健身'), findsWidgets);
     expect(find.text('理财'), findsOneWidget);
-    expect(find.text('旅行'), findsOneWidget);
+    expect(find.text('旅行'), findsWidgets);
     expect(find.text('美食'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, '健身'));
+    await tester.pumpAndSettle();
+    expect(find.text('今日概览'), findsOneWidget);
+    expect(find.text('每日打卡'), findsOneWidget);
   });
 
   testWidgets('signing out returns to login without framework errors', (
@@ -51,7 +96,7 @@ void main() {
       'haiming@example.com',
     );
     await tester.enterText(find.widgetWithText(TextField, '密码'), 'password1');
-    await tester.tap(find.widgetWithText(ElevatedButton, '登录'));
+    await tester.tap(find.widgetWithText(FilledButton, '登录'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Icons.account_circle_outlined));

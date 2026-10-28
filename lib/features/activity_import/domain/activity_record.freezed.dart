@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'activity_record.dart';
@@ -9,6 +9,7 @@ part of 'activity_record.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $ActivityRecordCopyWith<ActivityRecord> get copyWith => _$ActivityRecordCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActivityRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.source, source) || other.source == source)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.utcOffsetMinutes, utcOffsetMinutes) || other.utcOffsetMinutes == utcOffsetMinutes)&&(identical(other.distanceMeters, distanceMeters) || other.distanceMeters == distanceMeters)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&(identical(other.sourceLabel, sourceLabel) || other.sourceLabel == sourceLabel)&&(identical(other.averageHeartRateBpm, averageHeartRateBpm) || other.averageHeartRateBpm == averageHeartRateBpm)&&const DeepCollectionEquality().equals(other.preciseRoute, preciseRoute)&&const DeepCollectionEquality().equals(other.correctedFields, correctedFields));
+  final _this = this as ActivityRecord;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActivityRecord&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.source, _this.source) || other.source == _this.source)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.startedAt, _this.startedAt) || other.startedAt == _this.startedAt)&&(identical(other.utcOffsetMinutes, _this.utcOffsetMinutes) || other.utcOffsetMinutes == _this.utcOffsetMinutes)&&(identical(other.distanceMeters, _this.distanceMeters) || other.distanceMeters == _this.distanceMeters)&&(identical(other.durationSeconds, _this.durationSeconds) || other.durationSeconds == _this.durationSeconds)&&(identical(other.sourceLabel, _this.sourceLabel) || other.sourceLabel == _this.sourceLabel)&&(identical(other.averageHeartRateBpm, _this.averageHeartRateBpm) || other.averageHeartRateBpm == _this.averageHeartRateBpm)&&const DeepCollectionEquality().equals(other.preciseRoute, _this.preciseRoute)&&const DeepCollectionEquality().equals(other.correctedFields, _this.correctedFields));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,source,kind,startedAt,utcOffsetMinutes,distanceMeters,durationSeconds,sourceLabel,averageHeartRateBpm,const DeepCollectionEquality().hash(preciseRoute),const DeepCollectionEquality().hash(correctedFields));
+int get hashCode {
+  final _this = this as ActivityRecord;
+  return Object.hash(runtimeType,_this.id,_this.source,_this.kind,_this.startedAt,_this.utcOffsetMinutes,_this.distanceMeters,_this.durationSeconds,_this.sourceLabel,_this.averageHeartRateBpm,const DeepCollectionEquality().hash(_this.preciseRoute),const DeepCollectionEquality().hash(_this.correctedFields));
+}
 
 @override
 String toString() {
-  return 'ActivityRecord(id: $id, source: $source, kind: $kind, startedAt: $startedAt, utcOffsetMinutes: $utcOffsetMinutes, distanceMeters: $distanceMeters, durationSeconds: $durationSeconds, sourceLabel: $sourceLabel, averageHeartRateBpm: $averageHeartRateBpm, preciseRoute: $preciseRoute, correctedFields: $correctedFields)';
+  final _this = this as ActivityRecord;
+  return 'ActivityRecord(id: ${_this.id}, source: ${_this.source}, kind: ${_this.kind}, startedAt: ${_this.startedAt}, utcOffsetMinutes: ${_this.utcOffsetMinutes}, distanceMeters: ${_this.distanceMeters}, durationSeconds: ${_this.durationSeconds}, sourceLabel: ${_this.sourceLabel}, averageHeartRateBpm: ${_this.averageHeartRateBpm}, preciseRoute: ${_this.preciseRoute}, correctedFields: ${_this.correctedFields})';
 }
 
 
@@ -63,7 +69,7 @@ class _$ActivityRecordCopyWithImpl<$Res>
 /// Create a copy of ActivityRecord
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? source = null,Object? kind = null,Object? startedAt = null,Object? utcOffsetMinutes = null,Object? distanceMeters = null,Object? durationSeconds = null,Object? sourceLabel = null,Object? averageHeartRateBpm = freezed,Object? preciseRoute = freezed,Object? correctedFields = null,}) {
-  return _then(_self.copyWith(
+  return _then(ActivityRecord(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as ActivitySourceKind,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
@@ -216,7 +222,7 @@ return $default(_that.id,_that.source,_that.kind,_that.startedAt,_that.utcOffset
 
 
 class _ActivityRecord implements ActivityRecord {
-  const _ActivityRecord({required this.id, required this.source, required this.kind, required this.startedAt, required this.utcOffsetMinutes, required this.distanceMeters, required this.durationSeconds, required this.sourceLabel, this.averageHeartRateBpm, final  List<RouteCoordinate>? preciseRoute, final  Set<String> correctedFields = const <String>{}}): _preciseRoute = preciseRoute,_correctedFields = correctedFields;
+  const _ActivityRecord({required this.id, required this.source, required this.kind, required this.startedAt, required this.utcOffsetMinutes, required this.distanceMeters, required this.durationSeconds, required this.sourceLabel, this.averageHeartRateBpm,  List<RouteCoordinate>? preciseRoute,  Set<String> correctedFields = const <String>{}}): _preciseRoute = preciseRoute,_correctedFields = correctedFields;
 
 
 @override final  String id;
@@ -255,16 +261,18 @@ _$ActivityRecordCopyWith<_ActivityRecord> get copyWith => __$ActivityRecordCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ActivityRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.source, source) || other.source == source)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.utcOffsetMinutes, utcOffsetMinutes) || other.utcOffsetMinutes == utcOffsetMinutes)&&(identical(other.distanceMeters, distanceMeters) || other.distanceMeters == distanceMeters)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&(identical(other.sourceLabel, sourceLabel) || other.sourceLabel == sourceLabel)&&(identical(other.averageHeartRateBpm, averageHeartRateBpm) || other.averageHeartRateBpm == averageHeartRateBpm)&&const DeepCollectionEquality().equals(other._preciseRoute, _preciseRoute)&&const DeepCollectionEquality().equals(other._correctedFields, _correctedFields));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ActivityRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.source, source) || other.source == source)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.utcOffsetMinutes, utcOffsetMinutes) || other.utcOffsetMinutes == utcOffsetMinutes)&&(identical(other.distanceMeters, distanceMeters) || other.distanceMeters == distanceMeters)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&(identical(other.sourceLabel, sourceLabel) || other.sourceLabel == sourceLabel)&&(identical(other.averageHeartRateBpm, averageHeartRateBpm) || other.averageHeartRateBpm == averageHeartRateBpm)&&const DeepCollectionEquality().equals(other.preciseRoute, _preciseRoute)&&const DeepCollectionEquality().equals(other.correctedFields, _correctedFields));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,source,kind,startedAt,utcOffsetMinutes,distanceMeters,durationSeconds,sourceLabel,averageHeartRateBpm,const DeepCollectionEquality().hash(_preciseRoute),const DeepCollectionEquality().hash(_correctedFields));
+int get hashCode {
+    return Object.hash(runtimeType,id,source,kind,startedAt,utcOffsetMinutes,distanceMeters,durationSeconds,sourceLabel,averageHeartRateBpm,const DeepCollectionEquality().hash(_preciseRoute),const DeepCollectionEquality().hash(_correctedFields));
+}
 
 @override
 String toString() {
-  return 'ActivityRecord(id: $id, source: $source, kind: $kind, startedAt: $startedAt, utcOffsetMinutes: $utcOffsetMinutes, distanceMeters: $distanceMeters, durationSeconds: $durationSeconds, sourceLabel: $sourceLabel, averageHeartRateBpm: $averageHeartRateBpm, preciseRoute: $preciseRoute, correctedFields: $correctedFields)';
+    return 'ActivityRecord(id: $id, source: $source, kind: $kind, startedAt: $startedAt, utcOffsetMinutes: $utcOffsetMinutes, distanceMeters: $distanceMeters, durationSeconds: $durationSeconds, sourceLabel: $sourceLabel, averageHeartRateBpm: $averageHeartRateBpm, preciseRoute: $preciseRoute, correctedFields: $correctedFields)';
 }
 
 

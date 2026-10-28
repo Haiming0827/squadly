@@ -1,0 +1,28 @@
+{
+  "scope": "photos-user-HTTP",
+  "finishedAt": 1793156844,
+  "passed": false,
+  "checks": [
+    {
+      "check": "a_authenticated_identity",
+      "status": "pass"
+    },
+    {
+      "check": "b_authenticated_identity",
+      "status": "pass"
+    },
+    {
+      "check": "two_real_photo_members",
+      "status": "pass"
+    }
+  ],
+  "notVerified": [
+    "third_account_never_joined",
+    "leave_rejoin",
+    "physical_device_UI",
+    "widget_and_push",
+    "large_real_camera_photo"
+  ],
+  "completePhotoLoop": false,
+  "stoppedAt": "photo_publish: http=503 code=backend_unavailable"
+}

@@ -5,19 +5,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/demo/demo_store.dart';
+import '../../../../app/providers/plan_providers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../plan/domain/entities/squad_plan.dart';
 import '../../../squad/domain/entities/squad_member.dart';
 import '../../domain/entities/circle_message.dart';
 import '../../domain/entities/social_post.dart';
 
-enum _CircleTab { feed, chat }
+enum CircleScreenView { feed, chat }
 
 /// The shared space for one small circle. The parent owns app navigation and
 /// opens the data-post composer through [onCreatePost].
 class CircleScreen extends ConsumerStatefulWidget {
-  const CircleScreen({super.key, required this.onCreatePost});
+  const CircleScreen({
+    super.key,
+    required this.onCreatePost,
+    this.initialView = CircleScreenView.feed,
+    this.showViewSwitcher = true,
+    this.onOpenPlans,
+  });
 
   final VoidCallback onCreatePost;
+  final CircleScreenView initialView;
+  final bool showViewSwitcher;
+  final VoidCallback? onOpenPlans;
 
   @override
   ConsumerState<CircleScreen> createState() => _CircleScreenState();
@@ -26,7 +37,7 @@ class CircleScreen extends ConsumerStatefulWidget {
 class _CircleScreenState extends ConsumerState<CircleScreen> {
   final _messageController = TextEditingController();
   final _chatScrollController = ScrollController();
-  _CircleTab _tab = _CircleTab.feed;
+  late CircleScreenView _view = widget.initialView;
 
   @override
   void dispose() {
@@ -55,9 +66,8 @@ class _CircleScreenState extends ConsumerState<CircleScreen> {
       });
     } on StateError catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message.toString())));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message.toString())));
     }
   }
 
@@ -105,15 +115,17 @@ class _CircleScreenState extends ConsumerState<CircleScreen> {
               members: members,
               currentUserId: currentUserId,
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: _CircleTabSwitch(
-                selected: _tab,
-                onSelected: (tab) => setState(() => _tab = tab),
+            if (widget.showViewSwitcher)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: _CircleTabSwitch(
+                  selected: _view,
+                  onSelected: (view) => setState(() => _view = view),
+                ),
               ),
-            ),
+            _sharedPlanSummary(context, squad.id),
             Expanded(
-              child: _tab == _CircleTab.feed
+              child: _view == CircleScreenView.feed
                   ? _FeedView(
                       posts: posts,
                       currentUserId: currentUserId,
@@ -130,7 +142,7 @@ class _CircleScreenState extends ConsumerState<CircleScreen> {
                       scrollController: _chatScrollController,
                     ),
             ),
-            if (_tab == _CircleTab.chat)
+            if (_view == CircleScreenView.chat)
               _MessageComposer(
                 controller: _messageController,
                 enabled: currentUserId != null,
@@ -141,6 +153,91 @@ class _CircleScreenState extends ConsumerState<CircleScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _sharedPlanSummary(BuildContext context, String squadId) {
+    final plans = ref.watch(squadPlansProvider(squadId));
+    final progress = ref.watch(squadPlanProgressProvider(squadId));
+    return plans.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: LinearProgressIndicator(),
+      ),
+      error: (_, _) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: OutlinedButton.icon(
+          onPressed: () => ref.invalidate(squadPlansProvider(squadId)),
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('共同计划加载失败，重试'),
+        ),
+      ),
+      data: (allPlans) {
+        final active = allPlans
+            .where(
+              (plan) =>
+                  plan.visibility == PlanVisibility.squad &&
+                  plan.status == PlanStatus.active,
+            )
+            .take(2)
+            .toList();
+        final colors = Theme.of(context).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+          child: Material(
+            color: colors.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: widget.onOpenPlans,
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Icon(Icons.flag_outlined, color: colors.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '共同计划',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            active.isEmpty
+                                ? '还没有进行中的共同计划'
+                                : progress.when(
+                                    data: (counts) {
+                                      final item = counts[active.first.id];
+                                      if (item == null ||
+                                          item.totalCount == 0) {
+                                        return '${active.first.title} · 暂无任务';
+                                      }
+                                      return '${active.first.title} · ${item.completedCount}/${item.totalCount} 项任务';
+                                    },
+                                    loading: () =>
+                                        '${active.first.title} · 进度加载中',
+                                    error: (_, _) => active.first.title,
+                                  ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: colors.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.chevron_right_rounded),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -231,8 +328,8 @@ class _CircleHeader extends StatelessWidget {
 class _CircleTabSwitch extends StatelessWidget {
   const _CircleTabSwitch({required this.selected, required this.onSelected});
 
-  final _CircleTab selected;
-  final ValueChanged<_CircleTab> onSelected;
+  final CircleScreenView selected;
+  final ValueChanged<CircleScreenView> onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -247,13 +344,13 @@ class _CircleTabSwitch extends StatelessWidget {
         children: [
           _tabButton(
             context,
-            _CircleTab.feed,
+            CircleScreenView.feed,
             '动态',
             Icons.view_timeline_outlined,
           ),
           _tabButton(
             context,
-            _CircleTab.chat,
+            CircleScreenView.chat,
             '聊天',
             Icons.chat_bubble_outline_rounded,
           ),
@@ -264,7 +361,7 @@ class _CircleTabSwitch extends StatelessWidget {
 
   Widget _tabButton(
     BuildContext context,
-    _CircleTab tab,
+    CircleScreenView tab,
     String label,
     IconData icon,
   ) {

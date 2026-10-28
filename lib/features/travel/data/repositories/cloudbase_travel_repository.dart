@@ -9,10 +9,9 @@ typedef CurrentTravelUserId = Future<String?> Function();
 
 final class CloudBaseTravelRepository implements TravelRepository {
   const CloudBaseTravelRepository({
-    required PostgrestClient client,
-    required CurrentTravelUserId currentUserId,
-  }) : _client = client,
-       _currentUserId = currentUserId;
+    required this._client,
+    required this._currentUserId,
+  });
 
   final PostgrestClient _client;
   final CurrentTravelUserId _currentUserId;

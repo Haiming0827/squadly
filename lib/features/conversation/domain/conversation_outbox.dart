@@ -7,11 +7,13 @@ abstract interface class ConversationOutbox {
   Future<List<PendingConversationOperation>> listFor({
     required String userId,
     required String squadId,
+    String? planId,
   });
 
   Future<void> remove({
     required String userId,
     required String squadId,
     required String clientNonce,
+    String? planId,
   });
 }

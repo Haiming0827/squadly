@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'private_asset.dart';
@@ -9,14 +9,14 @@ part of 'private_asset.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$PrivateAsset {
 
- String get id; String get userId; String get assetType;// 'savings' | 'stock' | 'fund' | 'other'
- String get name; double get amount; String? get note; DateTime get createdAt; DateTime get updatedAt;
+ String get id; String get userId; String get assetType; String get name; double get amount; String? get note; DateTime get createdAt; DateTime get updatedAt;
 /// Create a copy of PrivateAsset
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +29,21 @@ $PrivateAssetCopyWith<PrivateAsset> get copyWith => _$PrivateAssetCopyWithImpl<P
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PrivateAsset&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.assetType, assetType) || other.assetType == assetType)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.note, note) || other.note == note)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  final _this = this as PrivateAsset;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PrivateAsset&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.assetType, _this.assetType) || other.assetType == _this.assetType)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.note, _this.note) || other.note == _this.note)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,assetType,name,amount,note,createdAt,updatedAt);
+int get hashCode {
+  final _this = this as PrivateAsset;
+  return Object.hash(runtimeType,_this.id,_this.userId,_this.assetType,_this.name,_this.amount,_this.note,_this.createdAt,_this.updatedAt);
+}
 
 @override
 String toString() {
-  return 'PrivateAsset(id: $id, userId: $userId, assetType: $assetType, name: $name, amount: $amount, note: $note, createdAt: $createdAt, updatedAt: $updatedAt)';
+  final _this = this as PrivateAsset;
+  return 'PrivateAsset(id: ${_this.id}, userId: ${_this.userId}, assetType: ${_this.assetType}, name: ${_this.name}, amount: ${_this.amount}, note: ${_this.note}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
@@ -67,7 +72,7 @@ class _$PrivateAssetCopyWithImpl<$Res>
 /// Create a copy of PrivateAsset
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? assetType = null,Object? name = null,Object? amount = null,Object? note = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
-  return _then(_self.copyWith(
+  return _then(PrivateAsset(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,assetType: null == assetType ? _self.assetType : assetType // ignore: cast_nullable_to_non_nullable
@@ -223,7 +228,6 @@ class _PrivateAsset implements PrivateAsset {
 @override final  String id;
 @override final  String userId;
 @override final  String assetType;
-// 'savings' | 'stock' | 'fund' | 'other'
 @override final  String name;
 @override@JsonKey() final  double amount;
 @override final  String? note;
@@ -243,16 +247,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PrivateAsset&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.assetType, assetType) || other.assetType == assetType)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.note, note) || other.note == note)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PrivateAsset&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.assetType, assetType) || other.assetType == assetType)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.note, note) || other.note == note)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,assetType,name,amount,note,createdAt,updatedAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,userId,assetType,name,amount,note,createdAt,updatedAt);
+}
 
 @override
 String toString() {
-  return 'PrivateAsset(id: $id, userId: $userId, assetType: $assetType, name: $name, amount: $amount, note: $note, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'PrivateAsset(id: $id, userId: $userId, assetType: $assetType, name: $name, amount: $amount, note: $note, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 

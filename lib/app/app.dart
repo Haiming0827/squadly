@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../core/theme/app_theme.dart';
 import '../core/theme/theme_mode_provider.dart';
+import 'providers/conversation_cache_lifecycle_provider.dart';
+import 'providers/diagnostics_provider.dart';
+import 'providers/photo_widget_providers.dart';
 import 'router.dart';
 
 /// 应用根组件
@@ -10,6 +14,9 @@ class SquadlyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(diagnosticsAccountGuardProvider);
+    ref.watch(conversationCacheLifecycleProvider);
+    ref.watch(photoWidgetLifecycleProvider);
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
 

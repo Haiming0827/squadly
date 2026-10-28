@@ -108,14 +108,12 @@ void main() {
   test('cancelled second selection preserves the accepted route', () async {
     final gateway = _Gateway(_bytes(_validGpx));
     final source = GpxActivitySource(gateway: gateway);
-    final first = (await source.importFromDevice(
-      kind: ActivityKind.run,
-    ))!.single;
+    final first = (await source.importFromDevice(kind: ActivityKind.run))!
+        .single;
     source.acceptSelection(first.id);
     gateway.bytes = _bytes(_validGpx.replaceAll('2026-10-08', '2026-10-09'));
-    final second = (await source.importFromDevice(
-      kind: ActivityKind.hike,
-    ))!.single;
+    final second = (await source.importFromDevice(kind: ActivityKind.hike))!
+        .single;
     expect(second.id, isNot(first.id));
     source.discardCandidates();
     expect((await source.readActivity(first.id)).id, first.id);
@@ -210,9 +208,8 @@ void main() {
             '</trkseg></trk>',
       );
       final source = GpxActivitySource(gateway: _Gateway(_bytes(segmented)));
-      final selected = (await source.importFromDevice(
-        kind: ActivityKind.hike,
-      ))!.single;
+      final selected = (await source.importFromDevice(kind: ActivityKind.hike))!
+          .single;
       await expectLater(
         source.readPreciseRoute(selected),
         throwsA(isA<ActivitySourceUnavailable>()),

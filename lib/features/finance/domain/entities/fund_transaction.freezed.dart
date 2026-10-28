@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'fund_transaction.dart';
@@ -9,15 +9,14 @@ part of 'fund_transaction.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$FundTransaction {
 
- String get id; String get fundId; String get userId; double get amount;// 正数存入，负数支出
- String? get description; String? get approvedBy; DateTime get transactionDate;// 关联信息
- String? get userNickname;
+ String get id; String get fundId; String get userId; double get amount; String? get description; String? get approvedBy; DateTime get transactionDate; String? get userNickname;
 /// Create a copy of FundTransaction
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,16 +29,21 @@ $FundTransactionCopyWith<FundTransaction> get copyWith => _$FundTransactionCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundTransaction&&(identical(other.id, id) || other.id == id)&&(identical(other.fundId, fundId) || other.fundId == fundId)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.description, description) || other.description == description)&&(identical(other.approvedBy, approvedBy) || other.approvedBy == approvedBy)&&(identical(other.transactionDate, transactionDate) || other.transactionDate == transactionDate)&&(identical(other.userNickname, userNickname) || other.userNickname == userNickname));
+  final _this = this as FundTransaction;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundTransaction&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.fundId, _this.fundId) || other.fundId == _this.fundId)&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.approvedBy, _this.approvedBy) || other.approvedBy == _this.approvedBy)&&(identical(other.transactionDate, _this.transactionDate) || other.transactionDate == _this.transactionDate)&&(identical(other.userNickname, _this.userNickname) || other.userNickname == _this.userNickname));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,fundId,userId,amount,description,approvedBy,transactionDate,userNickname);
+int get hashCode {
+  final _this = this as FundTransaction;
+  return Object.hash(runtimeType,_this.id,_this.fundId,_this.userId,_this.amount,_this.description,_this.approvedBy,_this.transactionDate,_this.userNickname);
+}
 
 @override
 String toString() {
-  return 'FundTransaction(id: $id, fundId: $fundId, userId: $userId, amount: $amount, description: $description, approvedBy: $approvedBy, transactionDate: $transactionDate, userNickname: $userNickname)';
+  final _this = this as FundTransaction;
+  return 'FundTransaction(id: ${_this.id}, fundId: ${_this.fundId}, userId: ${_this.userId}, amount: ${_this.amount}, description: ${_this.description}, approvedBy: ${_this.approvedBy}, transactionDate: ${_this.transactionDate}, userNickname: ${_this.userNickname})';
 }
 
 
@@ -68,7 +72,7 @@ class _$FundTransactionCopyWithImpl<$Res>
 /// Create a copy of FundTransaction
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fundId = null,Object? userId = null,Object? amount = null,Object? description = freezed,Object? approvedBy = freezed,Object? transactionDate = null,Object? userNickname = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(FundTransaction(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,fundId: null == fundId ? _self.fundId : fundId // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -225,11 +229,9 @@ class _FundTransaction implements FundTransaction {
 @override final  String fundId;
 @override final  String userId;
 @override final  double amount;
-// 正数存入，负数支出
 @override final  String? description;
 @override final  String? approvedBy;
 @override final  DateTime transactionDate;
-// 关联信息
 @override final  String? userNickname;
 
 /// Create a copy of FundTransaction
@@ -245,16 +247,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundTransaction&&(identical(other.id, id) || other.id == id)&&(identical(other.fundId, fundId) || other.fundId == fundId)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.description, description) || other.description == description)&&(identical(other.approvedBy, approvedBy) || other.approvedBy == approvedBy)&&(identical(other.transactionDate, transactionDate) || other.transactionDate == transactionDate)&&(identical(other.userNickname, userNickname) || other.userNickname == userNickname));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundTransaction&&(identical(other.id, id) || other.id == id)&&(identical(other.fundId, fundId) || other.fundId == fundId)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.description, description) || other.description == description)&&(identical(other.approvedBy, approvedBy) || other.approvedBy == approvedBy)&&(identical(other.transactionDate, transactionDate) || other.transactionDate == transactionDate)&&(identical(other.userNickname, userNickname) || other.userNickname == userNickname));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,fundId,userId,amount,description,approvedBy,transactionDate,userNickname);
+int get hashCode {
+    return Object.hash(runtimeType,id,fundId,userId,amount,description,approvedBy,transactionDate,userNickname);
+}
 
 @override
 String toString() {
-  return 'FundTransaction(id: $id, fundId: $fundId, userId: $userId, amount: $amount, description: $description, approvedBy: $approvedBy, transactionDate: $transactionDate, userNickname: $userNickname)';
+    return 'FundTransaction(id: $id, fundId: $fundId, userId: $userId, amount: $amount, description: $description, approvedBy: $approvedBy, transactionDate: $transactionDate, userNickname: $userNickname)';
 }
 
 

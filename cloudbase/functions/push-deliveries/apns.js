@@ -1,3 +1,4 @@
+const { webcrypto } = require('node:crypto');
 const encoder = new TextEncoder();
 
 function base64url(bytes) {
@@ -10,7 +11,7 @@ async function createApnsJwt(teamId, keyId, privateKeyPem, issuedAtSeconds = Mat
     pem.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, ''),
     'base64',
   );
-  const key = await crypto.subtle.importKey(
+  const key = await webcrypto.subtle.importKey(
     'pkcs8',
     der,
     { name: 'ECDSA', namedCurve: 'P-256' },
@@ -20,7 +21,7 @@ async function createApnsJwt(teamId, keyId, privateKeyPem, issuedAtSeconds = Mat
   const header = base64url(encoder.encode(JSON.stringify({ alg: 'ES256', kid: keyId })));
   const claims = base64url(encoder.encode(JSON.stringify({ iss: teamId, iat: issuedAtSeconds })));
   const input = `${header}.${claims}`;
-  const signature = await crypto.subtle.sign(
+  const signature = await webcrypto.subtle.sign(
     { name: 'ECDSA', hash: 'SHA-256' },
     key,
     encoder.encode(input),
@@ -28,8 +29,11 @@ async function createApnsJwt(teamId, keyId, privateKeyPem, issuedAtSeconds = Mat
   return `${input}.${base64url(new Uint8Array(signature))}`;
 }
 
-function apnsRequest(token, jwt, bundleId, environment) {
-  if (!/^[0-9a-fA-F]+$/.test(token)) throw new Error('Invalid APNs token');
+function apnsRequest(token, jwt, bundleId, environment, messageKind = 'text') {
+  if (typeof token !== 'string' || !/^[0-9a-fA-F]{8,512}$/.test(token)) throw new Error('Invalid APNs token');
+  if (environment !== 'sandbox' && environment !== 'production') throw new Error('Invalid APNs environment');
+  if (!['text', 'card', 'photo'].includes(messageKind)) throw new Error('Invalid message kind');
+  if (!/^[A-Za-z0-9.-]{3,200}$/.test(bundleId) || typeof jwt !== 'string' || !jwt) throw new Error('Invalid APNs configuration');
   const host = environment === 'sandbox'
     ? 'api.sandbox.push.apple.com'
     : 'api.push.apple.com';
@@ -45,7 +49,13 @@ function apnsRequest(token, jwt, bundleId, environment) {
         'apns-expiration': '0',
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ aps: { alert: { title: '小分队', body: '你的小队有新消息' } } }),
+      body: JSON.stringify({
+        aps: {
+          alert: { title: '小分队', body: '你的小队有新消息' },
+          ...(messageKind === 'photo' ? { 'content-available': 1 } : {}),
+        },
+        ...(messageKind === 'photo' ? { squadly: { v: 1, type: 'photo_sync' } } : {}),
+      }),
     },
   };
 }

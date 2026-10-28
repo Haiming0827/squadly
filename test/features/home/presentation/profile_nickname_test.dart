@@ -32,7 +32,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('晨跑海明'), findsOneWidget);
-    final after = container.read(authNotifierProvider).valueOrNull;
+    final after = container.read(authNotifierProvider).value;
     expect(after?.nickname, '晨跑海明');
     expect(after?.email, before.email);
     expect(after?.phone, before.phone);
@@ -64,6 +64,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('编辑昵称'), findsOneWidget);
-    expect(container.read(authNotifierProvider).valueOrNull, isNotNull);
+    expect(container.read(authNotifierProvider).value, isNotNull);
   });
 }

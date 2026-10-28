@@ -1,6 +1,7 @@
 package com.squadly.squadly
 
 import android.Manifest
+import android.app.NotificationManager
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
@@ -15,12 +16,13 @@ class MainActivity : FlutterActivity() {
     private val permissionRequestCode = 7314
     private var pendingPushResult: MethodChannel.Result? = null
     private val mainHandler = Handler(Looper.getMainLooper())
-
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
+                    "isNotificationsAvailable" -> result.success(BuildConfig.MIPUSH_ENABLED)
+                    "areNotificationsAuthorized" -> result.success(areNotificationsAuthorized())
                     "requestMiPushToken" -> requestMiPushToken(result)
                     "unregisterMiPush" -> {
                         unregisterMiPush()
@@ -29,6 +31,18 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun areNotificationsAuthorized(): Boolean {
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(
+                this, Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) return false
+        if (Build.VERSION.SDK_INT >= 24) {
+            val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            return manager.areNotificationsEnabled()
+        }
+        return true
     }
 
     private fun requestMiPushToken(result: MethodChannel.Result) {

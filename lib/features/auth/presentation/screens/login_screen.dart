@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/providers/offline_access_provider.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/validators.dart';
 import '../providers/auth_provider.dart';
@@ -48,6 +49,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final isLoading = authState is AsyncLoading;
+    final offline = ref.watch(offlineAccessProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -95,6 +97,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 },
               ),
               const SizedBox(height: 24),
+
+              if (offline.status == OfflineAccessStatus.available ||
+                  offline.status == OfflineAccessStatus.expired)
+                TextButton.icon(
+                  onPressed: () => context.push('/offline'),
+                  icon: const Icon(Icons.offline_pin_outlined),
+                  label: const Text('本机聊天记录'),
+                ),
 
               if (_isPhoneMode) ..._buildPhoneForm(isLoading),
               if (!_isPhoneMode) ..._buildEmailForm(isLoading),
@@ -201,23 +211,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
       ],
       const SizedBox(height: 20),
-      ElevatedButton(
-        onPressed: isLoading
-            ? null
-            : (_awaitingEmailConfirmation
-                  ? _handleEmailVerify
-                  : _handleEmailSubmit),
-        child: isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Text(
-                _awaitingEmailConfirmation
-                    ? '验证邮箱'
-                    : (_isRegister ? '注册' : '登录'),
-              ),
+      SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          onPressed: isLoading
+              ? null
+              : (_awaitingEmailConfirmation
+                    ? _handleEmailVerify
+                    : _handleEmailSubmit),
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+          child: isLoading
+              ? Text(
+                  _awaitingEmailConfirmation
+                      ? '正在验证邮箱…'
+                      : (_isRegister ? '正在注册…' : '正在登录…'),
+                )
+              : Text(
+                  _awaitingEmailConfirmation
+                      ? '验证邮箱'
+                      : (_isRegister ? '注册' : '登录'),
+                ),
+        ),
       ),
       if (!_awaitingEmailConfirmation)
         TextButton(
@@ -279,11 +293,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ? null
             : (_codeSent ? _handlePhoneVerify : _handleSendCode),
         child: isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+            ? Text(_codeSent ? '正在验证手机号…' : '正在发送验证码…')
             : Text(_codeSent ? '验证登录' : '发送验证码'),
       ),
       if (_codeSent)
@@ -379,8 +389,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }

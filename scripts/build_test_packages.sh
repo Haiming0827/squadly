@@ -38,6 +38,7 @@ if [[ "$config_file" == *.env ]]; then
   cloudbase_env_id=""
   cloudbase_region="ap-shanghai"
   cloudbase_publishable_key=""
+  photo_gateway_url=""
   invite_link_base_url=""
   use_demo_backend="false"
   mipush_app_id=""
@@ -48,6 +49,7 @@ if [[ "$config_file" == *.env ]]; then
       CLOUDBASE_ENV_ID) cloudbase_env_id="$value" ;;
       CLOUDBASE_REGION) cloudbase_region="$value" ;;
       CLOUDBASE_PUBLISHABLE_KEY) cloudbase_publishable_key="$value" ;;
+      CLOUDBASE_PHOTO_GATEWAY_URL) photo_gateway_url="$value" ;;
       INVITE_LINK_BASE_URL) invite_link_base_url="$value" ;;
       USE_DEMO_BACKEND) use_demo_backend="$value" ;;
       MIPUSH_APP_ID) mipush_app_id="$value" ;;
@@ -60,12 +62,21 @@ if [[ "$config_file" == *.env ]]; then
     --arg envId "$cloudbase_env_id" \
     --arg region "$cloudbase_region" \
     --arg publishableKey "$cloudbase_publishable_key" \
+    --arg photoGatewayUrl "$photo_gateway_url" \
     --arg inviteLinkBaseUrl "$invite_link_base_url" \
     --arg useDemoBackend "$use_demo_backend" \
     --arg mipushAppId "$mipush_app_id" \
     --arg mipushAppKey "$mipush_app_key" \
-    '{CLOUDBASE_ENV_ID:$envId,CLOUDBASE_REGION:$region,CLOUDBASE_PUBLISHABLE_KEY:$publishableKey,INVITE_LINK_BASE_URL:$inviteLinkBaseUrl,USE_DEMO_BACKEND:$useDemoBackend,MIPUSH_APP_ID:$mipushAppId,MIPUSH_APP_KEY:$mipushAppKey}' \
+    '{CLOUDBASE_ENV_ID:$envId,CLOUDBASE_REGION:$region,CLOUDBASE_PUBLISHABLE_KEY:$publishableKey,CLOUDBASE_PHOTO_GATEWAY_URL:$photoGatewayUrl,INVITE_LINK_BASE_URL:$inviteLinkBaseUrl,USE_DEMO_BACKEND:$useDemoBackend,MIPUSH_APP_ID:$mipushAppId,MIPUSH_APP_KEY:$mipushAppKey}' \
     > "$config_file"
+fi
+
+if ! jq -e '
+  (.CLOUDBASE_PHOTO_GATEWAY_URL // "") as $url |
+  ($url == "" or ($url | type == "string" and test("^https://[A-Za-z0-9-]+\\.(ap-shanghai|ap-singapore)\\.app\\.tcloudbase\\.com/photos$")))
+' "$config_file" >/dev/null; then
+  printf 'Optional CLOUDBASE_PHOTO_GATEWAY_URL must be the HTTPS /photos URL returned by the staging HTTP service.\n' >&2
+  exit 2
 fi
 
 if ! jq -e '
@@ -111,6 +122,7 @@ flutter test --no-test-assets
 flutter test --no-test-assets --dart-define-from-file="$config_file" \
   --dart-define=USE_DEMO_BACKEND=false \
   test/app/real_mode_router_test.dart \
+  test/features/auth/presentation/auth_async_state_test.dart \
   test/features/auth/presentation/auth_recovery_state_test.dart
 
 if [[ "$target" == android || "$target" == all ]]; then

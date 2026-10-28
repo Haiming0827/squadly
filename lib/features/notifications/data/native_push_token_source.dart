@@ -19,6 +19,30 @@ final class NativePushTokenSource implements PushTokenSource {
   String get provider => _isIOS ? 'apns' : 'mipush';
 
   @override
+  Future<bool> isAvailable() async {
+    if (!_isIOS && !_isAndroid) return false;
+    try {
+      return await _channel.invokeMethod<bool>('isNotificationsAvailable') ??
+          false;
+    } on PlatformException catch (error) {
+      if (error.code == 'unavailable') return false;
+      rethrow;
+    }
+  }
+
+  @override
+  Future<bool> isAuthorized() async {
+    if (!_isIOS && !_isAndroid) return false;
+    try {
+      return await _channel.invokeMethod<bool>('areNotificationsAuthorized') ??
+          false;
+    } on PlatformException catch (error) {
+      if (error.code == 'unavailable') return false;
+      rethrow;
+    }
+  }
+
+  @override
   Future<String?> requestToken() async {
     if (!_isIOS && !_isAndroid) return null;
     try {

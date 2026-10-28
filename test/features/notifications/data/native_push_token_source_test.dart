@@ -21,6 +21,36 @@ void main() {
     expect(await source.requestToken(), 'fresh-token');
   });
 
+  test(
+    'queries existing notification authorization without prompting',
+    () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            expect(call.method, 'areNotificationsAuthorized');
+            return true;
+          });
+      final source = NativePushTokenSource(channel: channel, isIOS: true);
+      expect(await source.isAuthorized(), isTrue);
+    },
+  );
+
+  test(
+    'checks provider availability before asking platform permission',
+    () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            expect(call.method, 'isNotificationsAvailable');
+            return false;
+          });
+      final source = NativePushTokenSource(
+        channel: channel,
+        isIOS: false,
+        isAndroid: true,
+      );
+      expect(await source.isAvailable(), isFalse);
+    },
+  );
+
   test('denied permission is not a chat failure', () async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (_) async {

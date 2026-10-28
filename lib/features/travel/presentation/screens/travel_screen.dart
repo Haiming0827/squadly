@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../app/demo/demo_store.dart';
+import '../../../../app/providers/squad_context_providers.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/cloudbase_client_provider.dart';
+import '../../../../shared/widgets/app_loading_state.dart';
 import '../../../../shared/widgets/app_section.dart';
 import '../../../finance/domain/entities/public_fund.dart';
-import '../../../squad/presentation/providers/squad_provider.dart';
 import '../providers/travel_provider.dart';
 
 class TravelScreen extends ConsumerWidget {
@@ -206,7 +207,7 @@ final class CloudBaseTravelScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final squadState = ref.watch(currentSquadProvider);
     return squadState.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: AppLoadingState(label: '正在加载小队…')),
       error: (error, _) => _travelError(error),
       data: (squad) {
         if (squad == null) {
@@ -214,7 +215,8 @@ final class CloudBaseTravelScreen extends ConsumerWidget {
         }
         final state = ref.watch(travelSnapshotProvider(squad.id));
         return state.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () =>
+              const Center(child: AppLoadingState(label: '正在加载旅行数据…')),
           error: (error, _) => _travelError(error),
           data: (snapshot) {
             final plans = snapshot.plans;

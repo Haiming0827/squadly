@@ -12,10 +12,9 @@ typedef CurrentFitnessUserId = Future<String?> Function();
 
 final class CloudBaseFitnessRepository implements FitnessRepository {
   const CloudBaseFitnessRepository({
-    required PostgrestClient client,
-    required CurrentFitnessUserId currentUserId,
-  }) : _client = client,
-       _currentUserId = currentUserId;
+    required this._client,
+    required this._currentUserId,
+  });
 
   final PostgrestClient _client;
   final CurrentFitnessUserId _currentUserId;

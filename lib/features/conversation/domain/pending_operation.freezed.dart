@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'pending_operation.dart';
@@ -9,6 +9,7 @@ part of 'pending_operation.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $PendingConversationOperationCopyWith<PendingConversationOperation> get copyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PendingConversationOperation&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.clientNonce, clientNonce) || other.clientNonce == clientNonce)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as PendingConversationOperation;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PendingConversationOperation&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.squadId, _this.squadId) || other.squadId == _this.squadId)&&(identical(other.clientNonce, _this.clientNonce) || other.clientNonce == _this.clientNonce)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,userId,squadId,clientNonce,createdAt);
+int get hashCode {
+  final _this = this as PendingConversationOperation;
+  return Object.hash(runtimeType,_this.userId,_this.squadId,_this.clientNonce,_this.createdAt);
+}
 
 @override
 String toString() {
-  return 'PendingConversationOperation(userId: $userId, squadId: $squadId, clientNonce: $clientNonce, createdAt: $createdAt)';
+  final _this = this as PendingConversationOperation;
+  return 'PendingConversationOperation(userId: ${_this.userId}, squadId: ${_this.squadId}, clientNonce: ${_this.clientNonce}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -89,10 +95,11 @@ extension PendingConversationOperationPatterns on PendingConversationOperation {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( PendingTextOperation value)?  text,TResult Function( PendingCardOperation value)?  card,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( PendingPhotoOperation value)?  photo,TResult Function( PendingTextOperation value)?  text,TResult Function( PendingCardOperation value)?  card,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case PendingTextOperation() when text != null:
+case PendingPhotoOperation() when photo != null:
+return photo(_that);case PendingTextOperation() when text != null:
 return text(_that);case PendingCardOperation() when card != null:
 return card(_that);case _:
   return orElse();
@@ -112,10 +119,11 @@ return card(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( PendingTextOperation value)  text,required TResult Function( PendingCardOperation value)  card,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( PendingPhotoOperation value)  photo,required TResult Function( PendingTextOperation value)  text,required TResult Function( PendingCardOperation value)  card,}){
 final _that = this;
 switch (_that) {
-case PendingTextOperation():
+case PendingPhotoOperation():
+return photo(_that);case PendingTextOperation():
 return text(_that);case PendingCardOperation():
 return card(_that);}
 }
@@ -131,10 +139,11 @@ return card(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( PendingTextOperation value)?  text,TResult? Function( PendingCardOperation value)?  card,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( PendingPhotoOperation value)?  photo,TResult? Function( PendingTextOperation value)?  text,TResult? Function( PendingCardOperation value)?  card,}){
 final _that = this;
 switch (_that) {
-case PendingTextOperation() when text != null:
+case PendingPhotoOperation() when photo != null:
+return photo(_that);case PendingTextOperation() when text != null:
 return text(_that);case PendingCardOperation() when card != null:
 return card(_that);case _:
   return null;
@@ -153,11 +162,12 @@ return card(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String userId,  String squadId,  String clientNonce,  DateTime createdAt,  String body,  String? replyToEntryId)?  text,TResult Function( String userId,  String squadId,  String clientNonce,  DateTime createdAt,  String cardId,  CardSnapshot snapshot,  EncryptedRouteBundle? encryptedRoute)?  card,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String userId,  String squadId,  String squadName,  String clientNonce,  DateTime createdAt,  PhotoImage image,  String? replyToEntryId)?  photo,TResult Function( String userId,  String squadId,  String clientNonce,  DateTime createdAt,  String body,  String? planId,  String? replyToEntryId)?  text,TResult Function( String userId,  String squadId,  String clientNonce,  DateTime createdAt,  String cardId,  CardSnapshot snapshot,  String? planId,  EncryptedRouteBundle? encryptedRoute)?  card,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case PendingTextOperation() when text != null:
-return text(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.body,_that.replyToEntryId);case PendingCardOperation() when card != null:
-return card(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.cardId,_that.snapshot,_that.encryptedRoute);case _:
+case PendingPhotoOperation() when photo != null:
+return photo(_that.userId,_that.squadId,_that.squadName,_that.clientNonce,_that.createdAt,_that.image,_that.replyToEntryId);case PendingTextOperation() when text != null:
+return text(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.body,_that.planId,_that.replyToEntryId);case PendingCardOperation() when card != null:
+return card(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.cardId,_that.snapshot,_that.planId,_that.encryptedRoute);case _:
   return orElse();
 
 }
@@ -175,11 +185,12 @@ return card(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.c
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String userId,  String squadId,  String clientNonce,  DateTime createdAt,  String body,  String? replyToEntryId)  text,required TResult Function( String userId,  String squadId,  String clientNonce,  DateTime createdAt,  String cardId,  CardSnapshot snapshot,  EncryptedRouteBundle? encryptedRoute)  card,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String userId,  String squadId,  String squadName,  String clientNonce,  DateTime createdAt,  PhotoImage image,  String? replyToEntryId)  photo,required TResult Function( String userId,  String squadId,  String clientNonce,  DateTime createdAt,  String body,  String? planId,  String? replyToEntryId)  text,required TResult Function( String userId,  String squadId,  String clientNonce,  DateTime createdAt,  String cardId,  CardSnapshot snapshot,  String? planId,  EncryptedRouteBundle? encryptedRoute)  card,}) {final _that = this;
 switch (_that) {
-case PendingTextOperation():
-return text(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.body,_that.replyToEntryId);case PendingCardOperation():
-return card(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.cardId,_that.snapshot,_that.encryptedRoute);}
+case PendingPhotoOperation():
+return photo(_that.userId,_that.squadId,_that.squadName,_that.clientNonce,_that.createdAt,_that.image,_that.replyToEntryId);case PendingTextOperation():
+return text(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.body,_that.planId,_that.replyToEntryId);case PendingCardOperation():
+return card(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.cardId,_that.snapshot,_that.planId,_that.encryptedRoute);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -193,11 +204,12 @@ return card(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.c
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String userId,  String squadId,  String clientNonce,  DateTime createdAt,  String body,  String? replyToEntryId)?  text,TResult? Function( String userId,  String squadId,  String clientNonce,  DateTime createdAt,  String cardId,  CardSnapshot snapshot,  EncryptedRouteBundle? encryptedRoute)?  card,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String userId,  String squadId,  String squadName,  String clientNonce,  DateTime createdAt,  PhotoImage image,  String? replyToEntryId)?  photo,TResult? Function( String userId,  String squadId,  String clientNonce,  DateTime createdAt,  String body,  String? planId,  String? replyToEntryId)?  text,TResult? Function( String userId,  String squadId,  String clientNonce,  DateTime createdAt,  String cardId,  CardSnapshot snapshot,  String? planId,  EncryptedRouteBundle? encryptedRoute)?  card,}) {final _that = this;
 switch (_that) {
-case PendingTextOperation() when text != null:
-return text(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.body,_that.replyToEntryId);case PendingCardOperation() when card != null:
-return card(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.cardId,_that.snapshot,_that.encryptedRoute);case _:
+case PendingPhotoOperation() when photo != null:
+return photo(_that.userId,_that.squadId,_that.squadName,_that.clientNonce,_that.createdAt,_that.image,_that.replyToEntryId);case PendingTextOperation() when text != null:
+return text(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.body,_that.planId,_that.replyToEntryId);case PendingCardOperation() when card != null:
+return card(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.cardId,_that.snapshot,_that.planId,_that.encryptedRoute);case _:
   return null;
 
 }
@@ -208,8 +220,88 @@ return card(_that.userId,_that.squadId,_that.clientNonce,_that.createdAt,_that.c
 /// @nodoc
 
 
-class PendingTextOperation implements PendingConversationOperation {
-  const PendingTextOperation({required this.userId, required this.squadId, required this.clientNonce, required this.createdAt, required this.body, this.replyToEntryId});
+class PendingPhotoOperation extends PendingConversationOperation {
+  const PendingPhotoOperation({required this.userId, required this.squadId, required this.squadName, required this.clientNonce, required this.createdAt, required this.image, this.replyToEntryId}): super._();
+
+
+@override final  String userId;
+@override final  String squadId;
+ final  String squadName;
+@override final  String clientNonce;
+@override final  DateTime createdAt;
+ final  PhotoImage image;
+ final  String? replyToEntryId;
+
+/// Create a copy of PendingConversationOperation
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PendingPhotoOperationCopyWith<PendingPhotoOperation> get copyWith => _$PendingPhotoOperationCopyWithImpl<PendingPhotoOperation>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PendingPhotoOperation&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.squadName, squadName) || other.squadName == squadName)&&(identical(other.clientNonce, clientNonce) || other.clientNonce == clientNonce)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.image, image) || other.image == image)&&(identical(other.replyToEntryId, replyToEntryId) || other.replyToEntryId == replyToEntryId));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,userId,squadId,squadName,clientNonce,createdAt,image,replyToEntryId);
+}
+
+@override
+String toString() {
+    return 'PendingConversationOperation.photo(userId: $userId, squadId: $squadId, squadName: $squadName, clientNonce: $clientNonce, createdAt: $createdAt, image: $image, replyToEntryId: $replyToEntryId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PendingPhotoOperationCopyWith<$Res> implements $PendingConversationOperationCopyWith<$Res> {
+  factory $PendingPhotoOperationCopyWith(PendingPhotoOperation value, $Res Function(PendingPhotoOperation) _then) = _$PendingPhotoOperationCopyWithImpl;
+@override @useResult
+$Res call({
+ String userId, String squadId, String squadName, String clientNonce, DateTime createdAt, PhotoImage image, String? replyToEntryId
+});
+
+
+
+
+}
+/// @nodoc
+class _$PendingPhotoOperationCopyWithImpl<$Res>
+    implements $PendingPhotoOperationCopyWith<$Res> {
+  _$PendingPhotoOperationCopyWithImpl(this._self, this._then);
+
+  final PendingPhotoOperation _self;
+  final $Res Function(PendingPhotoOperation) _then;
+
+/// Create a copy of PendingConversationOperation
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? userId = null,Object? squadId = null,Object? squadName = null,Object? clientNonce = null,Object? createdAt = null,Object? image = null,Object? replyToEntryId = freezed,}) {
+  return _then(PendingPhotoOperation(
+userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
+as String,squadId: null == squadId ? _self.squadId : squadId // ignore: cast_nullable_to_non_nullable
+as String,squadName: null == squadName ? _self.squadName : squadName // ignore: cast_nullable_to_non_nullable
+as String,clientNonce: null == clientNonce ? _self.clientNonce : clientNonce // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,image: null == image ? _self.image : image // ignore: cast_nullable_to_non_nullable
+as PhotoImage,replyToEntryId: freezed == replyToEntryId ? _self.replyToEntryId : replyToEntryId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class PendingTextOperation extends PendingConversationOperation {
+  const PendingTextOperation({required this.userId, required this.squadId, required this.clientNonce, required this.createdAt, required this.body, this.planId, this.replyToEntryId}): super._();
 
 
 @override final  String userId;
@@ -217,6 +309,7 @@ class PendingTextOperation implements PendingConversationOperation {
 @override final  String clientNonce;
 @override final  DateTime createdAt;
  final  String body;
+ final  String? planId;
  final  String? replyToEntryId;
 
 /// Create a copy of PendingConversationOperation
@@ -229,16 +322,18 @@ $PendingTextOperationCopyWith<PendingTextOperation> get copyWith => _$PendingTex
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PendingTextOperation&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.clientNonce, clientNonce) || other.clientNonce == clientNonce)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.body, body) || other.body == body)&&(identical(other.replyToEntryId, replyToEntryId) || other.replyToEntryId == replyToEntryId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PendingTextOperation&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.clientNonce, clientNonce) || other.clientNonce == clientNonce)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.body, body) || other.body == body)&&(identical(other.planId, planId) || other.planId == planId)&&(identical(other.replyToEntryId, replyToEntryId) || other.replyToEntryId == replyToEntryId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,userId,squadId,clientNonce,createdAt,body,replyToEntryId);
+int get hashCode {
+    return Object.hash(runtimeType,userId,squadId,clientNonce,createdAt,body,planId,replyToEntryId);
+}
 
 @override
 String toString() {
-  return 'PendingConversationOperation.text(userId: $userId, squadId: $squadId, clientNonce: $clientNonce, createdAt: $createdAt, body: $body, replyToEntryId: $replyToEntryId)';
+    return 'PendingConversationOperation.text(userId: $userId, squadId: $squadId, clientNonce: $clientNonce, createdAt: $createdAt, body: $body, planId: $planId, replyToEntryId: $replyToEntryId)';
 }
 
 
@@ -249,7 +344,7 @@ abstract mixin class $PendingTextOperationCopyWith<$Res> implements $PendingConv
   factory $PendingTextOperationCopyWith(PendingTextOperation value, $Res Function(PendingTextOperation) _then) = _$PendingTextOperationCopyWithImpl;
 @override @useResult
 $Res call({
- String userId, String squadId, String clientNonce, DateTime createdAt, String body, String? replyToEntryId
+ String userId, String squadId, String clientNonce, DateTime createdAt, String body, String? planId, String? replyToEntryId
 });
 
 
@@ -266,14 +361,15 @@ class _$PendingTextOperationCopyWithImpl<$Res>
 
 /// Create a copy of PendingConversationOperation
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? userId = null,Object? squadId = null,Object? clientNonce = null,Object? createdAt = null,Object? body = null,Object? replyToEntryId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? userId = null,Object? squadId = null,Object? clientNonce = null,Object? createdAt = null,Object? body = null,Object? planId = freezed,Object? replyToEntryId = freezed,}) {
   return _then(PendingTextOperation(
 userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,squadId: null == squadId ? _self.squadId : squadId // ignore: cast_nullable_to_non_nullable
 as String,clientNonce: null == clientNonce ? _self.clientNonce : clientNonce // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
-as String,replyToEntryId: freezed == replyToEntryId ? _self.replyToEntryId : replyToEntryId // ignore: cast_nullable_to_non_nullable
+as String,planId: freezed == planId ? _self.planId : planId // ignore: cast_nullable_to_non_nullable
+as String?,replyToEntryId: freezed == replyToEntryId ? _self.replyToEntryId : replyToEntryId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -284,8 +380,8 @@ as String?,
 /// @nodoc
 
 
-class PendingCardOperation implements PendingConversationOperation {
-  const PendingCardOperation({required this.userId, required this.squadId, required this.clientNonce, required this.createdAt, required this.cardId, required this.snapshot, this.encryptedRoute});
+class PendingCardOperation extends PendingConversationOperation {
+  const PendingCardOperation({required this.userId, required this.squadId, required this.clientNonce, required this.createdAt, required this.cardId, required this.snapshot, this.planId, this.encryptedRoute}): super._();
 
 
 @override final  String userId;
@@ -294,6 +390,7 @@ class PendingCardOperation implements PendingConversationOperation {
 @override final  DateTime createdAt;
  final  String cardId;
  final  CardSnapshot snapshot;
+ final  String? planId;
  final  EncryptedRouteBundle? encryptedRoute;
 
 /// Create a copy of PendingConversationOperation
@@ -306,16 +403,18 @@ $PendingCardOperationCopyWith<PendingCardOperation> get copyWith => _$PendingCar
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PendingCardOperation&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.clientNonce, clientNonce) || other.clientNonce == clientNonce)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.cardId, cardId) || other.cardId == cardId)&&(identical(other.snapshot, snapshot) || other.snapshot == snapshot)&&(identical(other.encryptedRoute, encryptedRoute) || other.encryptedRoute == encryptedRoute));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PendingCardOperation&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.clientNonce, clientNonce) || other.clientNonce == clientNonce)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.cardId, cardId) || other.cardId == cardId)&&(identical(other.snapshot, snapshot) || other.snapshot == snapshot)&&(identical(other.planId, planId) || other.planId == planId)&&(identical(other.encryptedRoute, encryptedRoute) || other.encryptedRoute == encryptedRoute));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,userId,squadId,clientNonce,createdAt,cardId,snapshot,encryptedRoute);
+int get hashCode {
+    return Object.hash(runtimeType,userId,squadId,clientNonce,createdAt,cardId,snapshot,planId,encryptedRoute);
+}
 
 @override
 String toString() {
-  return 'PendingConversationOperation.card(userId: $userId, squadId: $squadId, clientNonce: $clientNonce, createdAt: $createdAt, cardId: $cardId, snapshot: $snapshot, encryptedRoute: $encryptedRoute)';
+    return 'PendingConversationOperation.card(userId: $userId, squadId: $squadId, clientNonce: $clientNonce, createdAt: $createdAt, cardId: $cardId, snapshot: $snapshot, planId: $planId, encryptedRoute: $encryptedRoute)';
 }
 
 
@@ -326,7 +425,7 @@ abstract mixin class $PendingCardOperationCopyWith<$Res> implements $PendingConv
   factory $PendingCardOperationCopyWith(PendingCardOperation value, $Res Function(PendingCardOperation) _then) = _$PendingCardOperationCopyWithImpl;
 @override @useResult
 $Res call({
- String userId, String squadId, String clientNonce, DateTime createdAt, String cardId, CardSnapshot snapshot, EncryptedRouteBundle? encryptedRoute
+ String userId, String squadId, String clientNonce, DateTime createdAt, String cardId, CardSnapshot snapshot, String? planId, EncryptedRouteBundle? encryptedRoute
 });
 
 
@@ -343,7 +442,7 @@ class _$PendingCardOperationCopyWithImpl<$Res>
 
 /// Create a copy of PendingConversationOperation
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? userId = null,Object? squadId = null,Object? clientNonce = null,Object? createdAt = null,Object? cardId = null,Object? snapshot = null,Object? encryptedRoute = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? userId = null,Object? squadId = null,Object? clientNonce = null,Object? createdAt = null,Object? cardId = null,Object? snapshot = null,Object? planId = freezed,Object? encryptedRoute = freezed,}) {
   return _then(PendingCardOperation(
 userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,squadId: null == squadId ? _self.squadId : squadId // ignore: cast_nullable_to_non_nullable
@@ -351,7 +450,8 @@ as String,clientNonce: null == clientNonce ? _self.clientNonce : clientNonce // 
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,cardId: null == cardId ? _self.cardId : cardId // ignore: cast_nullable_to_non_nullable
 as String,snapshot: null == snapshot ? _self.snapshot : snapshot // ignore: cast_nullable_to_non_nullable
-as CardSnapshot,encryptedRoute: freezed == encryptedRoute ? _self.encryptedRoute : encryptedRoute // ignore: cast_nullable_to_non_nullable
+as CardSnapshot,planId: freezed == planId ? _self.planId : planId // ignore: cast_nullable_to_non_nullable
+as String?,encryptedRoute: freezed == encryptedRoute ? _self.encryptedRoute : encryptedRoute // ignore: cast_nullable_to_non_nullable
 as EncryptedRouteBundle?,
   ));
 }

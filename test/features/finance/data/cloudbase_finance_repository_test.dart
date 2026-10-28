@@ -4,11 +4,43 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:postgrest/postgrest.dart';
+import 'package:squadly/core/error/failures.dart';
 
 import 'package:squadly/features/finance/data/repositories/cloudbase_finance_repository.dart';
 
 void main() {
   group('CloudBaseFinanceRepository', () {
+    test('maps actual CloudBase fund permission errors safely', () async {
+      final client = PostgrestClient(
+        'https://staging.example/v1/rdb/rest',
+        httpClient: MockClient(
+          (request) async => http.Response(
+            jsonEncode({
+              'code': 'DATABASE_42501',
+              'message': 'sensitive private backend context',
+              'requestId': 'private-request',
+            }),
+            403,
+            headers: {'content-type': 'application/json'},
+            request: request,
+          ),
+        ),
+      );
+      addTearDown(client.dispose);
+      final repository = CloudBaseFinanceRepository(
+        client: client,
+        currentUserId: () async => 'member-b',
+      );
+      final result = await repository.createFund(
+        squadId: 'squad-a',
+        name: 'Test',
+        fundType: 'custom',
+      );
+      expect(
+        result.match((failure) => failure, (_) => null),
+        const Failure.permissionDenied(),
+      );
+    });
     test('scopes private asset query to the signed-in owner', () async {
       http.Request? capturedRequest;
       final client = PostgrestClient(

@@ -4,15 +4,10 @@ import 'dart:math';
 import 'package:cryptography/cryptography.dart';
 
 import '../domain/route_models.dart';
+import '../domain/route_reader.dart';
 
 export '../domain/route_models.dart';
-
-final class RouteDecryptionException implements Exception {
-  const RouteDecryptionException();
-
-  @override
-  String toString() => 'RouteDecryptionException';
-}
+export '../domain/route_reader.dart' show RouteDecryptionException;
 
 /// A device-private X25519 key. Only [exportPrivateKeyBase64] may persist it,
 /// and only through the device's protected key store.
@@ -20,8 +15,8 @@ final class RouteDeviceKey {
   RouteDeviceKey._({
     required this.deviceId,
     required this.publicKeyBase64,
-    required SimpleKeyPair keyPair,
-  }) : _keyPair = keyPair;
+    required this._keyPair,
+  });
 
   final String deviceId;
   final String publicKeyBase64;

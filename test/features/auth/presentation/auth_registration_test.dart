@@ -34,15 +34,14 @@ void main() {
           );
 
       expect(needsConfirmation, isTrue);
-      expect(container.read(authNotifierProvider).valueOrNull, isNull);
+      expect(container.read(authNotifierProvider).value, isNull);
     },
   );
 
   test('phone send failure remains visible to the registration UI', () async {
     final repository = _AuthBoundary();
-    when(
-      () => repository.sendPhoneVerification(phone: '13800138000'),
-    ).thenAnswer((_) async => const Left(Failure.server(message: '发送过于频繁')));
+    when(() => repository.sendPhoneVerification(phone: '13800138000'))
+        .thenAnswer((_) async => const Left(Failure.server(message: '发送过于频繁')));
     final container = ProviderContainer(
       overrides: [authRepositoryProvider.overrideWithValue(repository)],
     );

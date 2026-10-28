@@ -8,6 +8,8 @@ import '../../features/fitness/domain/entities/daily_task.dart';
 import '../../features/fitness/domain/entities/health_snapshot.dart';
 import '../../features/fitness/domain/entities/workout_plan.dart';
 import '../../features/food/domain/entities/food_spot.dart';
+import '../../features/plan/domain/entities/plan_task.dart';
+import '../../features/plan/domain/entities/squad_plan.dart';
 import '../../features/social/domain/entities/circle_message.dart';
 import '../../features/social/domain/entities/data_connection.dart';
 import '../../features/social/domain/entities/external_data_item.dart';
@@ -30,6 +32,8 @@ class DemoAppState {
     required this.privateAssets,
     required this.sharedExpenses,
     required this.travelPlans,
+    required this.squadPlans,
+    required this.planTasks,
     required this.foodSpots,
     required this.externalDataItems,
     required this.dataConnections,
@@ -53,6 +57,8 @@ class DemoAppState {
   final List<PrivateAsset> privateAssets;
   final List<SharedExpense> sharedExpenses;
   final List<TravelPlan> travelPlans;
+  final List<SquadPlan> squadPlans;
+  final List<PlanTask> planTasks;
   final List<FoodSpot> foodSpots;
   final List<ExternalDataItem> externalDataItems;
   final List<DataConnection> dataConnections;
@@ -137,6 +143,32 @@ class DemoAppState {
 
   List<TravelPlan> plansFor(String squadId) {
     return travelPlans.where((plan) => plan.squadId == squadId).toList();
+  }
+
+  List<SquadPlan> visiblePlansFor(String squadId) {
+    final user = currentUser;
+    if (user == null || !_isCurrentUserMemberOf(squadId)) return const [];
+    final plans = squadPlans.where((plan) {
+      return plan.squadId == squadId &&
+          (plan.visibility == PlanVisibility.squad ||
+              plan.createdBy == user.id);
+    }).toList();
+    plans.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return plans;
+  }
+
+  List<PlanTask> visiblePlanTasks(String planId) {
+    final plan = squadPlans.where((item) => item.id == planId).firstOrNull;
+    if (plan == null ||
+        !visiblePlansFor(plan.squadId).any((p) => p.id == planId)) {
+      return const [];
+    }
+    final tasks = planTasks.where((task) => task.planId == planId).toList();
+    tasks.sort((a, b) {
+      final byPosition = a.position.compareTo(b.position);
+      return byPosition != 0 ? byPosition : a.createdAt.compareTo(b.createdAt);
+    });
+    return tasks;
   }
 
   List<FoodSpot> foodFor(String squadId) {
@@ -226,6 +258,8 @@ class DemoAppState {
     List<PrivateAsset>? privateAssets,
     List<SharedExpense>? sharedExpenses,
     List<TravelPlan>? travelPlans,
+    List<SquadPlan>? squadPlans,
+    List<PlanTask>? planTasks,
     List<FoodSpot>? foodSpots,
     List<ExternalDataItem>? externalDataItems,
     List<DataConnection>? dataConnections,
@@ -249,6 +283,8 @@ class DemoAppState {
       privateAssets: privateAssets ?? this.privateAssets,
       sharedExpenses: sharedExpenses ?? this.sharedExpenses,
       travelPlans: travelPlans ?? this.travelPlans,
+      squadPlans: squadPlans ?? this.squadPlans,
+      planTasks: planTasks ?? this.planTasks,
       foodSpots: foodSpots ?? this.foodSpots,
       externalDataItems: externalDataItems ?? this.externalDataItems,
       dataConnections: dataConnections ?? this.dataConnections,

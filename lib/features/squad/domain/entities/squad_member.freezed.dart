@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'squad_member.dart';
@@ -9,15 +9,14 @@ part of 'squad_member.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$SquadMember {
 
- String get id; String get squadId; String get userId; String get role;// 'captain' | 'member'
- DateTime get joinedAt;// 关联用户信息（查询时 join）
- String? get nickname; String? get avatarUrl;
+ String get id; String get squadId; String get userId; String get role; DateTime get joinedAt; String? get nickname; String? get avatarUrl;
 /// Create a copy of SquadMember
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,16 +29,21 @@ $SquadMemberCopyWith<SquadMember> get copyWith => _$SquadMemberCopyWithImpl<Squa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SquadMember&&(identical(other.id, id) || other.id == id)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.role, role) || other.role == role)&&(identical(other.joinedAt, joinedAt) || other.joinedAt == joinedAt)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl));
+  final _this = this as SquadMember;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SquadMember&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.squadId, _this.squadId) || other.squadId == _this.squadId)&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.role, _this.role) || other.role == _this.role)&&(identical(other.joinedAt, _this.joinedAt) || other.joinedAt == _this.joinedAt)&&(identical(other.nickname, _this.nickname) || other.nickname == _this.nickname)&&(identical(other.avatarUrl, _this.avatarUrl) || other.avatarUrl == _this.avatarUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,squadId,userId,role,joinedAt,nickname,avatarUrl);
+int get hashCode {
+  final _this = this as SquadMember;
+  return Object.hash(runtimeType,_this.id,_this.squadId,_this.userId,_this.role,_this.joinedAt,_this.nickname,_this.avatarUrl);
+}
 
 @override
 String toString() {
-  return 'SquadMember(id: $id, squadId: $squadId, userId: $userId, role: $role, joinedAt: $joinedAt, nickname: $nickname, avatarUrl: $avatarUrl)';
+  final _this = this as SquadMember;
+  return 'SquadMember(id: ${_this.id}, squadId: ${_this.squadId}, userId: ${_this.userId}, role: ${_this.role}, joinedAt: ${_this.joinedAt}, nickname: ${_this.nickname}, avatarUrl: ${_this.avatarUrl})';
 }
 
 
@@ -68,7 +72,7 @@ class _$SquadMemberCopyWithImpl<$Res>
 /// Create a copy of SquadMember
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? squadId = null,Object? userId = null,Object? role = null,Object? joinedAt = null,Object? nickname = freezed,Object? avatarUrl = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(SquadMember(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,squadId: null == squadId ? _self.squadId : squadId // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -224,9 +228,7 @@ class _SquadMember implements SquadMember {
 @override final  String squadId;
 @override final  String userId;
 @override final  String role;
-// 'captain' | 'member'
 @override final  DateTime joinedAt;
-// 关联用户信息（查询时 join）
 @override final  String? nickname;
 @override final  String? avatarUrl;
 
@@ -243,16 +245,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SquadMember&&(identical(other.id, id) || other.id == id)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.role, role) || other.role == role)&&(identical(other.joinedAt, joinedAt) || other.joinedAt == joinedAt)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SquadMember&&(identical(other.id, id) || other.id == id)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.role, role) || other.role == role)&&(identical(other.joinedAt, joinedAt) || other.joinedAt == joinedAt)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,squadId,userId,role,joinedAt,nickname,avatarUrl);
+int get hashCode {
+    return Object.hash(runtimeType,id,squadId,userId,role,joinedAt,nickname,avatarUrl);
+}
 
 @override
 String toString() {
-  return 'SquadMember(id: $id, squadId: $squadId, userId: $userId, role: $role, joinedAt: $joinedAt, nickname: $nickname, avatarUrl: $avatarUrl)';
+    return 'SquadMember(id: $id, squadId: $squadId, userId: $userId, role: $role, joinedAt: $joinedAt, nickname: $nickname, avatarUrl: $avatarUrl)';
 }
 
 

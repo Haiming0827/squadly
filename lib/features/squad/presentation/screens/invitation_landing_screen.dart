@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../shared/widgets/app_loading_state.dart';
 import '../providers/squad_provider.dart';
 
 /// A link may be opened before login; the router returns here after auth.
@@ -61,9 +62,7 @@ class _InvitationLandingScreenState
             mainAxisSize: MainAxisSize.min,
             children: [
               if (_busy) ...[
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
-                const Text('正在验证邀请…'),
+                const AppLoadingState(label: '正在验证邀请…'),
               ] else ...[
                 Text(_error ?? '加入失败', textAlign: TextAlign.center),
                 const SizedBox(height: 16),

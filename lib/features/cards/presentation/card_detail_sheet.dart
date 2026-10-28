@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../auth/presentation/providers/auth_provider.dart';
+import '../../../app/providers/current_user_provider.dart';
+import '../../../app/providers/domain_repository_providers.dart';
+import '../../../app/providers/route_providers.dart';
 import '../../conversation/domain/timeline_entry.dart';
-import '../../conversation/presentation/conversation_provider.dart';
-import '../../secure_route/data/route_crypto.dart';
 import '../../secure_route/domain/route_bundle_repository.dart';
 import '../../secure_route/domain/route_reader.dart';
-import '../../secure_route/presentation/route_reader_provider.dart';
 import '../data/device_share/system_image_share.dart';
 import '../domain/card_composer.dart';
 import '../domain/device_image_share.dart';
@@ -59,7 +58,7 @@ final class _CardDetailSheetState extends ConsumerState<CardDetailSheet> {
   }
 
   Future<void> _loadRoute() async {
-    final userId = ref.read(authNotifierProvider).valueOrNull?.id;
+    final userId = ref.read(currentUserProvider).value?.id;
     final cardId = widget.entry.cardId;
     if (userId == null || cardId == null) {
       setState(() => _routeError = '请先登录并重新打开卡片');
@@ -154,14 +153,12 @@ final class _CardDetailSheetState extends ConsumerState<CardDetailSheet> {
       final png = await const CardImageRenderer().renderPng(_imageKey);
       await ref.read(deviceImageShareProvider).saveImage(png);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('图片已保存到相册')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('图片已保存到相册')));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('保存失败，请检查相册权限或存储空间')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('保存失败，请检查相册权限或存储空间')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -174,16 +171,14 @@ final class _CardDetailSheetState extends ConsumerState<CardDetailSheet> {
       final outcome = await ref.read(deviceImageShareProvider).shareImage(png);
       if (!mounted) return;
       if (outcome == ShareOutcome.unavailable) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('当前设备无法打开系统分享')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('当前设备无法打开系统分享')));
       }
       // A selected target is not proof that WeChat received the image.
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('分享失败，请稍后重试')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('分享失败，请稍后重试')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

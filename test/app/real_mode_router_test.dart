@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:squadly/app/app.dart';
+import 'package:squadly/app/providers/conversation_cache_provider.dart';
 import 'package:squadly/app/router.dart';
 import 'package:squadly/features/auth/domain/entities/user.dart';
 import 'package:squadly/features/auth/presentation/providers/auth_provider.dart';
@@ -29,15 +30,17 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          conversationCacheProvider.overrideWithValue(null),
           authNotifierProvider.overrideWith(_SignedIn.new),
           currentSquadProvider.overrideWithValue(const AsyncData(null)),
+          mySquadsProvider.overrideWith((ref) async => []),
         ],
         child: const SquadlyApp(),
       ),
     );
     await tester.pumpAndSettle();
     expect(find.text('会话'), findsOneWidget);
-    expect(find.text('先创建或加入小队'), findsOneWidget);
+    expect(find.text('创建或加入小队'), findsOneWidget);
     expect(find.textContaining('本地演示'), findsNothing);
     await tester.tap(find.text('我的'));
     await tester.pumpAndSettle();

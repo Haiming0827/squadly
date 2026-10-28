@@ -17,6 +17,7 @@ exports.main = async () => {
       authorization: `Bearer ${apiKey}`,
       'x-squadly-worker-secret': secret,
     },
+    signal: AbortSignal.timeout(130_000),
   });
   if (!result.ok) throw new Error(`Push worker returned ${result.status}`);
   return result.json();

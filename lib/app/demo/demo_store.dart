@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/constants/app_constants.dart';
@@ -14,6 +14,8 @@ import '../../features/fitness/domain/entities/daily_task.dart';
 import '../../features/fitness/domain/entities/health_snapshot.dart';
 import '../../features/fitness/domain/entities/workout_plan.dart';
 import '../../features/food/domain/entities/food_spot.dart';
+import '../../features/plan/domain/entities/plan_task.dart';
+import '../../features/plan/domain/entities/squad_plan.dart';
 import '../../features/social/domain/entities/circle_message.dart';
 import '../../features/social/domain/entities/data_connection.dart';
 import '../../features/social/domain/entities/external_data_item.dart';
@@ -112,6 +114,12 @@ class DemoAppStore extends StateNotifier<DemoAppState> {
     _requireMember(squadId);
     state = state.copyWith(currentSquadId: squadId);
   }
+
+  List<SquadPlan> getVisiblePlans(String squadId) =>
+      state.visiblePlansFor(squadId);
+
+  List<PlanTask> getVisiblePlanTasks(String planId) =>
+      state.visiblePlanTasks(planId);
 
   Squad createSquad({required String name, String? description}) {
     final user = _requireUser();
@@ -350,7 +358,7 @@ class DemoAppStore extends StateNotifier<DemoAppState> {
     double targetAmount = 0,
   }) {
     final user = _requireUser();
-    _requireMember(squadId);
+    _requireCaptain(squadId);
     final fund = PublicFund(
       id: _uuid.v4(),
       squadId: squadId,
@@ -497,8 +505,290 @@ class DemoAppStore extends StateNotifier<DemoAppState> {
       createdAt: now,
       notes: notes,
     );
-    state = state.copyWith(travelPlans: [...state.travelPlans, plan]);
+    final unifiedPlan = SquadPlan(
+      id: 'unified-${plan.id}',
+      squadId: plan.squadId,
+      title: plan.title,
+      description: plan.notes,
+      category: PlanCategory.travel,
+      visibility: PlanVisibility.squad,
+      status: PlanStatus.active,
+      startDate: plan.startDate,
+      endDate: plan.endDate,
+      createdBy: user.id,
+      createdAt: now,
+      updatedAt: now,
+      legacySource: 'travel_plan',
+      legacyId: plan.id,
+      legacyData: {
+        'destination': plan.destination,
+        'budget': plan.budget,
+        'linked_fund_id': plan.linkedFundId,
+        'notes': plan.notes,
+      },
+    );
+    state = state.copyWith(
+      travelPlans: [...state.travelPlans, plan],
+      squadPlans: [...state.squadPlans, unifiedPlan],
+    );
     return plan;
+  }
+
+  SquadPlan createPlan({
+    required String squadId,
+    required String title,
+    required PlanCategory category,
+    required PlanVisibility visibility,
+    String? description,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    final user = _requireUser();
+    _requireMember(squadId);
+    final normalizedTitle = title.trim();
+    if (normalizedTitle.isEmpty || normalizedTitle.length > 100) {
+      throw StateError('计划名称需为 1–100 个字符');
+    }
+    if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+      throw StateError('结束日期不能早于开始日期');
+    }
+    final now = DateTime.now();
+    final plan = SquadPlan(
+      id: _uuid.v4(),
+      squadId: squadId,
+      title: normalizedTitle,
+      description: _optionalText(description),
+      category: category,
+      visibility: visibility,
+      status: PlanStatus.active,
+      startDate: startDate,
+      endDate: endDate,
+      createdBy: user.id,
+      createdAt: now,
+      updatedAt: now,
+    );
+    state = state.copyWith(squadPlans: [...state.squadPlans, plan]);
+    return plan;
+  }
+
+  SquadPlan setPlanStatus({
+    required String planId,
+    required PlanStatus status,
+  }) {
+    final user = _requireUser();
+    final plan = state.squadPlans
+        .where((item) => item.id == planId)
+        .firstOrNull;
+    if (plan == null) throw StateError('计划不存在');
+    _requireMember(plan.squadId);
+    if (plan.visibility == PlanVisibility.private &&
+        plan.createdBy != user.id) {
+      throw StateError('没有操作该计划的权限');
+    }
+    final now = DateTime.now();
+    final updated = SquadPlan(
+      id: plan.id,
+      squadId: plan.squadId,
+      title: plan.title,
+      description: plan.description,
+      category: plan.category,
+      visibility: plan.visibility,
+      status: status,
+      startDate: plan.startDate,
+      endDate: plan.endDate,
+      createdBy: plan.createdBy,
+      createdAt: plan.createdAt,
+      updatedAt: now,
+      legacySource: plan.legacySource,
+      legacyId: plan.legacyId,
+      legacyData: plan.legacyData,
+    );
+    state = state.copyWith(
+      squadPlans: [
+        for (final item in state.squadPlans)
+          if (item.id == plan.id) updated else item,
+      ],
+    );
+    return updated;
+  }
+
+  SquadPlan updatePlan({
+    required String planId,
+    required String title,
+    required PlanCategory category,
+    required PlanVisibility visibility,
+    String? description,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    final user = _requireUser();
+    final plan = state.squadPlans
+        .where((item) => item.id == planId)
+        .firstOrNull;
+    if (plan == null) throw StateError('计划不存在');
+    _requireMember(plan.squadId);
+    if ((plan.visibility == PlanVisibility.private ||
+            visibility == PlanVisibility.private) &&
+        plan.createdBy != user.id) {
+      throw StateError('没有操作该计划的权限');
+    }
+    final normalizedTitle = title.trim();
+    if (normalizedTitle.isEmpty || normalizedTitle.length > 100) {
+      throw StateError('计划名称需为 1–100 个字符');
+    }
+    if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+      throw StateError('结束日期不能早于开始日期');
+    }
+    final updated = SquadPlan(
+      id: plan.id,
+      squadId: plan.squadId,
+      title: normalizedTitle,
+      description: _optionalText(description),
+      category: category,
+      visibility: visibility,
+      status: plan.status,
+      startDate: startDate,
+      endDate: endDate,
+      createdBy: plan.createdBy,
+      createdAt: plan.createdAt,
+      updatedAt: DateTime.now(),
+      legacySource: plan.legacySource,
+      legacyId: plan.legacyId,
+      legacyData: plan.legacyData,
+    );
+    state = state.copyWith(
+      squadPlans: [
+        for (final item in state.squadPlans)
+          if (item.id == plan.id) updated else item,
+      ],
+    );
+    return updated;
+  }
+
+  PlanTask createPlanTask({
+    required String planId,
+    required String squadId,
+    required String title,
+    String? details,
+    String? assignedTo,
+    DateTime? dueDate,
+  }) {
+    final user = _requireUser();
+    _requireMember(squadId);
+    final plan = state.squadPlans
+        .where((item) => item.id == planId && item.squadId == squadId)
+        .firstOrNull;
+    if (plan == null ||
+        (plan.visibility == PlanVisibility.private &&
+            plan.createdBy != user.id)) {
+      throw StateError('没有操作该计划的权限');
+    }
+    final normalizedTitle = title.trim();
+    if (normalizedTitle.isEmpty || normalizedTitle.length > 160) {
+      throw StateError('任务名称需为 1–160 个字符');
+    }
+    if (assignedTo != null &&
+        !state.members.any(
+          (member) => member.squadId == squadId && member.userId == assignedTo,
+        )) {
+      throw StateError('只能分配给当前小队成员');
+    }
+    final tasks = state.planTasks.where((task) => task.planId == planId);
+    final position = tasks.isEmpty
+        ? 0
+        : tasks.map((task) => task.position).reduce((a, b) => a > b ? a : b) +
+              1;
+    final now = DateTime.now();
+    final task = PlanTask(
+      id: _uuid.v4(),
+      planId: planId,
+      squadId: squadId,
+      title: normalizedTitle,
+      details: _optionalText(details),
+      assignedTo: assignedTo,
+      dueDate: dueDate,
+      isComplete: false,
+      position: position,
+      createdBy: user.id,
+      createdAt: now,
+      updatedAt: now,
+    );
+    state = state.copyWith(planTasks: [...state.planTasks, task]);
+    _touchPlan(planId, now);
+    return task;
+  }
+
+  PlanTask setPlanTaskCompletion({
+    required String taskId,
+    required bool isComplete,
+  }) {
+    final user = _requireUser();
+    final task = state.planTasks.where((item) => item.id == taskId).firstOrNull;
+    if (task == null) throw StateError('任务不存在');
+    _requireMember(task.squadId);
+    final plan = state.squadPlans
+        .where((item) => item.id == task.planId)
+        .firstOrNull;
+    if (plan == null ||
+        (plan.visibility == PlanVisibility.private &&
+            plan.createdBy != user.id)) {
+      throw StateError('没有操作该计划的权限');
+    }
+    final now = DateTime.now();
+    final updated = PlanTask(
+      id: task.id,
+      planId: task.planId,
+      squadId: task.squadId,
+      title: task.title,
+      details: task.details,
+      assignedTo: task.assignedTo,
+      dueDate: task.dueDate,
+      isComplete: isComplete,
+      completedBy: isComplete ? user.id : null,
+      completedAt: isComplete ? now : null,
+      position: task.position,
+      createdBy: task.createdBy,
+      createdAt: task.createdAt,
+      updatedAt: now,
+    );
+    state = state.copyWith(
+      planTasks: [
+        for (final item in state.planTasks)
+          if (item.id == task.id) updated else item,
+      ],
+    );
+    _touchPlan(plan.id, now);
+    return updated;
+  }
+
+  void _touchPlan(String planId, DateTime updatedAt) {
+    final plan = state.squadPlans
+        .where((item) => item.id == planId)
+        .firstOrNull;
+    if (plan == null) return;
+    final updated = SquadPlan(
+      id: plan.id,
+      squadId: plan.squadId,
+      title: plan.title,
+      description: plan.description,
+      category: plan.category,
+      visibility: plan.visibility,
+      status: plan.status,
+      startDate: plan.startDate,
+      endDate: plan.endDate,
+      createdBy: plan.createdBy,
+      createdAt: plan.createdAt,
+      updatedAt: updatedAt,
+      legacySource: plan.legacySource,
+      legacyId: plan.legacyId,
+      legacyData: plan.legacyData,
+    );
+    state = state.copyWith(
+      squadPlans: [
+        for (final item in state.squadPlans)
+          if (item.id == plan.id) updated else item,
+      ],
+    );
   }
 
   FoodSpot addFoodSpot({
@@ -798,6 +1088,101 @@ DemoAppState _seedState() {
     ),
   ];
 
+  final squadPlans = [
+    SquadPlan(
+      id: 'squad-plan-weekend',
+      squadId: 'squad-weekend',
+      title: '把周末安排好',
+      description: '一起完成出发前的准备。',
+      category: PlanCategory.travel,
+      visibility: PlanVisibility.squad,
+      status: PlanStatus.active,
+      startDate: today.add(const Duration(days: 32)),
+      endDate: today.add(const Duration(days: 34)),
+      createdBy: 'user-haiming',
+      createdAt: now.subtract(const Duration(days: 6)),
+      updatedAt: now.subtract(const Duration(hours: 4)),
+      legacySource: 'travel_plan',
+      legacyId: 'travel-1',
+      legacyData: {
+        'title': '杭州两日散步',
+        'destination': '杭州',
+        'budget': 5200,
+        'linked_fund_id': 'fund-travel',
+        'notes': '西湖、良渚、咖啡店和一次夜跑。',
+      },
+    ),
+    SquadPlan(
+      id: 'squad-plan-legacy-workout',
+      squadId: 'squad-weekend',
+      title: '四周体能恢复',
+      description: '低冲击有氧 + 拉伸 + 核心训练。',
+      category: PlanCategory.fitness,
+      visibility: PlanVisibility.squad,
+      status: PlanStatus.active,
+      createdBy: 'user-haiming',
+      createdAt: now.subtract(const Duration(days: 14)),
+      updatedAt: now.subtract(const Duration(days: 14)),
+      legacySource: 'workout_plan',
+      legacyId: 'plan-1',
+      legacyData: const {
+        'plan_type': 'body_shaping',
+        'description': '低冲击有氧 + 拉伸 + 核心训练。',
+      },
+    ),
+    SquadPlan(
+      id: 'squad-plan-private-training',
+      squadId: 'squad-weekend',
+      title: '我的训练节奏',
+      description: '只在自己的计划里记录。',
+      category: PlanCategory.fitness,
+      visibility: PlanVisibility.private,
+      status: PlanStatus.active,
+      createdBy: 'user-haiming',
+      createdAt: now.subtract(const Duration(days: 1)),
+      updatedAt: now.subtract(const Duration(hours: 1)),
+    ),
+  ];
+
+  final planTasks = [
+    PlanTask(
+      id: 'squad-task-route',
+      planId: 'squad-plan-weekend',
+      squadId: 'squad-weekend',
+      title: '确定徒步路线',
+      details: '把路线和预计用时发到小队里。',
+      isComplete: false,
+      position: 0,
+      createdBy: 'user-haiming',
+      createdAt: now.subtract(const Duration(days: 1)),
+      updatedAt: now.subtract(const Duration(days: 1)),
+    ),
+    PlanTask(
+      id: 'squad-task-water',
+      planId: 'squad-plan-weekend',
+      squadId: 'squad-weekend',
+      title: '准备饮用水',
+      isComplete: true,
+      completedBy: 'user-lina',
+      completedAt: now.subtract(const Duration(hours: 5)),
+      position: 1,
+      createdBy: 'user-lina',
+      createdAt: now.subtract(const Duration(days: 1)),
+      updatedAt: now.subtract(const Duration(hours: 5)),
+    ),
+    PlanTask(
+      id: 'private-task-run',
+      planId: 'squad-plan-private-training',
+      squadId: 'squad-weekend',
+      title: '安排一次轻松跑',
+      isComplete: false,
+      position: 0,
+      createdBy: 'user-haiming',
+      createdAt: now.subtract(const Duration(hours: 1)),
+      updatedAt: now.subtract(const Duration(hours: 1)),
+    ),
+  ];
+
   final dailyTasks = [
     DailyTask(
       id: 'task-stretch',
@@ -948,8 +1333,8 @@ DemoAppState _seedState() {
       squadId: 'squad-weekend',
       title: '杭州两日散步',
       destination: '杭州',
-      startDate: today.add(const Duration(days: 32)),
-      endDate: today.add(const Duration(days: 34)),
+      startDate: today.add(const Duration(days: 20)),
+      endDate: today.add(const Duration(days: 32)),
       budget: 5200,
       linkedFundId: 'fund-travel',
       createdBy: 'user-haiming',
@@ -1144,6 +1529,8 @@ DemoAppState _seedState() {
     privateAssets: privateAssets,
     sharedExpenses: sharedExpenses,
     travelPlans: travelPlans,
+    squadPlans: squadPlans,
+    planTasks: planTasks,
     foodSpots: foodSpots,
     externalDataItems: externalDataItems,
     dataConnections: dataConnections,
@@ -1169,6 +1556,9 @@ DateTime _today() {
 bool _isSameDate(DateTime a, DateTime b) {
   return a.year == b.year && a.month == b.month && a.day == b.day;
 }
+
+String? _optionalText(String? value) =>
+    value == null || value.trim().isEmpty ? null : value.trim();
 
 extension _FirstOrNull<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;

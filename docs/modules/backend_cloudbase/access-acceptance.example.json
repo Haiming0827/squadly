@@ -1,0 +1,32 @@
+{
+  "environmentId": "squadly-staging-d1fjsdpkc562fa9c",
+  "region": "ap-shanghai",
+  "publishableKey": "REPLACE_WITH_STAGING_PUBLISHABLE_KEY",
+  "actors": {
+    "a": { "userId": "CLOUDBASE_USER_A_ID", "jwt": "REPLACE_WITH_USER_A_JWT" },
+    "b": { "userId": "CLOUDBASE_USER_B_ID", "jwt": "REPLACE_WITH_USER_B_JWT" },
+    "c": { "userId": "CLOUDBASE_USER_C_ID", "jwt": "REPLACE_WITH_USER_C_JWT" }
+  },
+  "fixtures": {
+    "memberSquad": "00000000-0000-4000-8000-000000000001",
+    "audienceSquad": "00000000-0000-4000-8000-000000000002",
+    "assetA": "00000000-0000-4000-8000-000000000003",
+    "assetB": "00000000-0000-4000-8000-000000000004",
+    "healthA": "00000000-0000-4000-8000-000000000005",
+    "healthB": "00000000-0000-4000-8000-000000000006",
+    "materialA": "00000000-0000-4000-8000-000000000007",
+    "materialB": "00000000-0000-4000-8000-000000000008",
+    "privatePlanA": "00000000-0000-4000-8000-000000000009",
+    "privatePlanB": "00000000-0000-4000-8000-000000000010",
+    "sharedPlan": "00000000-0000-4000-8000-000000000011",
+    "privateTaskA": "00000000-0000-4000-8000-000000000012",
+    "privateTaskB": "00000000-0000-4000-8000-000000000013",
+    "sharedTask": "00000000-0000-4000-8000-000000000014",
+    "privateMessageA": "00000000-0000-4000-8000-000000000015",
+    "privateMessageB": "00000000-0000-4000-8000-000000000016",
+    "sharedPlanMessage": "00000000-0000-4000-8000-000000000017",
+    "generalMessage": "00000000-0000-4000-8000-000000000018",
+    "selectedPost": "00000000-0000-4000-8000-000000000019",
+    "publicFund": "00000000-0000-4000-8000-000000000020"
+  }
+}

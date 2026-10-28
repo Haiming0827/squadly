@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application")
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    // The Flutter Gradle Plugin must be applied after the Android plugin.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -15,6 +14,25 @@ val mipushConfigured = mipushAppId != null || mipushAppKey != null || mipushAars
 require(!mipushConfigured || (mipushAppId?.isNotBlank() == true && mipushAppKey?.isNotBlank() == true && mipushAars.size == 1)) {
     "Mi Push requires one official AAR in android/app/libs plus both -P MIPUSH_APP_ID and -P MIPUSH_APP_KEY."
 }
+val releaseStorePath = providers.environmentVariable("SQUADLY_ANDROID_KEYSTORE_PATH").orNull
+val releaseStorePassword = providers.environmentVariable("SQUADLY_ANDROID_KEYSTORE_PASSWORD").orNull
+val releaseKeyAlias = providers.environmentVariable("SQUADLY_ANDROID_KEY_ALIAS").orNull
+val releaseKeyPassword = providers.environmentVariable("SQUADLY_ANDROID_KEY_PASSWORD").orNull
+val releaseSigningValues = listOf(
+    releaseStorePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+)
+val hasReleaseSigningValues = releaseSigningValues.all { !it.isNullOrBlank() }
+require(releaseSigningValues.all { it.isNullOrBlank() } || hasReleaseSigningValues) {
+    "Android release signing requires SQUADLY_ANDROID_KEYSTORE_PATH, SQUADLY_ANDROID_KEYSTORE_PASSWORD, SQUADLY_ANDROID_KEY_ALIAS, and SQUADLY_ANDROID_KEY_PASSWORD."
+}
+if (hasReleaseSigningValues) {
+    require(file(releaseStorePath!!).isFile) {
+        "SQUADLY_ANDROID_KEYSTORE_PATH must point to an existing keystore file."
+    }
+}
 
 android {
     namespace = "com.squadly.squadly"
@@ -24,10 +42,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -52,6 +66,17 @@ android {
 
     buildFeatures { buildConfig = true }
 
+    signingConfigs {
+        if (hasReleaseSigningValues) {
+            create("release") {
+                storeFile = file(releaseStorePath!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     if (mipushConfigured) {
         sourceSets.getByName("main").java.srcDir("src/withMiPush/kotlin")
     } else {
@@ -60,10 +85,20 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Never ship a release artifact signed with the debug certificate.
+            // Local/CI builds without secrets remain unsigned for compile checks.
+            signingConfig = if (hasReleaseSigningValues) {
+                signingConfigs.getByName("release")
+            } else {
+                null
+            }
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 

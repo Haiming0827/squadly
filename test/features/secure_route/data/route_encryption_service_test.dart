@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:squadly/features/secure_route/data/route_crypto.dart';
 import 'package:squadly/features/secure_route/data/route_device_key_store.dart';
 import 'package:squadly/features/secure_route/data/route_encryption_service.dart';
+import 'package:squadly/features/secure_route/domain/route_key_directory.dart';
+import 'package:squadly/features/secure_route/domain/route_sharing.dart';
 
 final class _MemoryVault implements RouteSecretVault {
   final values = <String, String>{};

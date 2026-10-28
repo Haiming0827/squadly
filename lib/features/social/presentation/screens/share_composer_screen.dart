@@ -147,14 +147,12 @@ class _ShareComposerScreenState extends ConsumerState<ShareComposerScreen> {
       Navigator.of(context).pop(true);
     } on StateError catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message.toString())));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message.toString())));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('发布没有成功，请稍后再试')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('发布没有成功，请稍后再试')));
     } finally {
       if (mounted) setState(() => _publishing = false);
     }
@@ -512,9 +510,8 @@ class _DemoNotice extends StatelessWidget {
           Expanded(
             child: Text(
               '当前素材是演示样本，未连接真实健康账户。',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: color),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: color),
             ),
           ),
         ],

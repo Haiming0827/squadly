@@ -40,7 +40,7 @@ class _AccountContactsScreenState extends ConsumerState<AccountContactsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authNotifierProvider).valueOrNull;
+    final user = ref.watch(authNotifierProvider).value;
     if (user == null) {
       return const Scaffold(body: Center(child: Text('请先登录')));
     }

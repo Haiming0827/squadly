@@ -8,10 +8,9 @@ typedef RouteUserIdReader = Future<String?> Function();
 /// Reads route ciphertext and the signed-in device's envelope only.
 final class CloudBaseRouteBundleRepository implements RouteBundleRepository {
   const CloudBaseRouteBundleRepository({
-    required PostgrestClient client,
-    required RouteUserIdReader userIdReader,
-  }) : _client = client,
-       _userIdReader = userIdReader;
+    required this._client,
+    required this._userIdReader,
+  });
 
   final PostgrestClient _client;
   final RouteUserIdReader _userIdReader;

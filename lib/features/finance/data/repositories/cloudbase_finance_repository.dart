@@ -14,10 +14,9 @@ typedef CurrentFinanceUserId = Future<String?> Function();
 /// include the current owner ID; PostgreSQL RLS remains the security boundary.
 final class CloudBaseFinanceRepository implements FinanceRepository {
   const CloudBaseFinanceRepository({
-    required PostgrestClient client,
-    required CurrentFinanceUserId currentUserId,
-  }) : _client = client,
-       _currentUserId = currentUserId;
+    required this._client,
+    required this._currentUserId,
+  });
 
   final PostgrestClient _client;
   final CurrentFinanceUserId _currentUserId;
@@ -227,7 +226,9 @@ final class CloudBaseFinanceRepository implements FinanceRepository {
     } on _Unauthenticated {
       return left(const Failure.unauthorized());
     } on PostgrestException catch (error) {
-      if (error.code == '42501' || error.code == 'PGRST301') {
+      if (error.code == '42501' ||
+          error.code == 'DATABASE_42501' ||
+          error.code == 'PGRST301') {
         return left(const Failure.permissionDenied());
       }
       if (error.code == 'PGRST116') {

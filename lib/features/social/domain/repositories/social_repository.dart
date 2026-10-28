@@ -1,7 +1,6 @@
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/error/failures.dart';
-import '../entities/circle_message.dart';
 import '../entities/data_connection.dart';
 import '../entities/external_data_item.dart';
 import '../entities/social_post.dart';
@@ -12,9 +11,11 @@ abstract interface class SocialRepository {
 
   Future<Either<Failure, List<DataConnection>>> getMyConnections();
 
-  Stream<Either<Failure, List<SocialPost>>> watchPosts(String squadId);
+  Future<Either<Failure, ExternalDataItem>> importDataItem({
+    required ExternalDataItem item,
+  });
 
-  Stream<Either<Failure, List<CircleMessage>>> watchMessages(String squadId);
+  Stream<Either<Failure, List<SocialPost>>> watchPosts(String squadId);
 
   Future<Either<Failure, SocialPost>> publishDataPost({
     required String squadId,
@@ -26,8 +27,8 @@ abstract interface class SocialRepository {
     List<String> visibleToUserIds,
   });
 
-  Future<Either<Failure, CircleMessage>> sendMessage({
+  Future<Either<Failure, bool>> togglePostReaction({
+    required String postId,
     required String squadId,
-    required String text,
   });
 }

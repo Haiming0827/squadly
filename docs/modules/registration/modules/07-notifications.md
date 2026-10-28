@@ -32,3 +32,10 @@
 CloudBase worker 本地可通过 `node --test cloudbase/functions/push-deliveries/*.test.js cloudbase/functions/push-deliveries-cron/*.test.js` 验证鉴权、APNs／Mi Push 模拟派送、回执和调度请求。旧 Supabase 契约测试只验证历史 SQL 实现；CloudBase PostgreSQL 目标 migration 使用 `scripts/check_cloudbase_migrations.sh` 检查。本地测试不能替代 CloudBase staging、Apple／小米真机验收。
 
 对应 [T12](../acceptance-matrix.md)。
+
+## 2026-10-28 CloudBase 后续检查点
+
+- `push-deliveries` 已以 Event 函数 + HTTP `/push-deliveries` 绑定部署 staging；该 handler 不监听 HTTP 服务端口，不能按 HTTP 类型函数发布。实际 Nodejs20.19 / Active / `IgnoreSysLog=true` 已核对；平台密钥未配置，timer 未部署。网关 GET 405、无 worker secret POST 401、正确 secret 但无 provider POST 503，属于关闭态守卫验证。
+- 新增第 18 个 `claim_push_deliveries_v2` 向前迁移，保留 V1；仅 service_role 可领取设备 token 和受控消息类型，A/B/C 与匿名的真实拒绝已通过。照片载荷仅增加 `content-available=1` 和无内容的 `photo_sync` 提示，普通消息不触发照片补取。
+- APNs 使用 Node 内置 HTTP/2 + TLS，固定 Apple 主机、总超时/响应上限，平台错误与数据库完成分别验证。实际本地 HTTP/2 服务与 worker/回执联合测试通过；通道配置、领取或完成失败不会跳过另一通道的工作。
+- 本节之前的“未部署”保留其旧日期范围。当前仍未完成原生后台获取/短期凭据桥、APNs 平台回执、签名真机与真实桌面绘制，小米资格与无 GMS 真机范围也未缩减。合同与证据见[后台同步设计](../../photo-widget/ios-background-sync-design.md)和[基础设施报告](../../photo-widget/evidence/2026-10-28-push-worker-infrastructure.json)。

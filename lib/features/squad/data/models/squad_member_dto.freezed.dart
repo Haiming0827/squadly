@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'squad_member_dto.dart';
@@ -9,14 +9,14 @@ part of 'squad_member_dto.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$SquadMemberDto {
 
- String get id;@JsonKey(name: 'squad_id') String get squadId;@JsonKey(name: 'user_id') String get userId; String get role;@JsonKey(name: 'joined_at') String get joinedAt;// join profiles 时的嵌套数据
- Map<String, dynamic>? get profiles;
+ String get id;@JsonKey(name: 'squad_id') String get squadId;@JsonKey(name: 'user_id') String get userId; String get role;@JsonKey(name: 'joined_at') String get joinedAt; Map<String, dynamic>? get profiles;
 /// Create a copy of SquadMemberDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +29,21 @@ $SquadMemberDtoCopyWith<SquadMemberDto> get copyWith => _$SquadMemberDtoCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SquadMemberDto&&(identical(other.id, id) || other.id == id)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.role, role) || other.role == role)&&(identical(other.joinedAt, joinedAt) || other.joinedAt == joinedAt)&&const DeepCollectionEquality().equals(other.profiles, profiles));
+  final _this = this as SquadMemberDto;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SquadMemberDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.squadId, _this.squadId) || other.squadId == _this.squadId)&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.role, _this.role) || other.role == _this.role)&&(identical(other.joinedAt, _this.joinedAt) || other.joinedAt == _this.joinedAt)&&const DeepCollectionEquality().equals(other.profiles, _this.profiles));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,squadId,userId,role,joinedAt,const DeepCollectionEquality().hash(profiles));
+int get hashCode {
+  final _this = this as SquadMemberDto;
+  return Object.hash(runtimeType,_this.id,_this.squadId,_this.userId,_this.role,_this.joinedAt,const DeepCollectionEquality().hash(_this.profiles));
+}
 
 @override
 String toString() {
-  return 'SquadMemberDto(id: $id, squadId: $squadId, userId: $userId, role: $role, joinedAt: $joinedAt, profiles: $profiles)';
+  final _this = this as SquadMemberDto;
+  return 'SquadMemberDto(id: ${_this.id}, squadId: ${_this.squadId}, userId: ${_this.userId}, role: ${_this.role}, joinedAt: ${_this.joinedAt}, profiles: ${_this.profiles})';
 }
 
 
@@ -67,7 +72,7 @@ class _$SquadMemberDtoCopyWithImpl<$Res>
 /// Create a copy of SquadMemberDto
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? squadId = null,Object? userId = null,Object? role = null,Object? joinedAt = null,Object? profiles = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(SquadMemberDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,squadId: null == squadId ? _self.squadId : squadId // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -215,7 +220,7 @@ return $default(_that.id,_that.squadId,_that.userId,_that.role,_that.joinedAt,_t
 @JsonSerializable()
 
 class _SquadMemberDto implements SquadMemberDto {
-  const _SquadMemberDto({required this.id, @JsonKey(name: 'squad_id') required this.squadId, @JsonKey(name: 'user_id') required this.userId, required this.role, @JsonKey(name: 'joined_at') required this.joinedAt, final  Map<String, dynamic>? profiles}): _profiles = profiles;
+  const _SquadMemberDto({required this.id, @JsonKey(name: 'squad_id') required this.squadId, @JsonKey(name: 'user_id') required this.userId, required this.role, @JsonKey(name: 'joined_at') required this.joinedAt,  Map<String, dynamic>? profiles}): _profiles = profiles;
   factory _SquadMemberDto.fromJson(Map<String, dynamic> json) => _$SquadMemberDtoFromJson(json);
 
 @override final  String id;
@@ -223,9 +228,7 @@ class _SquadMemberDto implements SquadMemberDto {
 @override@JsonKey(name: 'user_id') final  String userId;
 @override final  String role;
 @override@JsonKey(name: 'joined_at') final  String joinedAt;
-// join profiles 时的嵌套数据
  final  Map<String, dynamic>? _profiles;
-// join profiles 时的嵌套数据
 @override Map<String, dynamic>? get profiles {
   final value = _profiles;
   if (value == null) return null;
@@ -248,16 +251,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SquadMemberDto&&(identical(other.id, id) || other.id == id)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.role, role) || other.role == role)&&(identical(other.joinedAt, joinedAt) || other.joinedAt == joinedAt)&&const DeepCollectionEquality().equals(other._profiles, _profiles));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SquadMemberDto&&(identical(other.id, id) || other.id == id)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.role, role) || other.role == role)&&(identical(other.joinedAt, joinedAt) || other.joinedAt == joinedAt)&&const DeepCollectionEquality().equals(other.profiles, _profiles));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,squadId,userId,role,joinedAt,const DeepCollectionEquality().hash(_profiles));
+int get hashCode {
+    return Object.hash(runtimeType,id,squadId,userId,role,joinedAt,const DeepCollectionEquality().hash(_profiles));
+}
 
 @override
 String toString() {
-  return 'SquadMemberDto(id: $id, squadId: $squadId, userId: $userId, role: $role, joinedAt: $joinedAt, profiles: $profiles)';
+    return 'SquadMemberDto(id: $id, squadId: $squadId, userId: $userId, role: $role, joinedAt: $joinedAt, profiles: $profiles)';
 }
 
 

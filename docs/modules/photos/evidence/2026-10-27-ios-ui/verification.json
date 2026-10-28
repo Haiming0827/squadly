@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-27",
+  "platform": "iOS 26.5 / iPhone 17 Pro Simulator",
+  "test": "integration_test/integration_test/photo_ui_test.dart",
+  "driver": "integration_test/test_driver/photo_ui_driver.dart",
+  "scenarioTestsPassed": 1,
+  "nativeCameraFailure": "actual simulator unavailable-camera response; opt-in VERIFY_PHOTO_UI_SIMULATOR=true",
+  "librarySelection": "synthetic gateway fixture; system PHPicker interaction NOT verified",
+  "mediaTransport": "fake repository; real CloudBase user upload NOT verified",
+  "syntheticImage": "solid-colour 4 x 3 JPEG; not a personal photograph",
+  "screenshots": [
+    {
+      "file": "photo-ui-preview.png",
+      "sha256": "46bcdfe8670620713a9ee17cb2a0eefc4036abce2d7500f91b54d340a4c75ae0"
+    },
+    {
+      "file": "photo-ui-retry.png",
+      "sha256": "6b9214ddbe66601e7ec5931be8c2e898a0aaad483780fa922a4fdc35b20a6fbf"
+    },
+    {
+      "file": "photo-ui-message.png",
+      "sha256": "f70c85ac6b9053487bcf7978767568a2f7f0c227a0d67e1055da82615acf3948"
+    },
+    {
+      "file": "photo-ui-withdrawn.png",
+      "sha256": "f334949a732db69d5632149e54e73c0eed8be6b91f0a9ba6f32ee8cad0f0fc12"
+    }
+  ],
+  "rootFlutterTests": {
+    "passed": 494,
+    "skipped": 3
+  },
+  "realModeTargetedTestsPassed": 14,
+  "rootAndHostAnalyze": "no issues",
+  "localVerifyAll": "passed",
+  "notVerified": [
+    "live A/B/C media permissions",
+    "physical camera and PHPicker interaction",
+    "photo encrypted outbox",
+    "WidgetKit",
+    "APNs and background refresh",
+    "Android widget",
+    "streak and weekly recap"
+  ],
+  "photoReadGate": "loading image is ineligible; decoded first-frame callback schedules foreground/viewport recheck; targeted test passed",
+  "localChecksCompletedAt": "2026-10-28T00:00:27+08:00",
+  "screenshotsCapturedAt": "2026-10-27T23:54:40+08:00",
+  "stagingSimulatorBuild": "passed 2026-10-27T23:59:56+08:00"
+}

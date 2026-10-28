@@ -3,10 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/demo/demo_store.dart';
+import '../../../../app/providers/current_user_provider.dart';
+import '../../../../app/providers/plan_providers.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../../shared/widgets/app_loading_state.dart';
 import '../../../../shared/widgets/app_section.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../shared/widgets/squad_empty_state.dart';
+import '../../../plan/domain/entities/squad_plan.dart';
 import '../../domain/entities/issued_invitation.dart';
 import '../../domain/entities/squad.dart';
 import '../../domain/invitation_credential.dart';
@@ -28,39 +32,9 @@ class SquadListScreen extends ConsumerWidget {
     final squad = state.currentSquad;
 
     if (squad == null) {
-      return Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const EmptyState(
-                icon: Icons.group_add_outlined,
-                title: '还没有小队',
-                subtitle: '创建或加入一个小队，邀请熟悉的伙伴一起分享。',
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 320),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      FilledButton(
-                        onPressed: () => _showCreateDialog(context, store),
-                        child: const Text('创建小队'),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton(
-                        onPressed: () => _showJoinDialog(context, store),
-                        child: const Text('输入邀请码加入'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+      return SquadEmptyState(
+        onCreate: () => _showCreateDialog(context, store),
+        onJoin: () => _showJoinDialog(context, store),
       );
     }
 
@@ -86,9 +60,6 @@ class SquadListScreen extends ConsumerWidget {
             ],
           ),
           child: Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -112,9 +83,9 @@ class SquadListScreen extends ConsumerWidget {
                                 squad.description!,
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
                                     ),
                               ),
                           ],
@@ -146,9 +117,6 @@ class SquadListScreen extends ConsumerWidget {
         AppSection(
           title: '成员',
           child: Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
             child: Column(
               children: [
                 for (final member in members)
@@ -193,9 +161,6 @@ class SquadListScreen extends ConsumerWidget {
             children: [
               for (final item in state.mySquads)
                 Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
                   child: ListTile(
                     leading: Icon(
                       item.id == squad.id
@@ -359,7 +324,18 @@ void _showSnack(BuildContext context, String message) {
 }
 
 class RemoteSquadListScreen extends ConsumerStatefulWidget {
-  const RemoteSquadListScreen({super.key});
+  const RemoteSquadListScreen({
+    this.onOpenConversation,
+    this.onOpenPlans,
+    this.socialFeedBuilder,
+    this.onOpenPhotoWidget,
+    super.key,
+  });
+
+  final ValueChanged<Squad>? onOpenConversation;
+  final VoidCallback? onOpenPlans;
+  final Widget Function(String squadId)? socialFeedBuilder;
+  final ValueChanged<Squad>? onOpenPhotoWidget;
 
   @override
   ConsumerState<RemoteSquadListScreen> createState() => _RemoteSquadListState();
@@ -376,13 +352,16 @@ class _RemoteSquadListState extends ConsumerState<RemoteSquadListScreen> {
     final all = ref.watch(mySquadsProvider);
 
     return current.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: AppLoadingState(label: '正在加载小队…')),
       error: (error, _) => Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('小队加载失败'),
-            const SizedBox(height: 8),
+            const EmptyState(
+              icon: Icons.cloud_off_outlined,
+              title: '小队加载失败',
+              subtitle: '请检查网络连接后重试。',
+            ),
             OutlinedButton(
               onPressed: () => ref.invalidate(mySquadsProvider),
               child: const Text('重试'),
@@ -392,34 +371,12 @@ class _RemoteSquadListState extends ConsumerState<RemoteSquadListScreen> {
       ),
       data: (squad) => squad == null
           ? _emptyState(context)
-          : _squadDetails(context, squad, all.valueOrNull ?? [squad]),
+          : _squadDetails(context, squad, all.value ?? [squad]),
     );
   }
 
-  Widget _emptyState(BuildContext context) => Center(
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const EmptyState(
-            icon: Icons.group_add_outlined,
-            title: '还没有小队',
-            subtitle: '创建一个小队，或通过朋友的邀请加入。',
-          ),
-          FilledButton(
-            onPressed: _busy ? null : _create,
-            child: const Text('创建小队'),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: _busy ? null : _join,
-            child: const Text('输入邀请码或邀请链接'),
-          ),
-        ],
-      ),
-    ),
-  );
+  Widget _emptyState(BuildContext context) =>
+      SquadEmptyState(busy: _busy, onCreate: _create, onJoin: _join);
 
   Widget _squadDetails(
     BuildContext context,
@@ -427,8 +384,8 @@ class _RemoteSquadListState extends ConsumerState<RemoteSquadListScreen> {
     List<Squad> allSquads,
   ) {
     final members = ref.watch(squadMembersProvider(squad.id));
-    final currentUserId = ref.watch(authNotifierProvider).valueOrNull?.id;
-    final myRole = members.valueOrNull
+    final currentUserId = ref.watch(currentUserProvider).value?.id;
+    final myRole = members.value
         ?.where((member) => member.userId == currentUserId)
         .firstOrNull
         ?.role;
@@ -511,7 +468,10 @@ class _RemoteSquadListState extends ConsumerState<RemoteSquadListScreen> {
         AppSection(
           title: '成员',
           child: members.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Padding(
+              padding: EdgeInsets.all(16),
+              child: AppLoadingState(label: '正在加载成员…'),
+            ),
             error: (_, _) => OutlinedButton(
               onPressed: () => ref.invalidate(squadMembersProvider(squad.id)),
               child: const Text('成员加载失败，点击重试'),
@@ -539,6 +499,35 @@ class _RemoteSquadListState extends ConsumerState<RemoteSquadListScreen> {
           ),
         ),
         AppSection(
+          title: '共同计划',
+          trailing: TextButton(
+            onPressed: widget.onOpenPlans,
+            child: const Text('查看计划'),
+          ),
+          child: _sharedPlans(context, squad),
+        ),
+        if (widget.onOpenPhotoWidget != null)
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.widgets_outlined),
+              title: const Text('小队桌面组件'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => widget.onOpenPhotoWidget!(squad),
+            ),
+          ),
+        if (widget.socialFeedBuilder != null)
+          widget.socialFeedBuilder!(squad.id),
+        AppSection(
+          title: '近期分享',
+          trailing: TextButton(
+            onPressed: widget.onOpenConversation == null
+                ? null
+                : () => widget.onOpenConversation!(squad),
+            child: const Text('去会话'),
+          ),
+          child: _recentShares(context, squad),
+        ),
+        AppSection(
           title: '我的小队',
           child: Column(
             children: [
@@ -561,6 +550,148 @@ class _RemoteSquadListState extends ConsumerState<RemoteSquadListScreen> {
         ),
       ],
     );
+  }
+
+  Widget _sharedPlans(BuildContext context, Squad squad) {
+    final plans = ref.watch(squadPlansProvider(squad.id));
+    final progress = ref.watch(squadPlanProgressProvider(squad.id));
+    return plans.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: AppLoadingState(label: '正在加载计划…'),
+      ),
+      error: (_, _) => OutlinedButton(
+        onPressed: () {
+          ref.invalidate(squadPlansProvider(squad.id));
+          ref.invalidate(squadPlanProgressProvider(squad.id));
+        },
+        child: const Text('计划加载失败，点击重试'),
+      ),
+      data: (allPlans) {
+        final activePlans = allPlans
+            .where(
+              (plan) =>
+                  plan.visibility == PlanVisibility.squad &&
+                  plan.status == PlanStatus.active,
+            )
+            .take(3)
+            .toList();
+        if (activePlans.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            child: Text('还没有进行中的共同计划'),
+          );
+        }
+        return Card(
+          child: Column(
+            children: [
+              for (final (index, plan) in activePlans.indexed) ...[
+                if (index > 0) const Divider(height: 1, indent: 68),
+                ListTile(
+                  leading: const CircleAvatar(child: Icon(Icons.flag_outlined)),
+                  title: Text(
+                    plan.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: progress.when(
+                    data: (counts) {
+                      final item = counts[plan.id];
+                      if (item == null || item.totalCount == 0) {
+                        return const Text('暂无任务');
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${item.completedCount}/${item.totalCount} 项任务已完成',
+                          ),
+                          const SizedBox(height: 6),
+                          LinearProgressIndicator(
+                            value: item.fraction,
+                            minHeight: 4,
+                          ),
+                        ],
+                      );
+                    },
+                    loading: () => const Text('进度加载中'),
+                    error: (_, _) => TextButton(
+                      onPressed: () =>
+                          ref.invalidate(squadPlanProgressProvider(squad.id)),
+                      child: const Text('进度加载失败，重试'),
+                    ),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: widget.onOpenPlans,
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _recentShares(BuildContext context, Squad squad) {
+    final shares = ref.watch(squadRecentSharesProvider(squad.id));
+    return shares.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: AppLoadingState(label: '正在加载近期分享…'),
+      ),
+      error: (_, _) => OutlinedButton(
+        onPressed: () => ref.invalidate(squadRecentSharesProvider(squad.id)),
+        child: const Text('分享加载失败，点击重试'),
+      ),
+      data: (items) => items.isEmpty
+          ? const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              child: Text('还没有小队分享'),
+            )
+          : Card(
+              child: Column(
+                children: [
+                  for (final (index, share) in items.indexed) ...[
+                    if (index > 0) const Divider(height: 1, indent: 68),
+                    ListTile(
+                      leading: const CircleAvatar(
+                        child: Icon(Icons.auto_awesome_outlined),
+                      ),
+                      title: Text(
+                        share.authorName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        share.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: Text(
+                        _recentShareTime(share.createdAt),
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                      onTap: widget.onOpenConversation == null
+                          ? null
+                          : () => widget.onOpenConversation!(squad),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+    );
+  }
+
+  String _recentShareTime(DateTime value) {
+    final local = value.toLocal();
+    final now = DateTime.now();
+    if (local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day) {
+      return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+    }
+    return '${local.month}/${local.day}';
   }
 
   String? _linkFor(String token) {

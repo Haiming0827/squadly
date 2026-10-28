@@ -16,9 +16,8 @@ void main() {
     tester,
   ) async {
     final repo = _AuthRepository();
-    when(
-      () => repo.requestPasswordRecovery(email: 'a@example.test'),
-    ).thenAnswer((_) async => const Right(unit));
+    when(() => repo.requestPasswordRecovery(email: 'a@example.test'))
+        .thenAnswer((_) async => const Right(unit));
     final router = _router();
     addTearDown(router.dispose);
     await tester.pumpWidget(
@@ -41,18 +40,16 @@ void main() {
     await tester.pump();
     expect(find.text('如该邮箱已注册，验证码会发送到邮箱。'), findsOneWidget);
     expect(find.text('确认重置'), findsOneWidget);
-    verify(
-      () => repo.requestPasswordRecovery(email: 'a@example.test'),
-    ).called(1);
+    verify(() => repo.requestPasswordRecovery(email: 'a@example.test'))
+        .called(1);
   });
 
   testWidgets('wrong recovery code keeps form; success returns to login', (
     tester,
   ) async {
     final repo = _AuthRepository();
-    when(
-      () => repo.requestPasswordRecovery(email: 'a@example.test'),
-    ).thenAnswer((_) async => const Right(unit));
+    when(() => repo.requestPasswordRecovery(email: 'a@example.test'))
+        .thenAnswer((_) async => const Right(unit));
     when(
       () => repo.completePasswordRecovery(
         email: 'a@example.test',

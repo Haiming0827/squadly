@@ -1,0 +1,33 @@
+{
+  "scope": "service-cleanup-only",
+  "passed": true,
+  "checks": [
+    {
+      "check": "revoked_round_fixture_existed_before_cleanup",
+      "status": "pass",
+      "httpStatus": 200
+    },
+    {
+      "check": "cleanup_gateway_batch_1",
+      "status": "pass",
+      "httpStatus": 200
+    },
+    {
+      "check": "revoked_round_fixture_missing_after_cleanup",
+      "status": "pass",
+      "httpStatus": 404
+    },
+    {
+      "check": "still_published_widget_fixture_preserved",
+      "status": "pass",
+      "httpStatus": 200
+    }
+  ],
+  "acknowledgedCleanupAttempts": 5,
+  "notVerified": [
+    "ordinary_user_authorization_by_this_ops_check",
+    "cleanup_timer_policy",
+    "physical_device_cleanup"
+  ],
+  "finishedAt": 1793164052
+}

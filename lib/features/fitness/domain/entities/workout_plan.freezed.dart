@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'workout_plan.dart';
@@ -9,14 +9,14 @@ part of 'workout_plan.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$WorkoutPlan {
 
- String get id; String get squadId; String get name; String get planType;// 'muscle_gain' | 'fat_loss' | 'body_shaping' | 'custom'
- String? get description; String get createdBy; DateTime get createdAt;
+ String get id; String get squadId; String get name; String get planType; String? get description; String get createdBy; DateTime get createdAt;
 /// Create a copy of WorkoutPlan
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +29,21 @@ $WorkoutPlanCopyWith<WorkoutPlan> get copyWith => _$WorkoutPlanCopyWithImpl<Work
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorkoutPlan&&(identical(other.id, id) || other.id == id)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.name, name) || other.name == name)&&(identical(other.planType, planType) || other.planType == planType)&&(identical(other.description, description) || other.description == description)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as WorkoutPlan;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorkoutPlan&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.squadId, _this.squadId) || other.squadId == _this.squadId)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.planType, _this.planType) || other.planType == _this.planType)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.createdBy, _this.createdBy) || other.createdBy == _this.createdBy)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,squadId,name,planType,description,createdBy,createdAt);
+int get hashCode {
+  final _this = this as WorkoutPlan;
+  return Object.hash(runtimeType,_this.id,_this.squadId,_this.name,_this.planType,_this.description,_this.createdBy,_this.createdAt);
+}
 
 @override
 String toString() {
-  return 'WorkoutPlan(id: $id, squadId: $squadId, name: $name, planType: $planType, description: $description, createdBy: $createdBy, createdAt: $createdAt)';
+  final _this = this as WorkoutPlan;
+  return 'WorkoutPlan(id: ${_this.id}, squadId: ${_this.squadId}, name: ${_this.name}, planType: ${_this.planType}, description: ${_this.description}, createdBy: ${_this.createdBy}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -67,7 +72,7 @@ class _$WorkoutPlanCopyWithImpl<$Res>
 /// Create a copy of WorkoutPlan
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? squadId = null,Object? name = null,Object? planType = null,Object? description = freezed,Object? createdBy = null,Object? createdAt = null,}) {
-  return _then(_self.copyWith(
+  return _then(WorkoutPlan(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,squadId: null == squadId ? _self.squadId : squadId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -223,7 +228,6 @@ class _WorkoutPlan implements WorkoutPlan {
 @override final  String squadId;
 @override final  String name;
 @override final  String planType;
-// 'muscle_gain' | 'fat_loss' | 'body_shaping' | 'custom'
 @override final  String? description;
 @override final  String createdBy;
 @override final  DateTime createdAt;
@@ -241,16 +245,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorkoutPlan&&(identical(other.id, id) || other.id == id)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.name, name) || other.name == name)&&(identical(other.planType, planType) || other.planType == planType)&&(identical(other.description, description) || other.description == description)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorkoutPlan&&(identical(other.id, id) || other.id == id)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.name, name) || other.name == name)&&(identical(other.planType, planType) || other.planType == planType)&&(identical(other.description, description) || other.description == description)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,squadId,name,planType,description,createdBy,createdAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,squadId,name,planType,description,createdBy,createdAt);
+}
 
 @override
 String toString() {
-  return 'WorkoutPlan(id: $id, squadId: $squadId, name: $name, planType: $planType, description: $description, createdBy: $createdBy, createdAt: $createdAt)';
+    return 'WorkoutPlan(id: $id, squadId: $squadId, name: $name, planType: $planType, description: $description, createdBy: $createdBy, createdAt: $createdAt)';
 }
 
 

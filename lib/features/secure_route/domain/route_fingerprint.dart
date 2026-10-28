@@ -17,8 +17,9 @@ final class RouteFingerprint {
         .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
         .join()
         .toUpperCase();
-    return RegExp(
-      r'.{1,4}',
-    ).allMatches(hex).map((match) => match.group(0)!).join(' ');
+    return RegExp(r'.{1,4}')
+        .allMatches(hex)
+        .map((match) => match.group(0)!)
+        .join(' ');
   }
 }

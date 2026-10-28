@@ -119,9 +119,8 @@ class _PasswordRecoveryScreenState
       result.match(
         (failure) => setState(() => _error = authFailureMessage(failure)),
         (_) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('密码已更新，请重新登录')));
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('密码已更新，请重新登录')));
           context.go('/login');
         },
       );

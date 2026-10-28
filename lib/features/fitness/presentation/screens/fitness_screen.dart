@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../app/demo/demo_store.dart';
+import '../../../../app/providers/current_user_provider.dart';
+import '../../../../app/providers/squad_context_providers.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/cloudbase_client_provider.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/app_loading_state.dart';
 import '../../../../shared/widgets/app_section.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../squad/presentation/providers/squad_provider.dart';
 import '../providers/fitness_provider.dart';
 
 class FitnessScreen extends ConsumerWidget {
@@ -82,7 +84,7 @@ class FitnessScreen extends ConsumerWidget {
                                 ? Icons.check_circle_rounded
                                 : Icons.radio_button_unchecked_rounded,
                             color: completedTaskIds.contains(task.id)
-                                ? Theme.of(context).colorScheme.primary
+                                ? context.squadlyPalette.success
                                 : null,
                           ),
                           title: Text(task.title),
@@ -385,7 +387,7 @@ final class CloudBaseFitnessScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final squadState = ref.watch(currentSquadProvider);
     return squadState.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: AppLoadingState(label: '正在加载小队…')),
       error: (error, _) => _fitnessError(context, error),
       data: (squad) {
         if (squad == null) {
@@ -396,7 +398,8 @@ final class CloudBaseFitnessScreen extends ConsumerWidget {
         }
         final snapshot = ref.watch(fitnessSnapshotProvider(squad.id));
         return snapshot.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () =>
+              const Center(child: AppLoadingState(label: '正在加载健身数据…')),
           error: (error, _) => _fitnessError(context, error),
           data: (data) => _content(context, ref, squad.id, data),
         );
@@ -410,7 +413,7 @@ final class CloudBaseFitnessScreen extends ConsumerWidget {
     String squadId,
     FitnessSnapshot data,
   ) {
-    final userId = ref.watch(authNotifierProvider).valueOrNull?.id;
+    final userId = ref.watch(currentUserProvider).value?.id;
     final completed = data.checkIns
         .where((checkIn) => checkIn.userId == userId)
         .map((checkIn) => checkIn.taskId)

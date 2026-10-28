@@ -36,11 +36,7 @@ final class FlutterRouteSecretVault implements RouteSecretVault {
 }
 
 final class RouteDeviceKeyStore {
-  RouteDeviceKeyStore({
-    required RouteSecretVault vault,
-    required RouteCrypto crypto,
-  }) : _vault = vault,
-       _crypto = crypto;
+  RouteDeviceKeyStore({required this._vault, required this._crypto});
 
   final RouteSecretVault _vault;
   final RouteCrypto _crypto;

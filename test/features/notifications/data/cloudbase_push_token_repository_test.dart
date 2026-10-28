@@ -17,11 +17,11 @@ void main() {
         httpClient: MockClient((request) async {
           requests.add(request);
           return http.Response(
-          '{}',
-          200,
-          headers: {'content-type': 'application/json'},
-          request: request,
-        );
+            '{}',
+            200,
+            headers: {'content-type': 'application/json'},
+            request: request,
+          );
         }),
       );
       addTearDown(client.dispose);

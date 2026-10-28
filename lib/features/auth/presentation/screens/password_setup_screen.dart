@@ -112,9 +112,7 @@ class _PasswordSetupScreenState extends ConsumerState<PasswordSetupScreen> {
               const SizedBox(height: 20),
               FilledButton(
                 onPressed: _busy ? null : _submit,
-                child: _busy
-                    ? const CircularProgressIndicator()
-                    : const Text('保存密码'),
+                child: Text(_busy ? '正在保存密码…' : '保存密码'),
               ),
               TextButton(
                 onPressed: _busy ? null : _sendCode,
@@ -123,9 +121,7 @@ class _PasswordSetupScreenState extends ConsumerState<PasswordSetupScreen> {
             ] else
               FilledButton(
                 onPressed: _busy ? null : _sendCode,
-                child: _busy
-                    ? const CircularProgressIndicator()
-                    : const Text('验证手机号并设置密码'),
+                child: Text(_busy ? '正在发送验证码…' : '验证手机号并设置密码'),
               ),
             if (_error != null) ...[
               const SizedBox(height: 16),

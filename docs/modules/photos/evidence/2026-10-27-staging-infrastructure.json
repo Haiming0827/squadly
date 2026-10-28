@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-27",
+  "scope": "staging-photo-infrastructure",
+  "migrationTask": "task-b8c304d9a75c444e",
+  "functionType": "Event",
+  "functionStatus": "Active",
+  "systemResponseLogsDisabled": true,
+  "checks": [
+    {
+      "check": "method_guard",
+      "status": 405,
+      "error": "method_not_allowed",
+      "cacheControl": "no-store, no-cache, must-revalidate, max-age=0"
+    },
+    {
+      "check": "missing_bearer_denied",
+      "status": 401,
+      "error": "unauthenticated",
+      "cacheControl": "no-store, no-cache, must-revalidate, max-age=0"
+    },
+    {
+      "check": "server_cleanup_RPC_through_real_HTTP",
+      "status": 200,
+      "removed": 0
+    }
+  ],
+  "notVerified": [
+    "ordinary_user_upload_download",
+    "A_B_C_storage_RLS",
+    "withdrawal_and_membership_HTTP",
+    "timer_trigger",
+    "iOS_photo_UI",
+    "WidgetKit_APNs",
+    "seven_day_cohort"
+  ]
+}

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cloudbase_flutter/cloudbase_flutter.dart' hide CloudBaseConfig;
@@ -14,6 +15,33 @@ class _CloudBaseMock extends Mock implements CloudBase {}
 class _CloudBaseAuthMock extends Mock implements CloudBaseAuth {}
 
 void main() {
+  test(
+    'closing during a token read prevents the pending HTTP request',
+    () async {
+      final token = Completer<String?>();
+      final readingToken = Completer<void>();
+      final transport = _RecordingHttpClient();
+      final client = CloudBasePostgresClient(
+        config: _config(),
+        accessTokenReader: () {
+          readingToken.complete();
+          return token.future;
+        },
+        httpClient: transport,
+      );
+      final rejected = expectLater(
+        client.rest.rpc('send_text_message'),
+        throwsA(isA<http.ClientException>()),
+      );
+      await readingToken.future;
+      client.close();
+      token.complete('later-session-token');
+      await rejected;
+
+      expect(transport.request, isNull);
+    },
+  );
+
   test(
     'uses CloudBase PG REST and attaches the current user JWT per request',
     () async {

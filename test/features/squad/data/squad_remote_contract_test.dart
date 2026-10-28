@@ -145,9 +145,8 @@ void main() {
     );
     addTearDown(client.dispose);
 
-    final members = await CloudBaseSquadRemoteDatasource(
-      client,
-    ).getSquadMembers(squadId: 'squad-a');
+    final members = await CloudBaseSquadRemoteDatasource(client)
+        .getSquadMembers(squadId: 'squad-a');
 
     expect(members.single.profiles?['nickname'], '阿青');
     expect(captured?.url.path, '/v1/rdb/rest/squad_members');

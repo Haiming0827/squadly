@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
+import '../../core/theme/app_tokens.dart';
+
 class AppSection extends StatelessWidget {
   const AppSection({
     required this.title,
@@ -16,7 +19,12 @@ class AppSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sectionTop,
+        AppSpacing.md,
+        AppSpacing.micro,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -33,7 +41,7 @@ class AppSection extends StatelessWidget {
               ?trailing,
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.xs),
           child,
         ],
       ),
@@ -58,19 +66,19 @@ class EmptyState extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 40, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               title,
               style: theme.textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
             if (subtitle != null) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.micro),
               Text(
                 subtitle!,
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -104,16 +112,16 @@ class MetricTile extends StatelessWidget {
     return Expanded(
       child: Container(
         constraints: const BoxConstraints(minHeight: 78),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadii.compact),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 20, color: theme.colorScheme.primary),
-            const SizedBox(height: 8),
+            Icon(icon, size: 20, color: context.squadlyPalette.action),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               value,
               style: theme.textTheme.titleMedium?.copyWith(

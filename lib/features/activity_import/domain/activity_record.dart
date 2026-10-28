@@ -9,6 +9,7 @@ enum ActivityKind { run, hike }
 enum ActivitySourceKind {
   manual,
   appleHealth,
+  healthConnect,
   xiaomiHealth,
   huaweiHealth,
   gpxFile,

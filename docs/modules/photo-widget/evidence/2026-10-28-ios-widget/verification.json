@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-28",
+  "platform": "iPhone 17 Pro Simulator / iOS 26.5",
+  "flutter": {
+    "passed": 550,
+    "skipped": 3
+  },
+  "swiftWidgetCore": {
+    "passed": 9
+  },
+  "nativeAppGroupIntegration": {
+    "passed": 1,
+    "test": "integration_test/integration_test/photo_widget_bridge_test.dart"
+  },
+  "nativeWidgetAppUI": {
+    "passed": 1,
+    "test": "integration_test/integration_test/photo_widget_ui_test.dart",
+    "screenshotsVisuallyInspected": 3,
+    "actual": [
+      "native App Group bridge",
+      "WidgetCenter configuration count",
+      "native JPEG thumbnail generation",
+      "native camera-unavailable result"
+    ],
+    "synthetic": [
+      "users and membership lookup",
+      "photo query/media transport",
+      "photo source pixels"
+    ],
+    "notClaimed": [
+      "SpringBoard widget rendering",
+      "OS cold-start deep link",
+      "real member RLS",
+      "APNs/background refresh"
+    ]
+  },
+  "iosBuilds": [
+    "debug simulator with staging public config",
+    "debug device without codesign"
+  ],
+  "migration": {
+    "version": "20261028000100",
+    "local": 17,
+    "remote": 17,
+    "task": "task-f242dd7906124b5f",
+    "status": "Succeed",
+    "pendingAfterDeployment": 0
+  },
+  "gatesPending": [
+    "macOS unlock for desktop UI access",
+    "A/B relogin and C session",
+    "real system widget addition/rendering and cold-start entry",
+    "App Group provisioning/signed physical devices",
+    "APNs background fetch/rendering",
+    "remote CI run"
+  ],
+  "generalIosIntegration": {
+    "passed": 5,
+    "skipped": 13,
+    "note": "Opt-in widget bridge/UI tests passed separately; general skips are not claimed as passes."
+  },
+  "aggregateVerification": {
+    "command": "bash scripts/verify_all.sh",
+    "passed": true,
+    "log": "/tmp/squadly-widget-verify-all.log"
+  },
+  "stagingApps": {
+    "A": "installed and launched on iPhone 17 Pro Simulator; existing data preserved",
+    "B": "installed and launched on iPhone 17 Simulator; existing data preserved",
+    "newSdkSessionsObserved": false
+  }
+}

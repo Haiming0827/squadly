@@ -16,10 +16,12 @@ void main() {
         'haiming@example.com',
       );
       await tester.enterText(find.widgetWithText(TextField, '密码'), 'password1');
-      await tester.tap(find.widgetWithText(ElevatedButton, '登录'));
+      await tester.tap(find.widgetWithText(FilledButton, '登录'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('分享').last);
+      await tester.tap(find.text('小队'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('分享一件新鲜事'));
       await tester.pumpAndSettle();
       expect(find.text('制作分享'), findsOneWidget);
       expect(find.textContaining('未连接真实健康账户'), findsOneWidget);

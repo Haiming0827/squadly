@@ -1,4 +1,5 @@
 import 'package:fpdart/fpdart.dart';
+
 import '../../../../core/error/failures.dart';
 import '../entities/issued_invitation.dart';
 import '../entities/squad.dart';

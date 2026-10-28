@@ -289,9 +289,8 @@ class AuthRemoteDatasource {
           .eq('id', user!.id!)
           .select('id,nickname,avatar_url,created_at')
           .single();
-      return UserDto.fromJson(
-        data,
-      ).copyWith(email: user.email, phone: user.phone);
+      return UserDto.fromJson(data)
+          .copyWith(email: user.email, phone: user.phone);
     } on PostgrestException catch (error) {
       throw ServerException(message: error.message);
     }
@@ -304,9 +303,8 @@ class AuthRemoteDatasource {
           .select('id,nickname,avatar_url,created_at')
           .eq('id', user.id!)
           .single();
-      return UserDto.fromJson(
-        data,
-      ).copyWith(email: user.email, phone: user.phone);
+      return UserDto.fromJson(data)
+          .copyWith(email: user.email, phone: user.phone);
     } on PostgrestException catch (error) {
       throw ServerException(message: error.message);
     }

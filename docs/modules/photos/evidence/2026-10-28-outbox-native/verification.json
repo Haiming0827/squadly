@@ -1,0 +1,96 @@
+{
+  "date": "2026-10-28",
+  "platform": "iOS 26.5 / iPhone 17 Pro Simulator",
+  "nativePersistence": {
+    "test": "integration_test/integration_test/photo_outbox_cold_start_test.dart",
+    "seedPassed": true,
+    "readPassed": true,
+    "differentProcessIdAsserted": true,
+    "preserveHostFlag": "--no-uninstall",
+    "actualComponents": [
+      "app composition outbox provider",
+      "native SQLite background isolate",
+      "iOS Keychain through FlutterSecureStorage"
+    ],
+    "syntheticComponents": [
+      "actors",
+      "derived JPEG fixture",
+      "media transport",
+      "timeline transport"
+    ],
+    "crossAccountReplayBlocked": true,
+    "otherAccountPendingPreservedAfterAck": true,
+    "networkBlockedDuringTest": true
+  },
+  "queueFormat": {
+    "sqliteSchemaVersion": 2,
+    "photoEnvelopeVersion": 3,
+    "legacyEnvelopesReadWithoutRewrite": [
+      1,
+      2
+    ]
+  },
+  "flutterTests": {
+    "passed": 521,
+    "skipped": 3,
+    "realModeTargetedPassed": 14
+  },
+  "newLocalTests": 27,
+  "localChecks": {
+    "seed": {
+      "status": "passed",
+      "completedAt": "2026-10-28T00:35:25.378824+08:00"
+    },
+    "read": {
+      "status": "passed",
+      "completedAt": "2026-10-28T00:38:39.461534+08:00"
+    },
+    "ui": {
+      "status": "passed",
+      "completedAt": "2026-10-28T00:42:40.283920+08:00"
+    },
+    "local": {
+      "status": "passed",
+      "completedAt": "2026-10-28T00:38:54.328786+08:00"
+    }
+  },
+  "uiScreenshots": [
+    {
+      "file": "photo-ui-preview.png",
+      "sha256": "46bcdfe8670620713a9ee17cb2a0eefc4036abce2d7500f91b54d340a4c75ae0"
+    },
+    {
+      "file": "photo-ui-retry.png",
+      "sha256": "b667247a6a9f2e6fbfdbe461e94f0d8c2b2031b0ac716b14779fed52a6c26c67"
+    },
+    {
+      "file": "photo-ui-message.png",
+      "sha256": "f70c85ac6b9053487bcf7978767568a2f7f0c227a0d67e1055da82615acf3948"
+    },
+    {
+      "file": "photo-ui-withdrawn.png",
+      "sha256": "f334949a732db69d5632149e54e73c0eed8be6b91f0a9ba6f32ee8cad0f0fc12"
+    }
+  ],
+  "ci": "Native seed/read and screenshot steps configured; remote workflow run not verified",
+  "notVerified": [
+    "CloudBase ordinary user photo upload and storage permission matrix",
+    "live cloud response-loss replay",
+    "physical camera and system PHPicker interaction",
+    "signed iPhone and APNs",
+    "WidgetKit",
+    "Android widget",
+    "streak and weekly recap"
+  ],
+  "iosGeneralIntegration": {
+    "passed": 5,
+    "skipped": 11,
+    "nativePhotoBridgeEnabled": true,
+    "optInPhotoQueueAndUI": "Verified separately with their flags; skipped in this general run",
+    "completedAt": "2026-10-28T00:48:34.529631+08:00"
+  },
+  "stagingSimulatorBuild": {
+    "status": "passed",
+    "completedAt": "2026-10-28T00:45:54.681703+08:00"
+  }
+}

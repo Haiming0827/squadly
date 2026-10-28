@@ -33,6 +33,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+node_modules/
 
 # Symbolication related
 app.*.symbols
@@ -47,6 +48,12 @@ app.*.map.json
 
 # Local test-backend configuration. Keep real project details out of git.
 /config/test-backend.local.json
+/config/cloudbase-access.local.json
+/config/cloudbase-access.local.json.tmp
+/config/photo-staging.local.json
+/config/photo-staging-deploy.local.json
+/config/push-staging.local.json
+/config/push-staging-deploy.local.json
 /config/test-backend.local.env
 /config/local-backend.tailscale.json
 /supabase/.branches/

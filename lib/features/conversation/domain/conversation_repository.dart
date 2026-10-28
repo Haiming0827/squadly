@@ -7,23 +7,29 @@ import 'timeline_entry.dart';
 
 /// The seam shared by in-memory tests and the remote CloudBase adapter.
 abstract interface class ConversationRepository {
-  Future<Either<Failure, List<TimelineEntry>>> loadRecent(String squadId);
+  Future<Either<Failure, List<TimelineEntry>>> loadRecent(
+    String squadId, {
+    String? planId,
+  });
 
   Future<Either<Failure, List<TimelineEntry>>> loadAfter(
     String squadId,
-    TimelineCursor cursor,
-  );
+    TimelineCursor cursor, {
+    String? planId,
+  });
 
   Future<Either<Failure, List<TimelineEntry>>> loadBefore(
     String squadId,
-    TimelineCursor cursor,
-  );
+    TimelineCursor cursor, {
+    String? planId,
+  });
 
   Future<Either<Failure, TimelineEntry>> sendText({
     required String squadId,
     required String body,
     required String clientNonce,
     String? replyToEntryId,
+    String? planId,
   });
 
   Future<Either<Failure, TimelineEntry>> publishCard({
@@ -43,5 +49,5 @@ abstract interface class ConversationRepository {
 
   /// Events are hints. The repository's paged results remain the source of
   /// truth, including after disconnects and app restarts.
-  Stream<void> watchTimeline(String squadId);
+  Stream<void> watchTimeline(String squadId, {String? planId});
 }

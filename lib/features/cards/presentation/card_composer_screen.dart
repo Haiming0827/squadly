@@ -4,17 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../app/providers/activity_source_providers.dart';
+import '../../../app/providers/conversation_runtime_providers.dart';
+import '../../../app/providers/current_user_provider.dart';
+import '../../../app/providers/route_providers.dart';
+import '../../../app/providers/squad_context_providers.dart';
 import '../../activity_import/domain/activity_record.dart';
 import '../../activity_import/domain/activity_source.dart';
-import '../../activity_import/presentation/activity_source_provider.dart';
-import '../../auth/presentation/providers/auth_provider.dart';
+import '../../conversation/domain/conversation_target.dart';
 import '../../conversation/domain/timeline_entry.dart';
-import '../../conversation/presentation/conversation_provider.dart';
-import '../../secure_route/data/route_encryption_service.dart';
 import '../../secure_route/domain/route_fingerprint.dart';
 import '../../secure_route/domain/route_models.dart';
-import '../../secure_route/presentation/route_reader_provider.dart';
-import '../../squad/presentation/providers/squad_provider.dart';
+import '../../secure_route/domain/route_sharing.dart';
 import '../domain/card_composer.dart';
 import 'card_preview.dart';
 
@@ -109,10 +110,11 @@ final class _CardComposerScreenState extends ConsumerState<CardComposerScreen> {
     if (selected == null || _loadingRoute) return;
     setState(() => _loadingRoute = true);
     try {
-      final source = selected.source == ActivitySourceKind.gpxFile ||
+      final source =
+          selected.source == ActivitySourceKind.gpxFile ||
               selected.source == ActivitySourceKind.fileImport
           ? ref.read(gpxActivitySourceProvider)
-          : ref.read(appleHealthActivitySourceProvider);
+          : ref.read(healthActivitySourceProvider);
       final withRoute = await source.readPreciseRoute(selected);
       if (!mounted) return;
       setState(() {
@@ -134,31 +136,35 @@ final class _CardComposerScreenState extends ConsumerState<CardComposerScreen> {
     }
   }
 
-  Future<void> _chooseAppleWorkout() async {
+  Future<void> _chooseHealthWorkout() async {
     if (_loadingActivities) return;
     setState(() => _loadingActivities = true);
     try {
       final now = DateTime.now();
       final activities = await ref
-          .read(appleHealthActivitySourceProvider)
+          .read(healthActivitySourceProvider)
           .listEligibleActivities(
-            from: now.subtract(const Duration(days: 90)),
+            from: now.subtract(
+              Duration(days: ref.read(healthActivityLookbackDaysProvider)),
+            ),
             to: now,
           );
       if (!mounted) return;
       if (activities.isEmpty) {
-        _showError('没有读到近 90 天可用的跑步或徒步记录；请检查 Apple 健康中的数据和读取授权');
+        _showError(
+          '没有读到近 ${ref.read(healthActivityLookbackDaysProvider)} 天可用的跑步或徒步记录；请检查系统健康数据和读取授权',
+        );
         return;
       }
       final selected = await _pickActivity(activities);
       if (selected == null || !mounted) return;
       _useSelectedActivity(selected);
     } on ActivitySourceUnavailable {
-      _showError('这台设备暂不支持 Apple 健康读取');
+      _showError('这台设备暂不支持健康数据读取，或 Health Connect 尚未安装');
     } on ActivityPermissionDenied {
       _showError('未获得运动记录读取授权；可在系统设置中重新授权');
     } catch (_) {
-      _showError('读取 Apple 健康失败，请稍后重试');
+      _showError('读取运动记录失败，请稍后重试');
     } finally {
       if (mounted) setState(() => _loadingActivities = false);
     }
@@ -245,10 +251,16 @@ final class _CardComposerScreenState extends ConsumerState<CardComposerScreen> {
 
   CardDraft _composeConversation() {
     final controller = ref.read(
-      conversationControllerProvider(widget.squadId).notifier,
+      conversationControllerProvider(
+        ConversationTarget(squadId: widget.squadId),
+      ).notifier,
     );
     final entries = ref
-        .read(conversationControllerProvider(widget.squadId))
+        .read(
+          conversationControllerProvider(
+            ConversationTarget(squadId: widget.squadId),
+          ),
+        )
         .entries;
     final selected = [
       for (final entry in entries)
@@ -341,7 +353,7 @@ final class _CardComposerScreenState extends ConsumerState<CardComposerScreen> {
       if (route != null && !retry) {
         final approvedKeys = await _approveRouteRecipients();
         if (approvedKeys == null || !mounted) return;
-        final userId = ref.read(authNotifierProvider).valueOrNull?.id;
+        final userId = ref.read(currentUserProvider).value?.id;
         if (userId == null) throw StateError('Not signed in');
         encryptedRoute = await ref
             .read(routeEncryptionServiceProvider)
@@ -364,7 +376,11 @@ final class _CardComposerScreenState extends ConsumerState<CardComposerScreen> {
         );
       }
       final result = await ref
-          .read(conversationControllerProvider(widget.squadId).notifier)
+          .read(
+            conversationControllerProvider(
+              ConversationTarget(squadId: widget.squadId),
+            ).notifier,
+          )
           .publishCard(
             cardId: cardId,
             snapshot: snapshot,
@@ -385,7 +401,7 @@ final class _CardComposerScreenState extends ConsumerState<CardComposerScreen> {
   }
 
   Future<Map<String, String>?> _approveRouteRecipients() async {
-    final userId = ref.read(authNotifierProvider).valueOrNull?.id;
+    final userId = ref.read(currentUserProvider).value?.id;
     if (userId == null) throw StateError('Not signed in');
     final keyStore = ref.read(routeDeviceKeyStoreProvider);
     final directory = ref.read(routeKeyDirectoryProvider);
@@ -489,16 +505,19 @@ final class _CardComposerScreenState extends ConsumerState<CardComposerScreen> {
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     // Keep the conversation controller (and its pending publish nonce) alive
     // for the entire composer session, including activity-card retries.
-    ref.watch(conversationControllerProvider(widget.squadId));
+    ref.watch(
+      conversationControllerProvider(
+        ConversationTarget(squadId: widget.squadId),
+      ),
+    );
     final preview = _previewDraft;
     return Scaffold(
       appBar: AppBar(title: const Text('生成卡片')),
@@ -596,11 +615,20 @@ final class _CardComposerScreenState extends ConsumerState<CardComposerScreen> {
           }),
         ),
         const SizedBox(height: 12),
-        if (ref.watch(appleHealthAvailableProvider)) ...[
+        if (ref
+            .watch(healthActivityAvailableProvider)
+            .maybeWhen(
+              data: (available) => available,
+              orElse: () => false,
+            )) ...[
           OutlinedButton.icon(
-            onPressed: _loadingActivities ? null : _chooseAppleWorkout,
+            onPressed: _loadingActivities ? null : _chooseHealthWorkout,
             icon: const Icon(Icons.directions_run_outlined),
-            label: Text(_loadingActivities ? '正在读取…' : '从 Apple 健康选择记录'),
+            label: Text(
+              _loadingActivities
+                  ? '正在读取…'
+                  : '从 ${ref.watch(healthActivitySourceLabelProvider)}选择记录',
+            ),
           ),
           const SizedBox(height: 12),
         ],
@@ -655,7 +683,8 @@ final class _CardComposerScreenState extends ConsumerState<CardComposerScreen> {
           _sensitiveToggle('heart_rate', '分享平均心率'),
         if (_weight.text.trim().isNotEmpty) _sensitiveToggle('weight', '分享体重'),
         if (_sleep.text.trim().isNotEmpty) _sensitiveToggle('sleep', '分享睡眠'),
-        if (_selectedActivity != null)
+        if (_selectedActivity != null &&
+            _selectedActivity!.source != ActivitySourceKind.healthConnect)
           OutlinedButton.icon(
             onPressed: _loadingRoute ? null : _readSelectedRoute,
             icon: const Icon(Icons.route_outlined),
@@ -724,10 +753,16 @@ final class _CardComposerScreenState extends ConsumerState<CardComposerScreen> {
 
   Widget _conversationPicker() {
     final controller = ref.read(
-      conversationControllerProvider(widget.squadId).notifier,
+      conversationControllerProvider(
+        ConversationTarget(squadId: widget.squadId),
+      ).notifier,
     );
     final entries = ref
-        .watch(conversationControllerProvider(widget.squadId))
+        .watch(
+          conversationControllerProvider(
+            ConversationTarget(squadId: widget.squadId),
+          ),
+        )
         .entries;
     final myMessages = entries
         .where(

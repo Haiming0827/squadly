@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'app_tokens.dart';
+
 @immutable
 class SquadlyPalette extends ThemeExtension<SquadlyPalette> {
   const SquadlyPalette({
     required this.accent,
+    required this.action,
     required this.accentSoft,
     required this.success,
     required this.info,
@@ -11,6 +14,7 @@ class SquadlyPalette extends ThemeExtension<SquadlyPalette> {
   });
 
   final Color accent;
+  final Color action;
   final Color accentSoft;
   final Color success;
   final Color info;
@@ -19,6 +23,7 @@ class SquadlyPalette extends ThemeExtension<SquadlyPalette> {
   @override
   SquadlyPalette copyWith({
     Color? accent,
+    Color? action,
     Color? accentSoft,
     Color? success,
     Color? info,
@@ -26,6 +31,7 @@ class SquadlyPalette extends ThemeExtension<SquadlyPalette> {
   }) {
     return SquadlyPalette(
       accent: accent ?? this.accent,
+      action: action ?? this.action,
       accentSoft: accentSoft ?? this.accentSoft,
       success: success ?? this.success,
       info: info ?? this.info,
@@ -38,6 +44,7 @@ class SquadlyPalette extends ThemeExtension<SquadlyPalette> {
     if (other == null) return this;
     return SquadlyPalette(
       accent: Color.lerp(accent, other.accent, t)!,
+      action: Color.lerp(action, other.action, t)!,
       accentSoft: Color.lerp(accentSoft, other.accentSoft, t)!,
       success: Color.lerp(success, other.success, t)!,
       info: Color.lerp(info, other.info, t)!,
@@ -51,11 +58,12 @@ extension SquadlyTheme on BuildContext {
       Theme.of(this).extension<SquadlyPalette>()!;
 }
 
-/// Humanized Quiet Utility 视觉主题。
+/// Squadly V1.0 视觉主题。
 class AppTheme {
   AppTheme._();
 
-  static const accent = Color(0xFFFF5A3C);
+  static const accent = Color(0xFFFC6634);
+  static const action = Color(0xFFC2411A);
 
   static ThemeData light() {
     const colors = ColorScheme.light(
@@ -68,7 +76,7 @@ class AppTheme {
       error: Color(0xFFC83D4A),
       onError: Color(0xFFFFFFFF),
       outline: Color(0xFFD7DAE0),
-      outlineVariant: Color(0xFFE7E9ED),
+      outlineVariant: Color(0xFFE5E7EB),
       surfaceContainerLowest: Color(0xFFFFFFFF),
       surfaceContainerLow: Color(0xFFF8F9FA),
       surfaceContainer: Color(0xFFF3F4F6),
@@ -78,7 +86,8 @@ class AppTheme {
       colors,
       const SquadlyPalette(
         accent: accent,
-        accentSoft: Color(0xFFFFF0EB),
+        action: action,
+        accentSoft: Color(0xFFFFF1EB),
         success: Color(0xFF16865D),
         info: Color(0xFF3276D2),
         privacy: Color(0xFF6658C8),
@@ -107,6 +116,7 @@ class AppTheme {
       colors,
       const SquadlyPalette(
         accent: Color(0xFFFF6A4A),
+        action: Color(0xFFFF8A5C),
         accentSoft: Color(0xFF3A211C),
         success: Color(0xFF3CCB91),
         info: Color(0xFF6EA8FF),
@@ -116,13 +126,18 @@ class AppTheme {
   }
 
   static ThemeData _base(ColorScheme colors, SquadlyPalette palette) {
+    final cardSurface = colors.brightness == Brightness.dark
+        ? colors.surfaceContainer
+        : colors.surface;
     final base = ThemeData(
       useMaterial3: true,
       // InkRipple is materially identical across Android/iOS and does not
       // depend on the Android-only sparkle fragment shader at runtime.
       splashFactory: InkRipple.splashFactory,
       colorScheme: colors,
-      scaffoldBackgroundColor: colors.surface,
+      scaffoldBackgroundColor: colors.brightness == Brightness.light
+          ? const Color(0xFFF7F8FA)
+          : colors.surface,
       extensions: [palette],
     );
     final textTheme = base.textTheme.copyWith(
@@ -146,6 +161,37 @@ class AppTheme {
 
     return base.copyWith(
       textTheme: textTheme,
+      chipTheme: ChipThemeData(
+        backgroundColor: cardSurface,
+        selectedColor: palette.accentSoft,
+        checkmarkColor: palette.accent,
+        labelStyle: TextStyle(color: colors.onSurface),
+        side: BorderSide(color: colors.outlineVariant),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.control),
+        ),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            return states.contains(WidgetState.selected)
+                ? palette.accentSoft
+                : cardSurface;
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            return states.contains(WidgetState.selected)
+                ? palette.action
+                : colors.onSurface;
+          }),
+          side: WidgetStateProperty.resolveWith((states) {
+            return BorderSide(
+              color: states.contains(WidgetState.selected)
+                  ? palette.accent
+                  : colors.outlineVariant,
+            );
+          }),
+        ),
+      ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
@@ -157,11 +203,11 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: colors.surfaceContainerLow,
+        color: cardSurface,
         surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadii.card),
           side: BorderSide(color: colors.outlineVariant),
         ),
       ),
@@ -175,63 +221,83 @@ class AppTheme {
         fillColor: colors.surfaceContainerLow,
         hintStyle: TextStyle(color: colors.onSurfaceVariant),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadii.control),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadii.control),
           borderSide: BorderSide(color: colors.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadii.control),
           borderSide: BorderSide(color: colors.outline),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm + 2,
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(48, 48),
+          backgroundColor: palette.action,
+          foregroundColor: colors.brightness == Brightness.dark
+              ? const Color(0xFF1F2329)
+              : Colors.white,
+          minimumSize: const Size(
+            AppSizes.minimumTouchTarget,
+            AppSizes.minimumTouchTarget,
+          ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadii.control),
           ),
           textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(48, 48),
+          minimumSize: const Size(
+            AppSizes.minimumTouchTarget,
+            AppSizes.minimumTouchTarget,
+          ),
           side: BorderSide(color: colors.outlineVariant),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadii.control),
           ),
         ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: colors.surface,
+        backgroundColor: cardSurface,
         surfaceTintColor: Colors.transparent,
         modalBackgroundColor: colors.surface,
         modalBarrierColor: Colors.black.withValues(alpha: 0.42),
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadii.sheet),
+          ),
         ),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: colors.surface,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.dialog),
+        ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        height: 68,
+        height: AppSizes.navigationBarHeight,
         elevation: 0,
-        backgroundColor: colors.surface,
+        backgroundColor: cardSurface,
         indicatorColor: Colors.transparent,
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return IconThemeData(
+            color: selected ? palette.accent : colors.onSurfaceVariant,
+          );
+        }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return textTheme.labelSmall?.copyWith(
-            color: selected ? colors.onSurface : colors.onSurfaceVariant,
+            color: selected ? palette.action : colors.onSurfaceVariant,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
           );
         }),
@@ -240,7 +306,9 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         backgroundColor: colors.inverseSurface,
         contentTextStyle: TextStyle(color: colors.onInverseSurface),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.control),
+        ),
       ),
     );
   }

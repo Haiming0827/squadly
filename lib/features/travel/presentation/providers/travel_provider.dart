@@ -1,37 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 
+import '../../../../app/providers/domain_repository_providers.dart';
 import '../../../../core/error/failures.dart';
-import '../../../../core/network/cloudbase_client_provider.dart';
-import '../../../finance/domain/entities/public_fund.dart';
-import '../../../finance/presentation/providers/finance_provider.dart';
-import '../../data/repositories/cloudbase_travel_repository.dart';
-import '../../domain/entities/travel_plan.dart';
-import '../../domain/repositories/travel_repository.dart';
+import '../../domain/entities/travel_snapshot.dart';
+import '../../domain/usecases/get_travel_snapshot.dart';
 
-final travelRepositoryProvider = Provider<TravelRepository>((ref) {
-  final app = ref.watch(cloudBaseAppProvider);
-  return CloudBaseTravelRepository(
-    client: ref.watch(cloudBasePostgresClientProvider).rest,
-    currentUserId: () async {
-      final response = await app.auth.getSession();
-      if (!response.isSuccess) return null;
-      return response.data?.session?.user?.id;
-    },
-  );
-});
+export '../../../../app/providers/domain_repository_providers.dart'
+    show travelRepositoryProvider;
 
 final travelSnapshotProvider = FutureProvider.family<TravelSnapshot, String>((
   ref,
   squadId,
 ) async {
-  final plans = await ref
-      .watch(travelRepositoryProvider)
-      .getSquadTravelPlans(squadId: squadId);
-  final funds = await ref
-      .watch(financeRepositoryProvider)
-      .getSquadFunds(squadId: squadId);
-  return TravelSnapshot(plans: _unwrap(plans), funds: _unwrap(funds));
+  final result = await GetTravelSnapshot(
+    travelRepository: ref.watch(travelRepositoryProvider),
+    financeRepository: ref.watch(financeRepositoryProvider),
+  )(squadId: squadId);
+  return _unwrap(result);
 });
 
 T _unwrap<T>(Either<Failure, T> result) => result.fold(
@@ -44,10 +30,3 @@ T _unwrap<T>(Either<Failure, T> result) => result.fold(
   }),
   (value) => value,
 );
-
-final class TravelSnapshot {
-  const TravelSnapshot({required this.plans, required this.funds});
-
-  final List<TravelPlan> plans;
-  final List<PublicFund> funds;
-}

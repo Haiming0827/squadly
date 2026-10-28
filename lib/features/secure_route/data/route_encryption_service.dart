@@ -1,39 +1,25 @@
 import 'package:postgrest/postgrest.dart';
 
 import '../domain/route_key_directory.dart';
+import '../domain/route_sharing.dart';
 import 'route_crypto.dart';
 import 'route_device_key_store.dart';
-
-export '../domain/route_key_directory.dart';
-
-final class RouteShareNotConfirmedException implements Exception {
-  const RouteShareNotConfirmedException();
-}
-
-final class UntrustedRouteDeviceException implements Exception {
-  const UntrustedRouteDeviceException();
-}
-
-final class RouteDeviceRegistrationException implements Exception {
-  const RouteDeviceRegistrationException();
-}
 
 /// Coordinates the explicit per-card approval, protected local key, member
 /// device directory and encryption. The caller must supply separately approved
 /// teammate public keys (for example, from a fingerprint confirmation UI).
-final class RouteEncryptionService {
+final class RouteEncryptionService implements RouteSharePreparer {
   const RouteEncryptionService({
-    required RouteDeviceKeyStore keyStore,
-    required RouteKeyDirectory directory,
-    required RouteCrypto crypto,
-  }) : _keyStore = keyStore,
-       _directory = directory,
-       _crypto = crypto;
+    required this._keyStore,
+    required this._directory,
+    required this._crypto,
+  });
 
   final RouteDeviceKeyStore _keyStore;
   final RouteKeyDirectory _directory;
   final RouteCrypto _crypto;
 
+  @override
   Future<EncryptedRouteBundle> prepare({
     required String userId,
     required String squadId,
@@ -93,10 +79,9 @@ typedef RouteSessionUserIdReader = Future<String?> Function();
 
 final class CloudBaseRouteKeyDirectory implements RouteKeyDirectory {
   const CloudBaseRouteKeyDirectory({
-    required PostgrestClient client,
-    required RouteSessionUserIdReader userIdReader,
-  }) : _client = client,
-       _userIdReader = userIdReader;
+    required this._client,
+    required this._userIdReader,
+  });
 
   final PostgrestClient _client;
   final RouteSessionUserIdReader _userIdReader;

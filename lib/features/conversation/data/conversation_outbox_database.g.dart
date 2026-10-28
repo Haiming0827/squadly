@@ -29,6 +29,16 @@ class $OutboxEntriesTable extends OutboxEntries
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _planIdMeta = const VerificationMeta('planId');
+  @override
+  late final GeneratedColumn<String> planId = GeneratedColumn<String>(
+    'plan_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _clientNonceMeta = const VerificationMeta(
     'clientNonce',
   );
@@ -66,6 +76,7 @@ class $OutboxEntriesTable extends OutboxEntries
   List<GeneratedColumn> get $columns => [
     userId,
     squadId,
+    planId,
     clientNonce,
     createdAtMicros,
     encryptedPayload,
@@ -97,6 +108,12 @@ class $OutboxEntriesTable extends OutboxEntries
       );
     } else if (isInserting) {
       context.missing(_squadIdMeta);
+    }
+    if (data.containsKey('plan_id')) {
+      context.handle(
+        _planIdMeta,
+        planId.isAcceptableOrUnknown(data['plan_id']!, _planIdMeta),
+      );
     }
     if (data.containsKey('client_nonce')) {
       context.handle(
@@ -135,7 +152,12 @@ class $OutboxEntriesTable extends OutboxEntries
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {userId, squadId, clientNonce};
+  Set<GeneratedColumn> get $primaryKey => {
+    userId,
+    squadId,
+    planId,
+    clientNonce,
+  };
   @override
   OutboxEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -147,6 +169,10 @@ class $OutboxEntriesTable extends OutboxEntries
       squadId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}squad_id'],
+      )!,
+      planId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plan_id'],
       )!,
       clientNonce: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -172,12 +198,14 @@ class $OutboxEntriesTable extends OutboxEntries
 class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
   final String userId;
   final String squadId;
+  final String planId;
   final String clientNonce;
   final int createdAtMicros;
   final String encryptedPayload;
   const OutboxEntry({
     required this.userId,
     required this.squadId,
+    required this.planId,
     required this.clientNonce,
     required this.createdAtMicros,
     required this.encryptedPayload,
@@ -187,6 +215,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
     final map = <String, Expression>{};
     map['user_id'] = Variable<String>(userId);
     map['squad_id'] = Variable<String>(squadId);
+    map['plan_id'] = Variable<String>(planId);
     map['client_nonce'] = Variable<String>(clientNonce);
     map['created_at_micros'] = Variable<int>(createdAtMicros);
     map['encrypted_payload'] = Variable<String>(encryptedPayload);
@@ -197,6 +226,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
     return OutboxEntriesCompanion(
       userId: Value(userId),
       squadId: Value(squadId),
+      planId: Value(planId),
       clientNonce: Value(clientNonce),
       createdAtMicros: Value(createdAtMicros),
       encryptedPayload: Value(encryptedPayload),
@@ -211,6 +241,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
     return OutboxEntry(
       userId: serializer.fromJson<String>(json['userId']),
       squadId: serializer.fromJson<String>(json['squadId']),
+      planId: serializer.fromJson<String>(json['planId']),
       clientNonce: serializer.fromJson<String>(json['clientNonce']),
       createdAtMicros: serializer.fromJson<int>(json['createdAtMicros']),
       encryptedPayload: serializer.fromJson<String>(json['encryptedPayload']),
@@ -222,6 +253,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
     return <String, dynamic>{
       'userId': serializer.toJson<String>(userId),
       'squadId': serializer.toJson<String>(squadId),
+      'planId': serializer.toJson<String>(planId),
       'clientNonce': serializer.toJson<String>(clientNonce),
       'createdAtMicros': serializer.toJson<int>(createdAtMicros),
       'encryptedPayload': serializer.toJson<String>(encryptedPayload),
@@ -231,12 +263,14 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
   OutboxEntry copyWith({
     String? userId,
     String? squadId,
+    String? planId,
     String? clientNonce,
     int? createdAtMicros,
     String? encryptedPayload,
   }) => OutboxEntry(
     userId: userId ?? this.userId,
     squadId: squadId ?? this.squadId,
+    planId: planId ?? this.planId,
     clientNonce: clientNonce ?? this.clientNonce,
     createdAtMicros: createdAtMicros ?? this.createdAtMicros,
     encryptedPayload: encryptedPayload ?? this.encryptedPayload,
@@ -245,6 +279,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
     return OutboxEntry(
       userId: data.userId.present ? data.userId.value : this.userId,
       squadId: data.squadId.present ? data.squadId.value : this.squadId,
+      planId: data.planId.present ? data.planId.value : this.planId,
       clientNonce: data.clientNonce.present
           ? data.clientNonce.value
           : this.clientNonce,
@@ -262,6 +297,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
     return (StringBuffer('OutboxEntry(')
           ..write('userId: $userId, ')
           ..write('squadId: $squadId, ')
+          ..write('planId: $planId, ')
           ..write('clientNonce: $clientNonce, ')
           ..write('createdAtMicros: $createdAtMicros, ')
           ..write('encryptedPayload: $encryptedPayload')
@@ -273,6 +309,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
   int get hashCode => Object.hash(
     userId,
     squadId,
+    planId,
     clientNonce,
     createdAtMicros,
     encryptedPayload,
@@ -283,6 +320,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
       (other is OutboxEntry &&
           other.userId == this.userId &&
           other.squadId == this.squadId &&
+          other.planId == this.planId &&
           other.clientNonce == this.clientNonce &&
           other.createdAtMicros == this.createdAtMicros &&
           other.encryptedPayload == this.encryptedPayload);
@@ -291,6 +329,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
 class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
   final Value<String> userId;
   final Value<String> squadId;
+  final Value<String> planId;
   final Value<String> clientNonce;
   final Value<int> createdAtMicros;
   final Value<String> encryptedPayload;
@@ -298,6 +337,7 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
   const OutboxEntriesCompanion({
     this.userId = const Value.absent(),
     this.squadId = const Value.absent(),
+    this.planId = const Value.absent(),
     this.clientNonce = const Value.absent(),
     this.createdAtMicros = const Value.absent(),
     this.encryptedPayload = const Value.absent(),
@@ -306,6 +346,7 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
   OutboxEntriesCompanion.insert({
     required String userId,
     required String squadId,
+    this.planId = const Value.absent(),
     required String clientNonce,
     required int createdAtMicros,
     required String encryptedPayload,
@@ -318,6 +359,7 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
   static Insertable<OutboxEntry> custom({
     Expression<String>? userId,
     Expression<String>? squadId,
+    Expression<String>? planId,
     Expression<String>? clientNonce,
     Expression<int>? createdAtMicros,
     Expression<String>? encryptedPayload,
@@ -326,6 +368,7 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
     return RawValuesInsertable({
       if (userId != null) 'user_id': userId,
       if (squadId != null) 'squad_id': squadId,
+      if (planId != null) 'plan_id': planId,
       if (clientNonce != null) 'client_nonce': clientNonce,
       if (createdAtMicros != null) 'created_at_micros': createdAtMicros,
       if (encryptedPayload != null) 'encrypted_payload': encryptedPayload,
@@ -336,6 +379,7 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
   OutboxEntriesCompanion copyWith({
     Value<String>? userId,
     Value<String>? squadId,
+    Value<String>? planId,
     Value<String>? clientNonce,
     Value<int>? createdAtMicros,
     Value<String>? encryptedPayload,
@@ -344,6 +388,7 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
     return OutboxEntriesCompanion(
       userId: userId ?? this.userId,
       squadId: squadId ?? this.squadId,
+      planId: planId ?? this.planId,
       clientNonce: clientNonce ?? this.clientNonce,
       createdAtMicros: createdAtMicros ?? this.createdAtMicros,
       encryptedPayload: encryptedPayload ?? this.encryptedPayload,
@@ -359,6 +404,9 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
     }
     if (squadId.present) {
       map['squad_id'] = Variable<String>(squadId.value);
+    }
+    if (planId.present) {
+      map['plan_id'] = Variable<String>(planId.value);
     }
     if (clientNonce.present) {
       map['client_nonce'] = Variable<String>(clientNonce.value);
@@ -380,6 +428,7 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
     return (StringBuffer('OutboxEntriesCompanion(')
           ..write('userId: $userId, ')
           ..write('squadId: $squadId, ')
+          ..write('planId: $planId, ')
           ..write('clientNonce: $clientNonce, ')
           ..write('createdAtMicros: $createdAtMicros, ')
           ..write('encryptedPayload: $encryptedPayload, ')
@@ -405,6 +454,7 @@ typedef $$OutboxEntriesTableCreateCompanionBuilder =
     OutboxEntriesCompanion Function({
       required String userId,
       required String squadId,
+      Value<String> planId,
       required String clientNonce,
       required int createdAtMicros,
       required String encryptedPayload,
@@ -414,6 +464,7 @@ typedef $$OutboxEntriesTableUpdateCompanionBuilder =
     OutboxEntriesCompanion Function({
       Value<String> userId,
       Value<String> squadId,
+      Value<String> planId,
       Value<String> clientNonce,
       Value<int> createdAtMicros,
       Value<String> encryptedPayload,
@@ -436,6 +487,11 @@ class $$OutboxEntriesTableFilterComposer
 
   ColumnFilters<String> get squadId => $composableBuilder(
     column: $table.squadId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get planId => $composableBuilder(
+    column: $table.planId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -474,6 +530,11 @@ class $$OutboxEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get planId => $composableBuilder(
+    column: $table.planId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get clientNonce => $composableBuilder(
     column: $table.clientNonce,
     builder: (column) => ColumnOrderings(column),
@@ -504,6 +565,9 @@ class $$OutboxEntriesTableAnnotationComposer
 
   GeneratedColumn<String> get squadId =>
       $composableBuilder(column: $table.squadId, builder: (column) => column);
+
+  GeneratedColumn<String> get planId =>
+      $composableBuilder(column: $table.planId, builder: (column) => column);
 
   GeneratedColumn<String> get clientNonce => $composableBuilder(
     column: $table.clientNonce,
@@ -560,6 +624,7 @@ class $$OutboxEntriesTableTableManager
               ({
                 Value<String> userId = const Value.absent(),
                 Value<String> squadId = const Value.absent(),
+                Value<String> planId = const Value.absent(),
                 Value<String> clientNonce = const Value.absent(),
                 Value<int> createdAtMicros = const Value.absent(),
                 Value<String> encryptedPayload = const Value.absent(),
@@ -567,6 +632,7 @@ class $$OutboxEntriesTableTableManager
               }) => OutboxEntriesCompanion(
                 userId: userId,
                 squadId: squadId,
+                planId: planId,
                 clientNonce: clientNonce,
                 createdAtMicros: createdAtMicros,
                 encryptedPayload: encryptedPayload,
@@ -576,6 +642,7 @@ class $$OutboxEntriesTableTableManager
               ({
                 required String userId,
                 required String squadId,
+                Value<String> planId = const Value.absent(),
                 required String clientNonce,
                 required int createdAtMicros,
                 required String encryptedPayload,
@@ -583,13 +650,23 @@ class $$OutboxEntriesTableTableManager
               }) => OutboxEntriesCompanion.insert(
                 userId: userId,
                 squadId: squadId,
+                planId: planId,
                 clientNonce: clientNonce,
                 createdAtMicros: createdAtMicros,
                 encryptedPayload: encryptedPayload,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$OutboxEntriesTable, OutboxEntry>(table),
+                  BaseReferences<
+                    _$ConversationOutboxDatabase,
+                    $OutboxEntriesTable,
+                    OutboxEntry
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),

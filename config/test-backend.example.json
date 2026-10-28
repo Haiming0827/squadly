@@ -2,6 +2,7 @@
   "CLOUDBASE_ENV_ID": "replace-with-cloudbase-environment",
   "CLOUDBASE_REGION": "ap-shanghai",
   "CLOUDBASE_PUBLISHABLE_KEY": "replace-with-cloudbase-publishable-key",
+  "CLOUDBASE_PHOTO_GATEWAY_URL": "",
   "INVITE_LINK_BASE_URL": "https://replace-with-your-link-domain.example",
   "USE_DEMO_BACKEND": "false",
   "MIPUSH_APP_ID": "",

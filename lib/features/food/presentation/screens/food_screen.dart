@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/demo/demo_store.dart';
+import '../../../../app/providers/squad_context_providers.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/cloudbase_client_provider.dart';
+import '../../../../shared/widgets/app_loading_state.dart';
 import '../../../../shared/widgets/app_section.dart';
-import '../../../squad/presentation/providers/squad_provider.dart';
+import '../../domain/entities/food_snapshot.dart';
 import '../providers/food_provider.dart';
 
 class FoodScreen extends ConsumerWidget {
@@ -203,7 +205,7 @@ final class CloudBaseFoodScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final squadState = ref.watch(currentSquadProvider);
     return squadState.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: AppLoadingState(label: '正在加载小队…')),
       error: (error, _) => _foodError(error),
       data: (squad) {
         if (squad == null) {
@@ -214,7 +216,8 @@ final class CloudBaseFoodScreen extends ConsumerWidget {
         }
         final state = ref.watch(foodSnapshotProvider(squad.id));
         return state.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () =>
+              const Center(child: AppLoadingState(label: '正在加载美食数据…')),
           error: (error, _) => _foodError(error),
           data: (snapshot) => _content(context, ref, squad.id, snapshot),
         );
@@ -403,9 +406,8 @@ final class CloudBaseFoodScreen extends ConsumerWidget {
         .voteFoodSpot(foodSpotId: spotId, vote: vote);
     if (!context.mounted) return;
     result.fold(
-      (failure) => ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_foodFailureMessage(failure)))),
+      (failure) => ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(_foodFailureMessage(failure)))),
       (_) => ref.invalidate(foodSnapshotProvider(squadId)),
     );
   }

@@ -1,33 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 
+import '../../../../app/providers/current_user_provider.dart';
+import '../../../../app/providers/domain_repository_providers.dart';
 import '../../../../core/error/failures.dart';
-import '../../../../core/network/cloudbase_client_provider.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../data/repositories/cloudbase_fitness_repository.dart';
 import '../../domain/entities/check_in.dart';
 import '../../domain/entities/daily_task.dart';
 import '../../domain/entities/workout_plan.dart';
-import '../../domain/repositories/fitness_repository.dart';
 
-final fitnessRepositoryProvider = Provider<FitnessRepository>((ref) {
-  final app = ref.watch(cloudBaseAppProvider);
-  return CloudBaseFitnessRepository(
-    client: ref.watch(cloudBasePostgresClientProvider).rest,
-    currentUserId: () async {
-      final response = await app.auth.getSession();
-      if (!response.isSuccess) return null;
-      return response.data?.session?.user?.id;
-    },
-  );
-});
+export '../../../../app/providers/domain_repository_providers.dart'
+    show fitnessRepositoryProvider;
 
 final fitnessSnapshotProvider = FutureProvider.family<FitnessSnapshot, String>((
   ref,
   squadId,
 ) async {
   final repository = ref.watch(fitnessRepositoryProvider);
-  final user = ref.watch(authNotifierProvider).valueOrNull;
+  final user = ref.watch(currentUserProvider).value;
   final tasks = await repository.getSquadDailyTasks(squadId: squadId);
   final checkIns = await repository.getSquadCheckIns(
     squadId: squadId,

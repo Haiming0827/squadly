@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/demo/demo_store.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../social/presentation/screens/circle_screen.dart';
 import '../../../social/presentation/screens/data_workshop_screen.dart';
 import '../../../social/presentation/screens/share_composer_screen.dart';
+import '../../../squad/domain/entities/squad.dart';
+import '../../../squad/presentation/screens/squad_list_screen.dart';
+import 'demo_conversation_list_screen.dart';
 import 'plan_hub_screen.dart';
 import 'profile_screen.dart';
 
@@ -19,15 +21,13 @@ class HomeShellScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeShellScreenState extends ConsumerState<HomeShellScreen> {
-  // NavigationBar index 2 is an action, not a persistent destination.
   int _index = 0;
 
   Future<void> _openComposer([String? itemId]) async {
     if (ref.read(demoAppStoreProvider).currentSquad == null) {
-      setState(() => _index = 3);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('先创建或加入小队，再与伙伴分享')));
+      setState(() => _index = 1);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('先创建或加入小队，再与伙伴分享')));
       return;
     }
 
@@ -37,10 +37,36 @@ class _HomeShellScreenState extends ConsumerState<HomeShellScreen> {
       ),
     );
     if (!mounted || published != true) return;
-    setState(() => _index = 0);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('已分享到小队')));
+    setState(() => _index = 1);
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('已分享到小队')));
+  }
+
+  void _openConversation(Squad squad) {
+    ref.read(demoAppStoreProvider.notifier).selectSquad(squad.id);
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: Text(squad.name)),
+          body: CircleScreen(
+            onCreatePost: _openComposer,
+            initialView: CircleScreenView.chat,
+            showViewSwitcher: false,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openDataWorkshop() {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('数据工坊')),
+          body: DataWorkshopScreen(onShareItem: _openComposer),
+        ),
+      ),
+    );
   }
 
   @override
@@ -48,7 +74,6 @@ class _HomeShellScreenState extends ConsumerState<HomeShellScreen> {
     final state = ref.watch(demoAppStoreProvider);
     final squad = state.currentSquad;
     final colors = Theme.of(context).colorScheme;
-    final palette = context.squadlyPalette;
 
     return Scaffold(
       appBar: AppBar(
@@ -108,50 +133,49 @@ class _HomeShellScreenState extends ConsumerState<HomeShellScreen> {
             ),
           IconButton(
             tooltip: '我的',
-            onPressed: () => setState(() => _index = 4),
+            onPressed: () => setState(() => _index = 3),
             icon: const Icon(Icons.account_circle_outlined),
           ),
         ],
       ),
       body: IndexedStack(
-        index: _index > 2 ? _index - 1 : _index,
+        index: _index,
         children: [
-          CircleScreen(onCreatePost: _openComposer),
-          DataWorkshopScreen(onShareItem: _openComposer),
-          const PlanHubScreen(),
-          const ProfileScreen(),
+          DemoConversationListScreen(
+            onOpenConversation: _openConversation,
+            onOpenSquads: () => setState(() => _index = 1),
+          ),
+          squad == null
+              ? const SquadListScreen()
+              : CircleScreen(
+                  onCreatePost: _openComposer,
+                  showViewSwitcher: false,
+                  onOpenPlans: () => setState(() => _index = 2),
+                ),
+          PlanHubScreen(onOpenSquads: () => setState(() => _index = 1)),
+          ProfileScreen(onOpenDataWorkshop: _openDataWorkshop),
         ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (value) {
-          if (value == 2) {
-            _openComposer();
-          } else {
-            setState(() => _index = value);
-          }
-        },
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.groups_2_outlined),
-            selectedIcon: Icon(Icons.groups_2_rounded),
-            label: '小队',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.auto_graph_outlined),
-            selectedIcon: Icon(Icons.auto_graph_rounded),
-            label: '数据',
+        onDestinationSelected: (value) => setState(() => _index = value),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline_rounded),
+            selectedIcon: Icon(Icons.chat_bubble_rounded),
+            label: '会话',
           ),
           NavigationDestination(
-            icon: Icon(Icons.add_circle_rounded, color: palette.accent),
-            label: '分享',
+            icon: Icon(Icons.groups_outlined),
+            selectedIcon: Icon(Icons.groups_rounded),
+            label: '小队',
           ),
-          const NavigationDestination(
+          NavigationDestination(
             icon: Icon(Icons.grid_view_outlined),
             selectedIcon: Icon(Icons.grid_view_rounded),
             label: '计划',
           ),
-          const NavigationDestination(
+          NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),
             selectedIcon: Icon(Icons.person_rounded),
             label: '我的',

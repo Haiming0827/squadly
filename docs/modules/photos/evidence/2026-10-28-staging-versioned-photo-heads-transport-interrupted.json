@@ -1,0 +1,145 @@
+{
+  "scope": "photos-user-HTTP",
+  "finishedAt": 1793163581,
+  "passed": false,
+  "checks": [
+    {
+      "check": "a_authenticated_identity",
+      "status": "pass"
+    },
+    {
+      "check": "b_authenticated_identity",
+      "status": "pass"
+    },
+    {
+      "check": "c_ordinary_unexpired_session",
+      "status": "pass"
+    },
+    {
+      "check": "c_authenticated_identity",
+      "status": "pass"
+    },
+    {
+      "check": "c_owner_profile_positive_control",
+      "status": "pass"
+    },
+    {
+      "check": "two_real_photo_members",
+      "status": "pass"
+    },
+    {
+      "check": "c_initially_outside_photo_fixture",
+      "status": "pass"
+    },
+    {
+      "check": "author_publication_identity",
+      "status": "pass"
+    },
+    {
+      "check": "same_nonce_same_message",
+      "status": "pass"
+    },
+    {
+      "check": "no_internal_fields_in_result",
+      "status": "pass"
+    },
+    {
+      "check": "authenticated_bytes_a",
+      "status": "pass"
+    },
+    {
+      "check": "latest_photo_rpc_a",
+      "status": "pass"
+    },
+    {
+      "check": "same_photo_projection_a",
+      "status": "pass"
+    },
+    {
+      "check": "atomic_photo_head_matches_timeline_a",
+      "status": "pass"
+    },
+    {
+      "check": "member_cannot_read_internal_head_table_a",
+      "status": "pass",
+      "httpStatus": 403
+    },
+    {
+      "check": "member_cannot_claim_push_tokens_a",
+      "status": "pass",
+      "httpStatus": 403
+    },
+    {
+      "check": "authenticated_bytes_b",
+      "status": "pass"
+    },
+    {
+      "check": "latest_photo_rpc_b",
+      "status": "pass"
+    },
+    {
+      "check": "same_photo_projection_b",
+      "status": "pass"
+    },
+    {
+      "check": "atomic_photo_head_matches_timeline_b",
+      "status": "pass"
+    },
+    {
+      "check": "member_cannot_read_internal_head_table_b",
+      "status": "pass",
+      "httpStatus": 403
+    },
+    {
+      "check": "member_cannot_claim_push_tokens_b",
+      "status": "pass",
+      "httpStatus": 403
+    },
+    {
+      "check": "anonymous_cannot_claim_push_tokens",
+      "status": "pass",
+      "httpStatus": 401
+    },
+    {
+      "check": "anonymous_cannot_execute_photo_head",
+      "status": "pass",
+      "httpStatus": 401
+    },
+    {
+      "check": "anonymous_key_denied",
+      "status": "pass",
+      "httpStatus": 401
+    },
+    {
+      "check": "missing_bearer_denied",
+      "status": "pass",
+      "httpStatus": 401
+    },
+    {
+      "check": "nonmember_c_bytes_denied",
+      "status": "pass",
+      "httpStatus": 404
+    },
+    {
+      "check": "nonmember_c_photo_head_hidden",
+      "status": "pass"
+    },
+    {
+      "check": "nonmember_c_photo_page_empty",
+      "status": "pass"
+    },
+    {
+      "check": "nonmember_c_parent_hidden",
+      "status": "pass"
+    }
+  ],
+  "notVerified": [
+    "third_account_never_joined",
+    "leave_rejoin",
+    "physical_device_UI",
+    "widget_and_push",
+    "large_real_camera_photo"
+  ],
+  "completePhotoLoop": false,
+  "stoppedAt": "RemoteDisconnected"
+}

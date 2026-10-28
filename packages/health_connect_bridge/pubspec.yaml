@@ -1,0 +1,19 @@
+name: health_connect_bridge
+description: Least-privilege one-time Health Connect workout import bridge for Squadly.
+version: 0.1.1
+publish_to: none
+environment:
+  sdk: '>=3.12.0 <4.0.0'
+  flutter: '>=3.44.0'
+dependencies:
+  flutter:
+    sdk: flutter
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.squadly.health_connect_bridge
+        pluginClass: HealthConnectBridgePlugin

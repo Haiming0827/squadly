@@ -8,12 +8,10 @@ typedef AccessTokenReader = Future<String?> Function();
 /// Callers pass a table or `rpc/<function>` path, never a schema name.
 final class CloudBasePgRestClient {
   CloudBasePgRestClient({
-    required CloudBaseConfig config,
-    required AccessTokenReader accessTokenReader,
+    required this._config,
+    required this._accessTokenReader,
     Dio? dio,
-  }) : _config = config,
-       _accessTokenReader = accessTokenReader,
-       _dio = dio ?? Dio();
+  }) : _dio = dio ?? Dio();
 
   final CloudBaseConfig _config;
   final AccessTokenReader _accessTokenReader;
@@ -27,9 +25,8 @@ final class CloudBasePgRestClient {
     Map<String, String>? headers,
     bool returnRepresentation = false,
   }) async {
-    if (!RegExp(
-      r'^[A-Za-z_][A-Za-z0-9_]*(/[A-Za-z_][A-Za-z0-9_]*)?$',
-    ).hasMatch(path)) {
+    if (!RegExp(r'^[A-Za-z_][A-Za-z0-9_]*(/[A-Za-z_][A-Za-z0-9_]*)?$')
+        .hasMatch(path)) {
       throw ArgumentError.value(path, 'path', 'Must be relative to public API');
     }
     final accessToken = await _accessTokenReader();

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'health_snapshot.dart';
@@ -9,6 +9,7 @@ part of 'health_snapshot.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $HealthSnapshotCopyWith<HealthSnapshot> get copyWith => _$HealthSnapshotCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HealthSnapshot&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.weight, weight) || other.weight == weight)&&(identical(other.workoutMinutes, workoutMinutes) || other.workoutMinutes == workoutMinutes)&&(identical(other.caloriesBurned, caloriesBurned) || other.caloriesBurned == caloriesBurned)&&(identical(other.recordedDate, recordedDate) || other.recordedDate == recordedDate)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as HealthSnapshot;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HealthSnapshot&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.squadId, _this.squadId) || other.squadId == _this.squadId)&&(identical(other.weight, _this.weight) || other.weight == _this.weight)&&(identical(other.workoutMinutes, _this.workoutMinutes) || other.workoutMinutes == _this.workoutMinutes)&&(identical(other.caloriesBurned, _this.caloriesBurned) || other.caloriesBurned == _this.caloriesBurned)&&(identical(other.recordedDate, _this.recordedDate) || other.recordedDate == _this.recordedDate)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,squadId,weight,workoutMinutes,caloriesBurned,recordedDate,createdAt);
+int get hashCode {
+  final _this = this as HealthSnapshot;
+  return Object.hash(runtimeType,_this.id,_this.userId,_this.squadId,_this.weight,_this.workoutMinutes,_this.caloriesBurned,_this.recordedDate,_this.createdAt);
+}
 
 @override
 String toString() {
-  return 'HealthSnapshot(id: $id, userId: $userId, squadId: $squadId, weight: $weight, workoutMinutes: $workoutMinutes, caloriesBurned: $caloriesBurned, recordedDate: $recordedDate, createdAt: $createdAt)';
+  final _this = this as HealthSnapshot;
+  return 'HealthSnapshot(id: ${_this.id}, userId: ${_this.userId}, squadId: ${_this.squadId}, weight: ${_this.weight}, workoutMinutes: ${_this.workoutMinutes}, caloriesBurned: ${_this.caloriesBurned}, recordedDate: ${_this.recordedDate}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -66,7 +72,7 @@ class _$HealthSnapshotCopyWithImpl<$Res>
 /// Create a copy of HealthSnapshot
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? squadId = null,Object? weight = freezed,Object? workoutMinutes = freezed,Object? caloriesBurned = freezed,Object? recordedDate = null,Object? createdAt = null,}) {
-  return _then(_self.copyWith(
+  return _then(HealthSnapshot(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,squadId: null == squadId ? _self.squadId : squadId // ignore: cast_nullable_to_non_nullable
@@ -241,16 +247,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HealthSnapshot&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.weight, weight) || other.weight == weight)&&(identical(other.workoutMinutes, workoutMinutes) || other.workoutMinutes == workoutMinutes)&&(identical(other.caloriesBurned, caloriesBurned) || other.caloriesBurned == caloriesBurned)&&(identical(other.recordedDate, recordedDate) || other.recordedDate == recordedDate)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _HealthSnapshot&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.squadId, squadId) || other.squadId == squadId)&&(identical(other.weight, weight) || other.weight == weight)&&(identical(other.workoutMinutes, workoutMinutes) || other.workoutMinutes == workoutMinutes)&&(identical(other.caloriesBurned, caloriesBurned) || other.caloriesBurned == caloriesBurned)&&(identical(other.recordedDate, recordedDate) || other.recordedDate == recordedDate)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,squadId,weight,workoutMinutes,caloriesBurned,recordedDate,createdAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,userId,squadId,weight,workoutMinutes,caloriesBurned,recordedDate,createdAt);
+}
 
 @override
 String toString() {
-  return 'HealthSnapshot(id: $id, userId: $userId, squadId: $squadId, weight: $weight, workoutMinutes: $workoutMinutes, caloriesBurned: $caloriesBurned, recordedDate: $recordedDate, createdAt: $createdAt)';
+    return 'HealthSnapshot(id: $id, userId: $userId, squadId: $squadId, weight: $weight, workoutMinutes: $workoutMinutes, caloriesBurned: $caloriesBurned, recordedDate: $recordedDate, createdAt: $createdAt)';
 }
 
 

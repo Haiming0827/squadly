@@ -1,64 +1,58 @@
 # 小分队 Squadly
 
-Squadly 是一个面向 2-9 人封闭亲密小圈子的跨平台移动 App。当前工程使用 Flutter + Riverpod + Supabase 架构，已提供本地演示数据层，方便在未配置后端前完整验证核心流程。
+Squadly 是面向 2–9 人邀请制亲密小队的 Flutter 应用，围绕会话、小队、计划和个人空间组织健身、理财、旅行与美食协作。
 
-## 当前功能
+## 当前状态
 
-- 邮箱、手机号、Apple 登录入口（默认使用本地演示模式）。
-- 小队创建、加入、切换、成员管理、队长转让。
-- 小队健身：每日任务、打卡、健康记录、训练计划展示。
-- 理财与轻投资：公共基金、基金流水、个人私密资产、集体记账。
-- 小队旅行：心愿行程、预算和旅行基金联动。
-- 小队美食：候选餐厅、投票决策、热量与健身数据联动。
-- Supabase migrations：核心表、健身、理财、旅行、美食表和 RLS 策略。
-- 测试与 CI/CD 文档。
+- 默认使用本地演示数据；四个一级入口为「会话 / 小队 / 计划 / 我的」。
+- 目标后端为腾讯云 CloudBase PostgreSQL。`cloudbase/migrations/` 是部署目录；`supabase/` 仅保留历史迁移来源，不部署到 CloudBase。
+- 个人素材默认为本人可见，分享需明确选定接收者并确认一次性快照。健康记录不持续同步；本轮不包含小队成员排行。
+- 成熟度、staging 验收和未完成事项见 [交付与成熟度计划](docs/maturity-plan.md) 与 [CloudBase 后端状态](docs/modules/backend_cloudbase/README.md)。
 
 ## 技术栈
 
-- Flutter 3.x + Dart
-- Riverpod 2.x
-- go_router
-- Supabase
-- freezed + json_serializable
-- fpdart
-- Material 3
+- Flutter 3.47.4 / Dart 3.13.3
+- Riverpod 3.x、`riverpod_annotation` 4.x、`go_router`
+- CloudBase Auth 与 PostgreSQL REST（通过 data 层封装）
+- Drift、Freezed、`json_serializable`、Material 3
 
-## 快速运行
+依赖精确版本以根目录 `pubspec.yaml` 和 `pubspec.lock` 为准。
+
+## 本地运行
 
 ```bash
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs
-flutter run
+flutter run --dart-define=USE_DEMO_BACKEND=true
 ```
 
-默认启用本地演示模式：
-
-```bash
---dart-define=USE_DEMO_BACKEND=true
-```
-
-接入真实 Supabase 时：
+真实 CloudBase 环境使用客户端 Publishable Key：
 
 ```bash
 flutter run \
   --dart-define=USE_DEMO_BACKEND=false \
-  --dart-define=SUPABASE_URL=<your-url> \
-  --dart-define=SUPABASE_ANON_KEY=<your-anon-key>
+  --dart-define=CLOUDBASE_ENV_ID=<your-environment-id> \
+  --dart-define=CLOUDBASE_REGION=ap-shanghai \
+  --dart-define=CLOUDBASE_PUBLISHABLE_KEY=<your-publishable-key>
 ```
 
-不要把真实密钥提交到仓库。
+不要将 CloudBase 高权限密钥、Apple/Mi Push 密钥或账号凭据写入仓库或客户端。
 
-## 常用验证
+## 验证
+
+完整本地静态分析、Flutter 测试、Node 合约和 disposable PostgreSQL migration/RLS 检查：
 
 ```bash
-dart format lib/ test/ integration_test/
-flutter analyze
-flutter test
-flutter test integration_test
-flutter build apk --debug
-flutter build ios --debug --no-codesign
+bash scripts/verify_all.sh
 ```
 
-更完整的 iOS/Android 测试说明见 [docs/testing.md](docs/testing.md)。
+设备集成测试使用独立宿主；从 `integration_test/` 目录运行：
 
-CI/CD 流程见 [docs/cicd.md](docs/cicd.md)。
+```bash
+flutter pub get
+flutter test integration_test/app_smoke_test.dart \
+  -d <device-id> \
+  --dart-define=USE_DEMO_BACKEND=true
+```
+
+更多信息见 [测试说明](docs/testing.md)、[CI/CD 与发布流程](docs/cicd.md) 和 [UI 设计规范](docs/ui-design/ui-design-spec.md)。

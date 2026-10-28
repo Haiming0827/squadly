@@ -287,7 +287,7 @@ squad_messages ──trigger──► message_outbox
 
 - Flutter 工程、Demo/真实模式切换、路由与登录重定向
 - CloudBase Auth、Squad、Conversation、Fitness、Finance、Travel、Food、Push token、Secure route adapter
-- `cloudbase/migrations/` 10 个目标 migration
+- `cloudbase/migrations/` 11 个目标 migration
 - 本地 Docker PostgreSQL 空库重放、RLS、基金余额触发器、私密资产/健康快照隔离检查
 - Flutter 单元/组件/合约测试与 Node 云函数合约测试
 - `scripts/verify_all.sh` 本地一键验证
@@ -295,7 +295,7 @@ squad_messages ──trigger──► message_outbox
 
 ### 8.2 已部署但未验收
 
-- `squadly-staging` 已通过 CloudBase CLI 登记 10/10 migrations
+- `squadly-staging` 已通过 CloudBase CLI 登记 12/12 migrations（2026-10-18 复核）；真实注册/JWT/RLS 双账号验证仍未执行
 - 真实注册、JWT、RLS 双账号 allow/deny 未执行
 - 真机邮箱/手机登录、国内短信送达未记录
 - 推送云函数未部署，APNs sandbox 与 Mi Push 回执未验证

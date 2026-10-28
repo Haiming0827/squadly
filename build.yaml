@@ -4,3 +4,7 @@ targets:
       - $package$
       - lib/**
       - pubspec.yaml
+    builders:
+      riverpod_generator:
+        options:
+          provider_name_strip_pattern: ""

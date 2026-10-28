@@ -1,6 +1,14 @@
 # Squadly 后端切换：腾讯云 CloudBase for Supabase（PostgreSQL）
 
-状态：目标方案、Flutter SDK 初始化、环境配置校验、PG REST/PostgREST transport、Auth 与各业务 adapter 已接入；10 个 CloudBase CLI migrations 已在 `squadly-staging` 成功登记。Staging 暴露出 `auth.users` 字段类型和 metadata 与本地假设不同，迁移已移除对系统表的直接外键和 `user_metadata` 读取，并通过实际平台重放。`scripts/verify_all.sh`、UUID/no-metadata 本地 SQL 重试与 RLS 检查均通过。CloudBase 真实注册/JWT/RLS 双账号验收、真机登录、Realtime、云函数部署与推送仍未完成；社交动态、外部数据工坊和素材导入尚无 CloudBase schema/API；Apple 登录在 SDK 提供 nonce 校验前失败关闭。此前 Android/iOS simulator 构建通过，但仍有 Gradle/AGP/Kotlin 及 Swift Package Manager 警告。本文不把本地模拟验证写成 CloudBase 云端验收。
+2026-10-28 版本化照片头检查点：第 19 个 `versioned_photo_heads` 已部署 staging，任务 `task-d3808fa44bf24db3` 为 Succeed；CLI **19/19**、无待执行项。普通 A/B/C 照片 HTTP **72 项通过**；前台下载后复核与真实 iOS App Group 版本写入通过，本地全量 Flutter 570 通过、3 跳过。原生私有凭据桥/后台获取、APNs/桌面与签名真机仍未验收。[验证范围](../photo-widget/evidence/2026-10-28-versioned-photo-heads.md)。
+
+2026-10-28 后续：第 18 个 `push_photo_hints` 已部署 staging，任务 `task-bcf39f266388429c` 为 Succeed；CLI 本地/远端 18/18、无待执行项。A/B 验收 App 重新登录并取得 C 普通用户会话后，照片 HTTP 57 项通过，真实对象清理/保留检查通过。修复共享 Buffer 上传 503；推送 worker 以无 provider、无 timer 的关闭态部署，HTTP/2 与基础网关守卫通过，原生后台/平台回执/桌面仍未验。见[照片验证](../photos/evidence/2026-10-28-staging-media-verification.md)及[推送证据](../photo-widget/evidence/2026-10-28-push-worker-infrastructure.json)。
+
+2026-10-28：第 17 个 `photo_timeline_queries` 已部署 staging，任务 `task-f242dd7906124b5f` 为 Succeed；CLI 本地/远端 17/17，最终 dry-run 无待执行项。新增照片过滤分页和原父照片查询，复用标准安全投影且不推进已读。本地权限/分页/撤回检查通过；A/B 待按用户选择在验收 App 重新登录，C 与普通用户云端联验仍未完成。见[组件证据](../photo-widget/evidence/2026-10-28-ios-widget/README.md)。
+
+状态：目标方案、Flutter SDK 初始化、环境配置校验、PG REST/PostgREST transport、Auth 与各业务 adapter 已接入；前 12 个 CloudBase CLI migrations 已在 `squadly-staging` 成功登记（2026-10-18，CLI 3.8.6 复核）；第 13 个统一计划/计划讨论 migration 已于 2026-10-21 部署 staging，CLI 复核本地/远端 13/13，dry-run 无待执行项。2026-10-22 新增第 14 个已读游标 migration 与作者专属明细本地实现；本地检查通过，并于 2026-10-23 部署 staging，任务 `task-8dab9a5dc968479b` 成功，CLI 复核 14/14、dry-run 无待执行项或冲突；常规构建默认关闭，专用已读验收包显式开启。第 12 个 `social_snapshots` migration 含 owner-only 素材、静态分享快照和 reaction RLS/RPC；Social repository、动态 UI 与单次分享确认已接入本地真实模式。Staging 暴露出 `auth.users` 字段类型和 metadata 与本地假设不同，迁移已移除对系统表的直接外键和 `user_metadata` 读取，并通过实际平台重放。A/B 真实邮箱注册/密码登录、SDK 续期与 44 项已读核心 HTTP 权限检查通过；36 项私密资源/共享基金读取检查通过，基金角色和余额直写缺口已由第 15 个 migration 修复，真实 A/B 18 项复验通过；完整矩阵、C/离队、真机登录、Realtime、云函数部署与推送仍未完成；Apple 登录在 SDK 提供 nonce 校验前失败关闭。本文不把本地模拟验证写成 CloudBase 云端权限验收。
+
+2026-10-26：第 15 个基金权限 migration 已部署 staging，任务 `task-c229002078ab4057` 成功；CLI 15/15，dry-run 无待执行项或冲突。队长元数据权限和流水维护余额已完成真实 A/B 复验，见 [基金权限记录](../finance/public-fund-permissions.md)。
 
 ## 决策
 
@@ -34,12 +42,21 @@
 
 1. **P0 配置与客户端边界**：将运行时配置改成 CloudBase 环境 ID、地域和 Publishable Key；统一初始化入口；Demo/Remote 使用同一个运行模式。真实模式缺配置必须 fail fast。
 2. **P1 身份与基础 REST**：建立 CloudBase auth/session provider 和 PG REST 客户端；先迁移 profiles/auth、邮箱/手机号流程及小队基础读写；禁止混用 Supabase session。
-3. **P2 SQL/RLS**：转换结果位于 `cloudbase/migrations/`，采用 CloudBase CLI 要求的 14 位 UTC 时间戳版本名；已处理 CloudBase Auth text 身份、系统 Auth 字段差异、显式 `GRANT`、基金流水原子更新、个人健康快照隔离，并去除 Supabase publication 操作。10 个 migrations 已部署至 staging。`scripts/check_cloudbase_migrations.sh` 在本地 UUID/no-metadata auth fixture 下重放所有 migrations 并验证重试安全、`PrivateAsset`/健康快照隔离及基金余额触发器。真实用户 JWT/RLS 和敏感实体边界仍待 CloudBase staging 验证。
+3. **P2 SQL/RLS**：转换结果位于 `cloudbase/migrations/`，采用 CloudBase CLI 要求的 14 位 UTC 时间戳版本名；已处理 CloudBase Auth text 身份、系统 Auth 字段差异、显式 `GRANT`、基金流水原子更新、个人健康快照隔离，并去除 Supabase publication 操作。前 12 个 migration 已于 2026-10-18 部署至 staging；CLI 3.8.6 确认 local/remote 12/12。第 13 个统一计划/计划讨论 migration 已于 2026-10-21 部署；第 14 个已读游标 migration 于 2026-10-23 部署，CLI 复核 14/14。`scripts/check_cloudbase_migrations.sh` 在本地 UUID/no-metadata auth fixture 下顺序重放 15 个 migration，验证重试安全、旧计划回填与兼容同步、计划讨论 RLS/RPC、计划/Social 可见性、单次分享快照、反应切换、`PrivateAsset`/健康快照隔离及基金余额触发器。真实用户 JWT/RLS 和敏感实体边界仍待 CloudBase 验证。
 4. **P3 功能 adapter**：邀请、会话/卡片、端到端加密路线密钥、Fitness、Finance、Travel、Food 和推送设备令牌已接入 CloudBase 客户端数据路径；推送 worker/timer 有可部署代码与 Node 合约测试。仍需部署并在真实环境验证 JWT/RLS/PostgREST、云函数密钥和调度配置；每个 adapter 保持 domain 接口，不从 UI 直接调用 SDK。
 5. **P4 运维能力**：替换 Realtime、Storage、Edge Function、定时重试、备份/恢复和监控；保留消息分页与离线队列作为一致性保障。
-6. **P5 切环境验收**：独立 `squadly-staging` 已创建，10 个 migrations 已部署；下一步验收 A/B/C/匿名权限、2–9 人/邀请码并发边界、私密资产隔离、恢复、双机消息、推送和备份恢复。通过前不得把真实模式作为可用环境。
+6. **P5 切环境验收**：独立 `squadly-staging` 已创建，前 12 个 migrations 已部署；第 13 个 unified-plan/discussion migration 已于 2026-10-21 部署，第 14 个已读游标 migration 于 2026-10-23 部署，第 15 个基金权限 migration 已于 2026-10-26 部署，当前 15/15。下一步验收 A/B/C/匿名权限、2–9 人/邀请码并发边界、私密资产隔离、恢复、双机消息、推送和备份恢复。通过前不得把真实模式作为可用环境。
 
 Supabase 数据迁移若将来存在真实用户数据，应以停写/增量同步策略、身份映射和回滚窗口单独制定；当前本机测试数据不得被称为生产数据，也不应直接迁移进真实用户空间。
+
+## 文档索引
+
+- [Staging 读取权限验收](access-acceptance.md)：三用户/匿名的固定测试记录读取矩阵、正向对照、私密值与凭据输出边界；工具已本地验证，真实 staging 运行待完成。
+- [CloudBase 说明](cloudbase说明.md)：CloudBase 在本项目中的角色、能力映射、架构链路、已接入功能、依赖边界、安全模型与当前状态。
+- [开发 & 云服务器运维手册](开发&云服务器运维手册.md)：开发规范、环境与部署、CloudBase 托管资源运维、问题台账、性能优化与应急处理。
+- [CloudBase 成本估算](cost-and-capacity.md)：套餐、资源点、阶段预算与账单护栏。
+- [Migration Runbook](migration-runbook.md)：SQL 顺序、本地检查与 staging 部署步骤。
+- [迁移清单](migration-inventory.md)：客户端/服务端迁移范围与逐项状态。
 
 ## 配置约定
 

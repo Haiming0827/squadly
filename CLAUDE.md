@@ -26,7 +26,7 @@ squadly/
 │   │       └── presentation/ # 页面、组件、状态管理
 │   └── shared/             # 跨模块共享组件和模型
 ├── test/                   # 单元测试和组件测试（目录结构与 lib/ 对应）
-├── integration_test/       # 集成/端到端测试
+├── integration_test/       # 独立 Flutter 原生测试宿主（测试源码位于子目录）
 ├── ios/                    # iOS 特定配置（Xcode 工程）
 ├── android/                # Android 特定配置（Gradle）
 ├── assets/                 # 图片、字体、动画
@@ -38,7 +38,7 @@ squadly/
 每个功能模块遵循 **domain → data → presentation** 分层：
 - **Domain 层**：纯 Dart 实体和用例，不引入 Flutter 依赖。仓库接口定义在此层。
 - **Data 层**：仓库实现、远程/本地数据源、DTO 及其到领域实体的映射。
-- **Presentation 层**：页面、组件、状态管理（Riverpod 或 Bloc 二选一，全局统一）。
+- **Presentation 层**：页面、组件和 Riverpod 3 状态管理。
 
 跨模块数据流（如：健身 ↔ 美食热量同步、理财 → 旅行预算）通过 domain 层用例传递，禁止组件之间直接耦合。
 
@@ -92,7 +92,7 @@ dart format lib/ test/
 
 - **语言**：Dart (Flutter 3.x)，单一代码库同时服务 iOS 和 Android
 - **后端目标**：腾讯云 CloudBase for Supabase 版（PostgreSQL 环境）；CloudBase Auth + PostgreSQL REST + RLS/GRANT + 云函数。切换状态以 `docs/modules/backend_cloudbase/README.md` 为准
-- **状态管理**：**Riverpod 2.x**（已确认），全局统一，不混用 Bloc/Provider
+- **状态管理**：**Riverpod 3.x**，全局统一；依赖注入使用 Riverpod 内置机制
 - **路由**：`go_router`，声明式路由，支持深度链接
 - **网络层**：`cloudbase_flutter` 负责认证/会话；`dio` 由 data 层封装 CloudBase PG REST，并处理第三方 API
 - **本地存储**：`drift`（SQLite）存储结构化离线缓存，`shared_preferences` 存储设置项

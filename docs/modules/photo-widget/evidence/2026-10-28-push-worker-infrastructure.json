@@ -1,0 +1,69 @@
+{
+  "date": "2026-10-28",
+  "scope": "push-worker-infrastructure-only",
+  "nodePushTestsPassed": 25,
+  "photoWorkerTestsPassed": 19,
+  "localSqlReplayMigrations": 18,
+  "migration": {
+    "version": "20261028000200",
+    "task": "task-bcf39f266388429c",
+    "status": "Succeed",
+    "localCount": 18,
+    "remoteCount": 18,
+    "pending": 0
+  },
+  "worker": {
+    "name": "push-deliveries",
+    "type": "Event",
+    "runtime": "Nodejs20.19",
+    "active": true,
+    "systemReturnLogsDisabled": true,
+    "providerKeysConfigured": false,
+    "timerTriggers": 0,
+    "gatewayChecks": [
+      {
+        "method": "GET",
+        "authentication": "none",
+        "httpStatus": 405
+      },
+      {
+        "method": "POST",
+        "authentication": "none",
+        "httpStatus": 401
+      },
+      {
+        "method": "POST",
+        "authentication": "worker secret",
+        "httpStatus": 503
+      }
+    ]
+  },
+  "http2Proof": {
+    "actualLoopbackProtocol": true,
+    "syntheticApnsCredentials": true,
+    "actualApnsPlatformReceipt": false
+  },
+  "notVerified": [
+    "APNs credentials and signed physical devices",
+    "native background fetch and private credential bridge",
+    "background system widget rendering",
+    "remote CI execution",
+    "Xiaomi SDK/category/device acceptance"
+  ],
+  "localAutomatedChecks": {
+    "aggregateCommand": "bash scripts/verify_all.sh",
+    "aggregatePassed": true,
+    "flutterPassed": 550,
+    "flutterSkipped": 3,
+    "realModeFlutterPassed": 14,
+    "pushNodePassed": 25,
+    "photoNodePassed": 19
+  },
+  "ordinaryUserV2DenialEvidence": "../../photos/evidence/2026-10-28-staging-user-photos-isolated-c-pass.json",
+  "lastDeploymentRechecked": true,
+  "sourceSha256": {
+    "index.js": "b1763f47990a28a865d76d70adeb456b6cdb0fbcd699e913481df76abe71111e",
+    "apns.js": "6606433cda381e3777da2443af21db129be5e674d50f3624a4655ddee54212e8",
+    "apns-transport.js": "76d44e972d0c1a5a41751c6fc0e753704306114921b14f5cff02532991113031"
+  }
+}

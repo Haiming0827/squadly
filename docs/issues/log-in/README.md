@@ -16,10 +16,19 @@
 
 ## 问题记录
 
+### 2026-10-23：邮箱注册返回 `provider email not found`
+
+- **现象**：staging 邮箱注册验证码请求返回 HTTP 404、`not_found`，错误说明为 `provider email not found`；测试账号密码登录未建立会话。
+- **已确认原因**：CLI 读取 staging 登录策略显示 `EmailLogin=false`；邮箱身份源为 `On=FALSE`，未启用内置邮件代发，也未配置 SMTP。
+- **配置修复**：在 `squadly-staging-d1fjsdpkc562fa9c` 使用 `tcb env login set --email-login true` 开启邮箱登录，再通过 `ModifyProvider` 设置 `Id=email`、`ProviderType=EMAIL`、`On=TRUE` 和 `EmailConfig.On=TRUE`，采用平台内置邮件代发。读取配置复核上述三项均已启用；匿名、手机号、用户名登录、短信配置、MFA 和密码策略与修改前一致。没有配置私人邮箱 SMTP 密钥。
+- **实际结果**：A/B 两个用户授权的测试邮箱收到验证码；首次验证码过期后重发并成功验码，两个账号注册成功。使用用户提供的密码分别登录成功，Auth 身份与邮箱核对、对应本人 profile 的 PG REST 读取均通过。检查沿用 SDK 的真实 HTTP 接口；未宣称 Flutter UI、短信、找回密码或业务 JWT/RLS 矩阵通过。
+- **本机证据**：`/tmp/squadly-staging-login-config-before-20261023.json`、`/tmp/squadly-staging-login-config-after-20261023.json`、`/tmp/squadly-staging-providers-after-20261023.json`；身份源配置 request 为 `ac33f50d-4f6e-4ca1-9d3e-14245a8c004f`。配置文件仅保存在本机，不提交凭据。账号会话文件 `config/cloudbase-access.local.json` 已保存有效的 A/B 身份、JWT 和续期信息；权限 0600，Git 忽略，不存储密码。检查摘要位于 `/tmp/squadly-account-registration-checks-20261023.json`，不含身份 ID、邮箱、token 或验证码。
+- **官方依据**：[邮箱验证码登录与内置邮件代发](https://docs.cloudbase.net/authentication-v2/method/email-login)、[修改邮箱身份源](https://cloud.tencent.com/document/product/876/129350)。本轮是环境配置修复，没有修改 App 源码或重新运行本地测试。
+
 ### 2026-10-17：SDK 仍返回 `timeout`，定位为模拟器 DNS 故障
 
 - **现象**：安装 10 月 16 日的新 APK 后发送验证码仍超时，页面显示 SDK 错误码 `timeout`。上次错误信息透传修复有效，但没有修复网络超时本身。
-- **复现**：在同一 Android 16 / API 36 模拟器运行 `integration_test/cloudbase_connectivity_test.dart`。DNS 查询超过 5 秒未完成，SDK 验证请求约 30,031ms 返回 `timeout`，没有 HTTP 状态。模拟器中 QQ、百度域名同样超过 7 秒无法解析；Mac 上相同 CloudBase 接口则约 2.6 秒返回 HTTP 400 参数校验错误。
+- **复现**：在同一 Android 16 / API 36 模拟器运行 `integration_test/integration_test/cloudbase_connectivity_test.dart`。DNS 查询超过 5 秒未完成，SDK 验证请求约 30,031ms 返回 `timeout`，没有 HTTP 状态。模拟器中 QQ、百度域名同样超过 7 秒无法解析；Mac 上相同 CloudBase 接口则约 2.6 秒返回 HTTP 400 参数校验错误。
 - **已确认原因**：模拟器运行时的 DNS 解析链路失效，验证码请求尚未获得服务端 HTTP 响应。Android 显示网络连接/曾通过网络校验，不足以证明当前 DNS 可用。这次证据没有指向手机号格式、短信额度或验证码凭证。
 - **修复**：关闭并冷启动同一个 `Squadly_Android_16` AVD，使用 `-dns-server 223.5.5.5,119.29.29.29 -no-snapshot-load`。保留已安装应用和用户数据，不执行 Wipe Data。更新现有 `scripts/start_android_emulator.sh`，默认选择当前实际安装的 Android 16 AVD，并让后续启动可重复使用这组参数；DNS 可通过 `ANDROID_EMULATOR_DNS_SERVERS` 覆盖。
 - **修复后证据**：最终网络诊断的两个测试通过：标准 HTTPS 验证请求约 330ms 返回 HTTP 400，App 实际调用的 `signInWithOtp` 路径约 158ms 返回 `INVALID_ARGUMENT` / HTTP 400。这两次均为无效/缺失收件人，参数校验失败是预期结果，证明 DNS、TLS 和验证码 API 已连通，不会发送短信。静态分析和全量单元/组件测试通过，正常 staging APK 已重新构建安装。
@@ -105,16 +114,16 @@ ANDROID_EMULATOR_DNS_SERVERS=223.5.5.5,119.29.29.29 bash scripts/start_android_e
 
 ```bash
 cd /Users/haiming/workspace/dev-apps/squadly
-flutter test integration_test/cloudbase_connectivity_test.dart \
+cd integration_test && flutter test integration_test/cloudbase_connectivity_test.dart \
   -d emulator-5554 \
-  --dart-define-from-file=config/test-backend.local.env \
+  --dart-define-from-file=../config/test-backend.local.env \
   --dart-define=RUN_CLOUDBASE_NETWORK_PROBE=true
 ```
 
 该命令会安装诊断测试应用；结束后需重新运行常规 App，避免把测试 APK 当作正常登录应用。可在另一个终端执行：
 
 ```bash
-flutter run -d emulator-5554 --dart-define-from-file=config/test-backend.local.env
+flutter run -d emulator-5554 --dart-define-from-file=../config/test-backend.local.env
 ```
 
 ## 维护记录模板

@@ -9,10 +9,9 @@ typedef CurrentFoodUserId = Future<String?> Function();
 
 final class CloudBaseFoodRepository implements FoodRepository {
   const CloudBaseFoodRepository({
-    required PostgrestClient client,
-    required CurrentFoodUserId currentUserId,
-  }) : _client = client,
-       _currentUserId = currentUserId;
+    required this._client,
+    required this._currentUserId,
+  });
 
   final PostgrestClient _client;
   final CurrentFoodUserId _currentUserId;

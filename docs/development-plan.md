@@ -10,6 +10,44 @@
 
 Squadly 的首要体验调整为 **2–9 人邀请制小圈子的即时社交与真实内容分享**。健身、理财、旅行和美食保留为围绕同一个 `Squad` 的共同兴趣活动，统一从“计划”入口访问。个人从其他应用取得的数据先进入私密素材空间，用户经过选择、编辑、美化、预览和受众确认后，才可分享为小队内容卡片。此方向不改变既有角色、`PrivateAsset` 隔离和 Clean Architecture 约束。
 
+### 2026-10-18 UI 迭代决策补充
+
+- 一级导航固定为「会话 / 小队 / 计划 / 我的」；分享是上下文操作，数据工坊从「我的」及分享流程进入。
+- 所有计划都必须关联当前 `Squad`。计划可设为「仅自己可见」，此范围只限制计划及其任务的可见成员，不解除 `squad_id` 关联；创建和加入小队仍是协作功能的前置流程。
+- 健康或个人素材分享只发布用户当次确认的静态快照；不提供持续同步授权。本轮不加入小队成员排行。
+- 会话需要展示每位当前小队成员的已读状态；2026-10-21 已确认采用会话游标保存/推导回执。普通小队会话与独立计划讨论必须按各自线程隔离游标，成员加入/离队、分页与离线恢复边界和 RLS 必须在实现前单独定义并验证。此确认不代表逐成员已读已实现。 2026-10-22 确认仅在前台且最新消息可见时推进，不统计本次加入前消息，仅作者可查看明细；本地实现及默认开关见 [已读设计](modules/conversation/read-receipts.md)。
+- 真实模式业务 repository 的 REST client 必须绑定组装时的账号；读取 token 后须再次校验 session 的用户身份，账号切换或 client 释放时拒绝继续发送旧请求。认证初始化使用独立的基础 client，避免登录流程依赖尚未建立的业务账号上下文。已持久化待发内容仍归原账号，不因切换账号迁移或自动删除。
+- 2026-10-28：普通照片确认后接入现有加密待发队列，采用 v3 照片信封兼容旧 v1/v2，SQLite schema 仍为 v2。先落盘再验权/上传，固定账号、小队、父消息及 nonce；确认后不得静默换图。本地与 iOS 模拟器 SQLite/Keychain 跨进程证据、剩余云端/组件工作见[照片实施台账](modules/photos/ios-photo-loop.md)。
+- 路由实例保持稳定；已登录账号的身份发生变化时，统一清理临时详情页、表单和弹窗，并重置首页状态。相同账号的数据刷新不清理导航，首次登录仍保留邀请链接回跳流程。
+- 后台认证恢复只提交当前认证状态版本的结果，并重新核对 session token 与 profile 用户身份；旧响应不得覆盖显式登录、昵称修改或退出。密码设置标记与已校验的同一会话资料一起提交，SDK 异常映射为安全错误；Demo 刷新只访问本地认证仓库。
+- UI 结构和视觉基线见 [UI 设计规范](ui-design/ui-design-spec.md)。本补充优先于本文及 V1.0 建议中早期关于独立个人计划、五 Tab 导航、持续同步或排行的草案。
+
+### 2026-10-27 照片三环实施（iOS 优先）
+
+用户已要求按产品 V1.1 开发测试计划顺序完成，并优先 iOS。普通照片作为独立媒体类型：主动拍摄/系统单选、净化成最长边 1600 px / 最大 2 MiB JPEG、预览确认目标 Squad 后才进入私有上传；不上传源 metadata，不改变原卡片 PNG/原始健康/路线加密约束。先定义领域和媒体权限，打通 iOS 照片到桌面，再完成关联回拍、同源照片墙、连续天数与基础周回顾；Android 后续仍按同一合同与独立设备矩阵验证。当前实现和未通过阶段门见 [iOS 照片实施](modules/photos/ios-photo-loop.md)，不将文档授权写作能力已上线。
+
+2026-10-28 A5 检查点：已接 WidgetKit 扩展、App Group 受保护短期派生图、默认关闭的预览、固定队绑定/重绑、严格深链与登录回跳。系统添加数量通过 WidgetCenter 查询，和 App 绑定分别展示；刷新请求不代表已绘制。第 17 个照片过滤查询迁移已部署 staging（17/17）；本地/模拟器桥接和 App UI 通过，桌面/冷启动/签名真机、A/B/C 普通用户权限与 A7 后台触达仍待验，见[组件合同和证据](modules/photo-widget/ios-widget-design.md)。
+
+2026-10-28 后续：A/B 恢复登录并新建 C 普通测试会话后，照片真实 HTTP 57 项与撤回对象清理验证通过；修复云端共享 Buffer 上传错误。第 18 个 V2 推送提示迁移已部署，18/18；APNs HTTP/2 和关闭态 worker 已接 staging，原生后台获取、平台凭据/回执与桌面仍待完成。[媒体验证与剩余项](modules/photos/evidence/2026-10-28-staging-media-verification.md)。
+
+2026-10-28 版本化照片头检查点：第 19 个 `versioned_photo_heads` 已部署 staging，任务 `task-d3808fa44bf24db3` 为 Succeed；CLI **19/19**、无待执行项。普通 A/B/C 照片 HTTP **72 项通过**；前台下载后复核与真实 iOS App Group 版本写入通过，本地全量 Flutter 570 通过、3 跳过。原生私有凭据桥/后台获取、APNs/桌面与签名真机仍未验收。[验证范围](modules/photo-widget/evidence/2026-10-28-versioned-photo-heads.md)。
+
+2026-10-28 凭据桥检查点：iOS 主 App 短期 JWT 桥已接入；一次性 ticket/原账号与绑定代次、绝对期限、私有 device-only Keychain 及关闭预览清理通过。真实 Keychain 双进程通过，设备二进制确认扩展不链接凭据代码。Flutter 580 通过、3 跳过；组件 Core 18 项与凭据 10 项 Swift 通过。原生后台网络获取、长期恢复、APNs/桌面与签名真机仍待完成。 [验证范围](modules/photo-widget/evidence/2026-10-28-private-credentials.md)。
+
+### 2026-10-27 离线冷启动
+
+用户确认：已有登录会话过期后先联网登录。新增只读本机记录入口，使用 SDK 初始会话检查账号和绝对期限；不从缓存恢复服务器授权，不凭本机副本延长登录。自然过期保留缓存，明确退出/账号切换清理原账号。标签目录通过本地 Drift schema 2 向前升级并加密，服务器 migrations 仍为 15 个，无新服务端部署。详见 [冷启动实现](modules/conversation/offline-cold-start.md)。
+
+### 2026-10-26 共享基金权限确认
+
+仅当前 Squad 队长可创建/编辑公共基金信息；客户端不能直接设置基金余额，余额只能通过受控流水触发器维护。当前小队成员仍可登记本人存入/支出流水，不能代写他人身份或审批者。保留既有数据，使用向前 migration 收紧列级 GRANT 与 RLS，并同步 Demo/真实 UI。详见 [基金权限方案](modules/finance/public-fund-permissions.md)。
+
+### 计划领域模型（2026-10-18）
+
+计划是统一的协作容器，所有计划必须包含 `squad_id`，并有 `category`、`visibility` 和 `status`。`visibility='squad'` 对当前小队成员可见；`visibility='private'` 仅创建者可见，但仍须为当前小队成员并保留小队关联。计划任务通过 `plan_id` 归属计划，读写权限继承父计划的可见范围；任务行同时冗余 `squad_id`，以复合外键保证不会跨 Squad 关联。
+
+健身、旅行等既有模块实体继续承载各自的业务字段；统一计划记录承载跨场景标题、描述、日期、状态和可见范围。`20261020000100_unified_plan_legacy_and_discussions.sql` 已将旧健身/旅行计划回填到统一计划，并以 `legacy_source/legacy_id` 保留来源身份、`legacy_data` 保留迁移期业务字段；旧表新增/更新由 trigger 同步，供兼容期使用。新建计划以统一计划为入口。该映射不引入个人健康原始记录或 `PrivateAsset`；计划列表只展示经计划表 RLS 授权的元数据。后续若移除旧业务表或将计划直接绑定业务实体，应另行定义数据迁移和删除边界。实现进度以 `cloudbase/migrations/`、`lib/features/plan/` 及本节为准。
+
 2026-10-11 实施状态：本地演示仍是默认运行方式；当时的独立真实后端路径使用 Supabase，已有邮箱／小队／会话／卡片与 Realtime 代码、RLS 迁移和空库契约测试，但尚未连接 staging 或完成双机验收。小米／华为运动健康直接读取及小米推送仍依赖厂商 SDK／资格；原始健康记录只留本机。模块化交付与未完成门槛详见 [注册实施计划](modules/registration/delivery-plan.md)，UI 决策详见 [UI 设计规范](ui-design/ui-design-spec.md)。
 
 2026-10-12 后端切换实施状态：目标方案、Flutter 运行依赖和真实模式入口已切换为 CloudBase for Supabase 版 PostgreSQL；Auth、会话/Squad、Fitness、Finance、Travel、Food、推送令牌和安全路线 adapters 已接入，真实模式首页可进入会话、小队、计划和个人中心。10 个版本化 SQL migrations 已应用到 `squadly-staging`。针对 staging 暴露的 `auth.users` 类型和字段差异，业务 profile 不再依赖系统表外键或 `user_metadata`；重试保护、本地 UUID/no-metadata auth fixture、PrivateAsset/健康快照隔离和基金余额检查均通过。`scripts/verify_all.sh` 的静态分析、Flutter 全量测试、Node worker 测试和 CloudBase SQL 检查通过。CloudBase 云函数仍未部署；真实注册/JWT/RLS 双用户验收、Realtime 和真机登录/推送尚未完成；Social 数据工坊/外部素材流仍未迁移；Apple 登录在 SDK 提供 nonce 校验前失败关闭。演示模式仍为默认值。详见 [CloudBase 迁移清单](modules/backend_cloudbase/migration-inventory.md)。
@@ -22,9 +60,9 @@ Squadly 的首要体验调整为 **2–9 人邀请制小圈子的即时社交与
 - 精确路线可在队友卡片和用户本机导出图片中呈现。必须每卡单独确认，并采用端到端加密密文及按接收设备封装的密钥；服务器不得持有可读轨迹或任何私钥。Android 首轮测试设备为无 Google Play 服务的小米手机。
 - 后端目标改为腾讯云 CloudBase PostgreSQL 模式；真实双机包必须显式使用独立 CloudBase staging 配置。当前演示后端不支持跨设备同步，不能用于真实用户入测。
 
-下面旧版 SQL 草图用于解释早期业务概念，不再作为数据库定义；它含有共享健康快照等与上述边界冲突的示例。当前目标结构与权限以 `cloudbase/migrations/` 和 [CloudBase 迁移清单](modules/backend_cloudbase/migration-inventory.md) 为准；`supabase/` 目录保留旧实现及回滚参考，不应部署到目标环境。
+下面旧版 SQL 草图用于解释早期业务概念，不再作为数据库定义；它含有共享健康快照等与上述边界冲突的示例，也早于 2026-10-18 的 Squad 计划上下文决策。计划及任务的最终可见范围应同时满足 `squad_id` 始终存在，以及「仅自己可见」不向其他成员暴露内容。当前已部署目标结构与权限以 `cloudbase/migrations/` 和 [CloudBase 迁移清单](modules/backend_cloudbase/migration-inventory.md) 为准；`supabase/` 目录保留旧实现及回滚参考，不应部署到目标环境。
 
-代码生成临时例外：本机 Flutter 3.47 / Dart 3.13 与当前锁定的 `analyzer 7.6.0` / Riverpod 2 生成器组合不兼容。为避免破坏已有生成文件，本次新增的四个 `social` 领域实体使用纯 Dart 不可变实现；现有生成文件保持原样。后续升级整套生成链并验证后，再迁回统一的 `freezed` 约定。
+代码生成兼容性记录（2026-10-18）：早期 Flutter 3.47 / Dart 3.13 与 Riverpod 2 生成器组合曾无法完成代码生成。2026-10-18 已升级至 Riverpod 3.4.3 / `riverpod_annotation` 4.0.7 / `riverpod_generator` 4.0.9 与 `build_runner` 2.16.2，并成功生成 364 个输出、通过分析和全量验证。该工具链阻塞已解除；纯 Dart 社交实体继续按当前 domain 设计维护，不再以旧生成器兼容问题作为迁移理由。
 
 ## 一、技术架构总览
 
@@ -33,7 +71,7 @@ Squadly 的首要体验调整为 **2–9 人邀请制小圈子的即时社交与
 | 层级 | 选型 | 说明 |
 |------|------|------|
 | 跨平台框架 | **Flutter 3.x + Dart** | 一套代码，iOS + Android |
-| 状态管理 | **Riverpod 2.x** | 全局统一，不混用其他方案 |
+| 状态管理 | **Riverpod 3.x** | 当前实现；版本以根 `pubspec.lock` 为准，不混用其他状态管理方案 |
 | 路由 | **go_router** | 声明式路由，支持深度链接 |
 | 后端服务 | **腾讯云 CloudBase PG 模式** | PostgreSQL + CloudBase Auth + PG REST/RLS + 云函数；详见 CloudBase 后端方案 |
 | 网络层 | **cloudbase_flutter** + **dio** | Flutter SDK 负责身份/会话；Dio 经 data 层调用 CloudBase PG REST |
@@ -243,6 +281,8 @@ CREATE TABLE watchlist_items (
   UNIQUE (squad_id, symbol)
 );
 ```
+
+理财录入表单只接受有限数值：公共基金目标和个人资产金额不得为负，共享支出必须大于 0，基金流水允许正负但不能为 0（负数表示支出）。空值、非数字、`NaN` 和无穷大不得静默转换为 0。
 
 ### 2.2 Row Level Security（RLS）策略
 
@@ -480,7 +520,9 @@ lib/
 
 ---
 
-## 五、依赖包清单
+## 五、早期依赖草案（历史快照）
+
+下方依赖清单记录 Supabase/Riverpod 2 初始方案，不是当前可复制的 `pubspec.yaml`。当前依赖以根目录 `pubspec.yaml` / `pubspec.lock` 为准，当前工具链与执行状态见 [交付与成熟度计划](maturity-plan.md)。
 
 ### pubspec.yaml 核心依赖
 

@@ -1,10 +1,20 @@
 import Flutter
 import UIKit
 import UserNotifications
+import squadly_widget_bridge
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var pendingTokenResult: FlutterResult?
+
+  override func application(
+    _ application: UIApplication,
+    didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+    fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+  ) {
+    if PhotoBackgroundNotificationHandler.handle(userInfo, completion: completionHandler) { return }
+    super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)
+  }
 
   override func application(
     _ application: UIApplication,
@@ -23,6 +33,19 @@ import UserNotifications
       binaryMessenger: registrar.messenger()
     )
     channel.setMethodCallHandler { [weak self] call, result in
+      if call.method == "isNotificationsAvailable" {
+        result(true)
+        return
+      }
+      if call.method == "areNotificationsAuthorized" {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+          let allowed = settings.authorizationStatus == .authorized
+            || settings.authorizationStatus == .provisional
+            || settings.authorizationStatus == .ephemeral
+          DispatchQueue.main.async { result(allowed) }
+        }
+        return
+      }
       guard call.method == "requestApnsToken" else {
         result(FlutterMethodNotImplemented)
         return

@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../../app/demo/demo_store.dart';
+import '../../../../app/providers/activity_source_providers.dart';
+import '../../../../app/providers/current_user_provider.dart';
+import '../../../../app/providers/domain_repository_providers.dart';
+import '../../../../app/providers/social_providers.dart';
+import '../../../../core/network/cloudbase_client_provider.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/app_loading_state.dart';
+import '../../../activity_import/domain/activity_record.dart';
+import '../../../activity_import/domain/activity_source.dart';
 import '../../domain/entities/data_connection.dart';
 import '../../domain/entities/external_data_item.dart';
 import '../widgets/data_story_card.dart';
@@ -15,6 +24,9 @@ class DataWorkshopScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(useDemoBackendProvider)) {
+      return _RemoteDataWorkshopScreen(onShareItem: onShareItem);
+    }
     final state = ref.watch(demoAppStoreProvider);
     final items = state.myImportedData;
     final connections = state.myDataConnections;
@@ -172,6 +184,342 @@ class DataWorkshopScreen extends ConsumerWidget {
   }
 }
 
+class _RemoteDataWorkshopScreen extends ConsumerStatefulWidget {
+  const _RemoteDataWorkshopScreen({required this.onShareItem});
+
+  final ValueChanged<String> onShareItem;
+
+  @override
+  ConsumerState<_RemoteDataWorkshopScreen> createState() =>
+      _RemoteDataWorkshopScreenState();
+}
+
+class _RemoteDataWorkshopScreenState
+    extends ConsumerState<_RemoteDataWorkshopScreen> {
+  bool _importing = false;
+  String? _activeUserId;
+  int _accountGeneration = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
+    final userId = ref.watch(currentUserProvider).asData?.value?.id;
+    if (_activeUserId != userId) {
+      _activeUserId = userId;
+      _accountGeneration++;
+    }
+    final items = ref
+        .watch(myImportedSocialDataProvider)
+        .whenData(
+          (values) => values
+              .where((item) => item.userId == userId)
+              .toList(growable: false),
+        );
+    final connections = ref
+        .watch(mySocialConnectionsProvider)
+        .whenData(
+          (values) => values
+              .where((source) => source.userId == userId)
+              .toList(growable: false),
+        );
+    final healthSourceAvailability = ref.watch(healthActivityAvailableProvider);
+    final healthSourceLabel = ref.watch(healthActivitySourceLabelProvider);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return items.when(
+      loading: () => const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppLoadingState(label: '正在加载个人素材…'),
+            SizedBox(height: 12),
+            Text('素材加载中'),
+          ],
+        ),
+      ),
+      error: (_, _) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('个人素材加载失败'),
+            OutlinedButton(
+              onPressed: () => ref.invalidate(myImportedSocialDataProvider),
+              child: const Text('重试'),
+            ),
+          ],
+        ),
+      ),
+      data: (values) => ListView(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+        children: [
+          Text('数据工坊', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 6),
+          Text(
+            '个人素材仅自己可见。发布时选择接收范围，并确认单次快照。',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text('外部来源', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 8),
+          connections.when(
+            loading: () => const ListTile(title: Text('来源状态加载中')),
+            error: (_, _) => ListTile(
+              title: const Text('来源状态加载失败'),
+              trailing: IconButton(
+                tooltip: '重试加载来源',
+                onPressed: () => ref.invalidate(mySocialConnectionsProvider),
+                icon: const Icon(Icons.refresh_rounded),
+              ),
+            ),
+            data: (sources) => Card(
+              child: sources.isEmpty
+                  ? const ListTile(
+                      leading: Icon(Icons.health_and_safety_outlined),
+                      title: Text('没有持续同步连接'),
+                      subtitle: Text('你可以按需授权并单次导入一条运动记录。'),
+                    )
+                  : Column(
+                      children: [
+                        for (final (index, source) in sources.indexed) ...[
+                          if (index > 0) const Divider(height: 1),
+                          ListTile(
+                            leading: const Icon(
+                              Icons.health_and_safety_outlined,
+                            ),
+                            title: Text(source.displayName),
+                            subtitle: Text(source.isConnected ? '已连接' : '未连接'),
+                          ),
+                        ],
+                      ],
+                    ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed:
+                  healthSourceAvailability.maybeWhen(
+                        data: (available) => available,
+                        orElse: () => false,
+                      ) &&
+                      !_importing
+                  ? _importHealthActivity
+                  : null,
+              icon: _importing
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.download_for_offline_outlined),
+              label: Text(
+                _importing
+                    ? '正在读取记录…'
+                    : healthSourceAvailability.when(
+                        data: (available) => available
+                            ? '单次导入 $healthSourceLabel 的运动记录'
+                            : '此设备暂不支持健康数据读取',
+                        error: (_, _) => '无法检查健康数据来源',
+                        loading: () => '正在检查健康数据来源…',
+                      ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(child: Text('我的素材', style: theme.textTheme.titleLarge)),
+              Text('${values.length} 份 · 仅自己可见'),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (values.isEmpty)
+            const Card(
+              child: ListTile(
+                leading: Icon(Icons.lock_outline_rounded),
+                title: Text('还没有个人素材'),
+                subtitle: Text('连接或导入来源后，素材会先保存在个人空间。'),
+              ),
+            )
+          else
+            for (final item in values) ...[
+              DataStoryCard(
+                title: item.title,
+                body: item.summary,
+                value: item.value,
+                unit: item.unit,
+                sourceLabel: item.sourceLabel,
+                rangeStart: item.rangeStart,
+                rangeEnd: item.rangeEnd,
+                template: 'story',
+                audienceLabel: '仅自己可见',
+                trend: item.trend,
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => widget.onShareItem(item.id),
+                icon: const Icon(Icons.ios_share_rounded),
+                label: const Text('制作单次分享'),
+              ),
+              const SizedBox(height: 20),
+            ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _importHealthActivity() async {
+    if (_importing) return;
+    final userId = ref.read(currentUserProvider).asData?.value?.id;
+    if (userId == null) {
+      _showImportMessage('请先登录后再导入个人素材');
+      return;
+    }
+    final repository = ref.read(socialRepositoryProvider);
+    final generation = _accountGeneration;
+    setState(() => _importing = true);
+    try {
+      final now = DateTime.now();
+      final records = await ref
+          .read(healthActivitySourceProvider)
+          .listEligibleActivities(
+            from: now.subtract(
+              Duration(days: ref.read(healthActivityLookbackDaysProvider)),
+            ),
+            to: now,
+          );
+      if (!mounted) return;
+      if (!_sameImportUser(userId, generation)) {
+        _showImportMessage('账号已变化，请重新导入');
+        return;
+      }
+      if (records.isEmpty) {
+        _showImportMessage(
+          '没有读到近 ${ref.read(healthActivityLookbackDaysProvider)} 天可用的跑步或徒步记录',
+        );
+        return;
+      }
+      final selected = await _chooseHealthRecord(records, userId, generation);
+      if (selected == null || !mounted) return;
+      if (!_sameImportUser(userId, generation)) {
+        _showImportMessage('账号已变化，请重新导入');
+        return;
+      }
+      final distanceKm = selected.distanceMeters / 1000;
+      final minutes = selected.durationSeconds ~/ 60;
+      final title =
+          '${selected.kind == ActivityKind.run ? '跑步' : '徒步'} · '
+          '${selected.startedAt.month}月${selected.startedAt.day}日';
+      final item = ExternalDataItem(
+        id: const Uuid().v4(),
+        userId: userId,
+        source: selected.source == ActivitySourceKind.healthConnect
+            ? 'health_connect'
+            : 'apple_health',
+        sourceLabel: selected.sourceLabel,
+        category: 'activity',
+        title: title,
+        summary: '完成 ${(distanceKm).toStringAsFixed(2)} 公里，用时 $minutes 分钟。',
+        value: distanceKm.toStringAsFixed(2),
+        unit: '公里',
+        rangeStart: selected.startedAt,
+        rangeEnd: selected.startedAt.add(
+          Duration(seconds: selected.durationSeconds),
+        ),
+        importedAt: DateTime.now(),
+      );
+      final result = await repository.importDataItem(item: item);
+      if (!mounted || !_sameImportUser(userId, generation)) return;
+      result.match((_) => _showImportMessage('导入没有成功，请稍后重试'), (_) {
+        ref.invalidate(myImportedSocialDataProvider);
+        _showImportMessage('已导入个人素材；需要再次确认才会分享给小队');
+      });
+    } on ActivityPermissionDenied {
+      if (_sameImportUser(userId, generation)) {
+        _showImportMessage('未获得运动记录读取授权');
+      }
+    } on ActivitySourceUnavailable {
+      if (_sameImportUser(userId, generation)) {
+        _showImportMessage('此设备暂不支持健康数据读取，或 Health Connect 尚未安装');
+      }
+    } catch (_) {
+      if (_sameImportUser(userId, generation)) {
+        _showImportMessage('读取运动记录失败，请稍后重试');
+      }
+    } finally {
+      if (mounted) setState(() => _importing = false);
+    }
+  }
+
+  bool _sameImportUser(String userId, int generation) =>
+      mounted &&
+      _accountGeneration == generation &&
+      ref.read(currentUserProvider).asData?.value?.id == userId;
+
+  Future<ActivityRecord?> _chooseHealthRecord(
+    List<ActivityRecord> records,
+    String userId,
+    int generation,
+  ) => showModalBottomSheet<ActivityRecord>(
+    context: context,
+    isScrollControlled: true,
+    builder: (context) => Consumer(
+      builder: (_, sheetRef, _) {
+        final activeUser = sheetRef
+            .watch(currentUserProvider)
+            .asData
+            ?.value
+            ?.id;
+        if (activeUser != userId || _accountGeneration != generation) {
+          return SafeArea(
+            child: ListTile(
+              title: const Text('账号已变化，请重新导入'),
+              trailing: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('返回'),
+              ),
+            ),
+          );
+        }
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+            ),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                const ListTile(title: Text('选择一条运动记录导入')),
+                for (final record in records)
+                  ListTile(
+                    title: Text(
+                      '${record.kind == ActivityKind.run ? '跑步' : '徒步'} · '
+                      '${(record.distanceMeters / 1000).toStringAsFixed(2)} 公里',
+                    ),
+                    subtitle: Text(
+                      '${record.startedAt.month}月${record.startedAt.day}日 · '
+                      '${record.durationSeconds ~/ 60} 分钟 · ${record.sourceLabel}',
+                    ),
+                    onTap: () => Navigator.of(context).pop(record),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
+
+  void _showImportMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
 class _SectionHeading extends StatelessWidget {
   const _SectionHeading({required this.title, required this.trailing});
 
@@ -220,10 +568,8 @@ class _PrivacyBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             '私人空间',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(context).textTheme.labelSmall
+                ?.copyWith(color: color, fontWeight: FontWeight.w600),
           ),
         ],
       ),

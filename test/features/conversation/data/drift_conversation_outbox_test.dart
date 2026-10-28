@@ -43,6 +43,7 @@ void main() {
     final stored = (await database.listEncrypted(
       userId: 'alice',
       squadId: 'squad-a',
+      planId: '',
     )).single;
     expect(stored.encryptedPayload, isNot(contains(body)));
 
@@ -86,6 +87,59 @@ void main() {
   });
 
   test(
+    'version 2 rebuilds the key while preserving version 1 queue rows',
+    () async {
+      final legacyExecutor = NativeDatabase.memory(
+        setup: (database) {
+          database.execute('''
+          CREATE TABLE outbox_entries (
+            user_id TEXT NOT NULL,
+            squad_id TEXT NOT NULL,
+            client_nonce TEXT NOT NULL,
+            created_at_micros INTEGER NOT NULL,
+            encrypted_payload TEXT NOT NULL,
+            PRIMARY KEY (user_id, squad_id, client_nonce)
+          )
+        ''');
+          database.execute('''
+          INSERT INTO outbox_entries (
+            user_id, squad_id, client_nonce, created_at_micros,
+            encrypted_payload
+          ) VALUES ('alice', 'squad-a', 'nonce-1', 1, 'sealed-v1')
+        ''');
+          database.execute('PRAGMA user_version = 1');
+        },
+      );
+      final upgraded = ConversationOutboxDatabase(legacyExecutor);
+      addTearDown(upgraded.close);
+
+      final rows = await upgraded
+          .customSelect('PRAGMA table_info(outbox_entries)')
+          .get();
+      final planId = rows.singleWhere(
+        (row) => row.read<String>('name') == 'plan_id',
+      );
+      expect(planId.read<int>('pk'), 3);
+      expect(
+        (await upgraded
+                .customSelect('SELECT plan_id FROM outbox_entries')
+                .get())
+            .single
+            .read<String>('plan_id'),
+        '',
+      );
+      expect(
+        (await upgraded.listEncrypted(
+          userId: 'alice',
+          squadId: 'squad-a',
+          planId: '',
+        )).single.encryptedPayload,
+        'sealed-v1',
+      );
+    },
+  );
+
+  test(
     'card snapshot and encrypted route round-trip without exposing data',
     () async {
       final secret = _routeBundle();
@@ -113,6 +167,7 @@ void main() {
       final row = (await database.listEncrypted(
         userId: 'alice',
         squadId: 'squad-a',
+        planId: '',
       )).single;
       expect(row.encryptedPayload, isNot(contains('今日跑步')));
       expect(row.encryptedPayload, isNot(contains('ciphertext-from-route')));
@@ -143,6 +198,38 @@ void main() {
       await adapter.listFor(userId: 'charlie', squadId: 'squad-a'),
       isEmpty,
     );
+  });
+
+  test('plan discussion retries are isolated by plan id', () async {
+    final adapter = DriftConversationOutbox(database: database, vault: vault);
+    for (final planId in ['plan-a', 'plan-b']) {
+      await adapter.put(
+        PendingConversationOperation.text(
+          userId: 'alice',
+          squadId: 'squad-a',
+          planId: planId,
+          clientNonce: 'nonce-$planId',
+          createdAt: DateTime.utc(2026, 10, 10, 12),
+          body: 'belongs to $planId',
+        ),
+      );
+    }
+
+    final planA = await adapter.listFor(
+      userId: 'alice',
+      squadId: 'squad-a',
+      planId: 'plan-a',
+    );
+    final planB = await adapter.listFor(
+      userId: 'alice',
+      squadId: 'squad-a',
+      planId: 'plan-b',
+    );
+    final general = await adapter.listFor(userId: 'alice', squadId: 'squad-a');
+
+    expect((planA.single as PendingTextOperation).body, 'belongs to plan-a');
+    expect((planB.single as PendingTextOperation).body, 'belongs to plan-b');
+    expect(general, isEmpty);
   });
 
   test('a lost local key never gets silently replaced', () async {

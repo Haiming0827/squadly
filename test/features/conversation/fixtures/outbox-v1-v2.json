@@ -1,0 +1,22 @@
+{
+  "description": "Fixed synthetic legacy ciphertext; test-only key, never a service or user credential",
+  "test_key": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
+  "rows": [
+    {
+      "user_id": "alice",
+      "squad_id": "squad-a",
+      "plan_id": "",
+      "client_nonce": "legacy-v1",
+      "created_at_micros": 1791590400000000,
+      "encrypted_payload": "{\"version\":1,\"nonce\":\"AQIDBAUGBwgJCgsM\",\"ciphertext\":\"fsgurJzx0rxu1gY/ZDHGCiAshYe1V3KpxDiYR+eWAPSkkP6nGpfAvcLJyom8hIwywZMhlKbgaRhSXzajGm1YIFUNZ0LRrjSEaSjeD5dUfg==\",\"mac\":\"uDWoWV2xRVsRrfARF02NQQ==\"}"
+    },
+    {
+      "user_id": "alice",
+      "squad_id": "squad-a",
+      "plan_id": "plan-a",
+      "client_nonce": "legacy-v2",
+      "created_at_micros": 1791590400000000,
+      "encrypted_payload": "{\"version\":2,\"nonce\":\"AgMEBQYHCAkKCwwN\",\"ciphertext\":\"EuTQuAkf/YiADUZDf2DRQt6U00OILSnp0z6R/nqjtAWAJ8lmNnWMHPJyLkJEFWdurvURhd4gzNevMoVMupfTmnkaCbPZO5FmgCva0hkn3gHdxAI=\",\"mac\":\"rj3j4o4p/PgyUN0jYHn+0A==\"}"
+    }
+  ]
+}

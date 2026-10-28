@@ -85,6 +85,34 @@ void main() {
       );
     });
 
+    test('published data posts capture a one-time source snapshot', () {
+      final store = DemoAppStore();
+      store.signInWithEmail(
+        email: 'haiming@example.com',
+        password: 'password1',
+      );
+      final source = store.state.externalDataItems.firstWhere(
+        (item) => item.id == 'external-evening-run',
+      );
+
+      final post = store.publishDataPost(
+        squadId: 'squad-weekend',
+        dataItemId: source.id,
+        title: '傍晚轻松跑',
+        body: '分享这次记录',
+        template: 'story',
+        visibility: 'squad',
+      );
+
+      expect(post.metricValue, source.value);
+      expect(post.metricUnit, source.unit);
+      expect(post.sourceLabel, source.sourceLabel);
+      expect(post.rangeStart, source.rangeStart);
+      expect(post.rangeEnd, source.rangeEnd);
+      expect(post.trend, source.trend);
+      expect(post.toJson(), isNot(contains('dataItemId')));
+    });
+
     test('outsiders cannot react even to squad-wide posts', () {
       final store = DemoAppStore();
       store.signInWithEmail(

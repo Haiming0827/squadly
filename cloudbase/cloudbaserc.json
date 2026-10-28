@@ -3,11 +3,15 @@
   "functions": [
     {
       "name": "push-deliveries",
-      "type": "HTTP",
+      "type": "Event",
       "handler": "index.main",
       "runtime": "Nodejs20.19",
       "timeout": 120,
-      "memorySize": 256
+      "memorySize": 256,
+      "ignore": [
+        "*.test.js"
+      ],
+      "ignoreSysLog": "true"
     },
     {
       "name": "push-deliveries-cron",
@@ -22,6 +26,35 @@
           "config": "0 * * * * * *"
         }
       ]
+    },
+    {
+      "name": "photos",
+      "type": "Event",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 60,
+      "memorySize": 512,
+      "installDependency": true,
+      "ignore": [
+        "node_modules",
+        "*.test.js"
+      ],
+      "ignoreSysLog": "true"
+    },
+    {
+      "name": "photos-cleanup-cron",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 60,
+      "memorySize": 128,
+      "triggers": [
+        {
+          "name": "cleanup-private-photo-orphans",
+          "type": "timer",
+          "config": "0 */5 * * * * *"
+        }
+      ],
+      "ignoreSysLog": "true"
     }
   ]
 }

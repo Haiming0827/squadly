@@ -19,6 +19,7 @@ import 'package:squadly/features/conversation/presentation/conversation_provider
 import 'package:squadly/features/secure_route/data/route_crypto.dart';
 import 'package:squadly/features/secure_route/data/route_device_key_store.dart';
 import 'package:squadly/features/secure_route/data/route_encryption_service.dart';
+import 'package:squadly/features/secure_route/domain/route_key_directory.dart';
 import 'package:squadly/features/secure_route/presentation/route_reader_provider.dart';
 import 'package:squadly/features/squad/domain/entities/squad_member.dart';
 import 'package:squadly/features/squad/presentation/providers/squad_provider.dart';
@@ -106,20 +107,23 @@ final class _Conversation implements ConversationRepository {
 
   @override
   Future<Either<Failure, List<TimelineEntry>>> loadRecent(
-    String squadId,
-  ) async => right(const []);
+    String squadId, {
+    String? planId,
+  }) async => right(const []);
 
   @override
   Future<Either<Failure, List<TimelineEntry>>> loadAfter(
     String squadId,
-    TimelineCursor cursor,
-  ) async => right(const []);
+    TimelineCursor cursor, {
+    String? planId,
+  }) async => right(const []);
 
   @override
   Future<Either<Failure, List<TimelineEntry>>> loadBefore(
     String squadId,
-    TimelineCursor cursor,
-  ) async => right(const []);
+    TimelineCursor cursor, {
+    String? planId,
+  }) async => right(const []);
 
   @override
   Future<Either<Failure, TimelineEntry>> sendText({
@@ -127,6 +131,7 @@ final class _Conversation implements ConversationRepository {
     required String body,
     required String clientNonce,
     String? replyToEntryId,
+    String? planId,
   }) async => left(const Failure.server(message: 'Not used'));
 
   @override
@@ -151,7 +156,8 @@ final class _Conversation implements ConversationRepository {
   }) async => right(const {});
 
   @override
-  Stream<void> watchTimeline(String squadId) => updates.stream;
+  Stream<void> watchTimeline(String squadId, {String? planId}) =>
+      updates.stream;
 }
 
 void main() {
@@ -192,8 +198,8 @@ void main() {
       ProviderScope(
         overrides: [
           authNotifierProvider.overrideWith(_SignedIn.new),
-          appleHealthAvailableProvider.overrideWithValue(true),
-          appleHealthActivitySourceProvider.overrideWithValue(_Source()),
+          healthActivityAvailableProvider.overrideWith((ref) async => true),
+          healthActivitySourceProvider.overrideWithValue(_Source()),
           squadMembersProvider('squad-a').overrideWith((ref) async => members),
           conversationRepositoryProvider.overrideWithValue(conversation),
           routeDeviceKeyStoreProvider.overrideWithValue(keyStore),
@@ -212,6 +218,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('从 Apple 健康选择记录'));
     await tester.pumpAndSettle();

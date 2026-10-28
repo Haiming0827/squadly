@@ -75,8 +75,8 @@ void main() {
             _RetryCardRepository(),
           ),
           authNotifierProvider.overrideWith(_SignedInAuthNotifier.new),
-          appleHealthAvailableProvider.overrideWithValue(true),
-          appleHealthActivitySourceProvider.overrideWithValue(_AppleSource()),
+          healthActivityAvailableProvider.overrideWith((ref) async => true),
+          healthActivitySourceProvider.overrideWithValue(_AppleSource()),
         ],
         child: MaterialApp(
           theme: ThemeData(splashFactory: InkRipple.splashFactory),
@@ -84,6 +84,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('从 Apple 健康选择记录'));
     await tester.pumpAndSettle();
     expect(find.textContaining('5.20 公里'), findsOneWidget);
@@ -126,10 +127,7 @@ void main() {
     await tester.tap(find.text('徒步').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('导入 GPX／TCX／KML 文件（运动类型按当前选择）'));
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 50)),
-    );
-    await tester.pumpAndSettle();
+    await _waitForImportedActivities(tester);
     expect(find.textContaining('0.11 公里'), findsOneWidget);
     await tester.tap(find.textContaining('0.11 公里'));
     await tester.pumpAndSettle();
@@ -178,10 +176,7 @@ void main() {
       ),
     );
     await tester.tap(find.text('导入 GPX／TCX／KML 文件（运动类型按当前选择）'));
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 50)),
-    );
-    await tester.pumpAndSettle();
+    await _waitForImportedActivities(tester);
     await tester.tap(find.textContaining('0.11 公里'));
     await tester.pumpAndSettle();
 
@@ -216,10 +211,7 @@ void main() {
       ),
     );
     await tester.tap(find.text('导入 GPX／TCX／KML 文件（运动类型按当前选择）'));
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 50)),
-    );
-    await tester.pumpAndSettle();
+    await _waitForImportedActivities(tester);
     await tester.tap(find.textContaining('0.11 公里'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('运动日期：2001-10-8'));
@@ -340,6 +332,22 @@ final class _SignedInAuthNotifier extends AuthNotifier {
   );
 }
 
+Future<void> _waitForImportedActivities(WidgetTester tester) async {
+  // GPX parsing runs in a real isolate. Fixed sleeps can finish before the
+  // isolate under concurrent test load; wait for its visible result instead.
+  final elapsed = Stopwatch()..start();
+  final candidates = find.textContaining('0.11 公里');
+  while (candidates.evaluate().isEmpty &&
+      elapsed.elapsed < const Duration(seconds: 5)) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 20)),
+    );
+    await tester.pump();
+  }
+  expect(candidates, findsOneWidget, reason: 'GPX import must finish');
+  await tester.pumpAndSettle();
+}
+
 final class _GpxGateway implements GpxFileGateway {
   _GpxGateway({this.date = '2026-10-08', this.withHeartRate = false});
 
@@ -407,20 +415,23 @@ final class _RetryCardRepository implements ConversationRepository {
 
   @override
   Future<Either<Failure, List<TimelineEntry>>> loadRecent(
-    String squadId,
-  ) async => right(const []);
+    String squadId, {
+    String? planId,
+  }) async => right(const []);
 
   @override
   Future<Either<Failure, List<TimelineEntry>>> loadAfter(
     String squadId,
-    TimelineCursor cursor,
-  ) async => right(const []);
+    TimelineCursor cursor, {
+    String? planId,
+  }) async => right(const []);
 
   @override
   Future<Either<Failure, List<TimelineEntry>>> loadBefore(
     String squadId,
-    TimelineCursor cursor,
-  ) async => right(const []);
+    TimelineCursor cursor, {
+    String? planId,
+  }) async => right(const []);
 
   @override
   Future<Either<Failure, TimelineEntry>> sendText({
@@ -428,6 +439,7 @@ final class _RetryCardRepository implements ConversationRepository {
     required String body,
     required String clientNonce,
     String? replyToEntryId,
+    String? planId,
   }) async => left(const Failure.server(message: 'Not used'));
 
   @override
@@ -465,5 +477,6 @@ final class _RetryCardRepository implements ConversationRepository {
   }) async => right(const {});
 
   @override
-  Stream<void> watchTimeline(String squadId) => const Stream<void>.empty();
+  Stream<void> watchTimeline(String squadId, {String? planId}) =>
+      const Stream<void>.empty();
 }

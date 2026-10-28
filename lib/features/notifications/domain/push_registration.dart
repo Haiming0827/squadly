@@ -1,9 +1,15 @@
 /// Notification permission and delivery are best effort. Messages remain in
 /// the conversation repository even when a push token cannot be registered.
-enum PushRegistrationResult { registered, unavailable }
+enum PushRegistrationResult { registered, permissionRequired, unavailable }
 
 abstract interface class PushTokenSource {
   String get provider;
+
+  /// Whether this app build contains a delivery provider for this platform.
+  Future<bool> isAvailable();
+
+  /// Whether this installation is already allowed to show notifications.
+  Future<bool> isAuthorized();
 
   /// Returns null when the platform or user does not permit notifications.
   Future<String?> requestToken();
@@ -38,9 +44,18 @@ final class PushRegistration {
   final PushDeviceIdStore deviceIds;
   final PushTokenRepository repository;
 
-  Future<PushRegistrationResult> register() async {
+  Future<PushRegistrationResult> register({
+    bool requestPermission = false,
+  }) async {
+    if (!await source.isAvailable()) return PushRegistrationResult.unavailable;
+    if (!requestPermission && !await source.isAuthorized()) {
+      return PushRegistrationResult.permissionRequired;
+    }
     final token = await source.requestToken();
     if (token == null || token.isEmpty) {
+      if (!await source.isAuthorized()) {
+        return PushRegistrationResult.permissionRequired;
+      }
       return PushRegistrationResult.unavailable;
     }
     await repository.register(

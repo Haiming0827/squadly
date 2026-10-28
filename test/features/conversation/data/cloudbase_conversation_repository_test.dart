@@ -70,11 +70,59 @@ void main() {
       );
       addTearDown(client.dispose);
 
-      final result = await CloudBaseConversationRepository(
-        client,
-      ).loadRecent('squad-1');
+      final result = await CloudBaseConversationRepository(client)
+          .loadRecent('squad-1');
 
       expect(result.isLeft(), isTrue);
+    });
+
+    test('loads plan messages through the plan-scoped RPC', () async {
+      http.Request? capturedRequest;
+      final client = PostgrestClient(
+        'https://env.example/v1/rdb/rest',
+        httpClient: MockClient((request) async {
+          capturedRequest = request;
+          return http.Response(
+            jsonEncode([
+              {
+                'id': 'message-plan-1',
+                'squad_id': 'squad-1',
+                'plan_id': 'plan-1',
+                'sender_id': 'user-1',
+                'author': {'nickname': '小明'},
+                'kind': 'text',
+                'body': '计划讨论',
+                'card_id': null,
+                'card_snapshot': null,
+                'reply_to_message_id': null,
+                'client_nonce': 'nonce-plan-1',
+                'created_at': '2026-10-12T10:00:00Z',
+              },
+            ]),
+            200,
+            headers: {'content-type': 'application/json'},
+            request: request,
+          );
+        }),
+      );
+      addTearDown(client.dispose);
+
+      final result = await CloudBaseConversationRepository(client)
+          .loadRecent('squad-1', planId: 'plan-1');
+
+      expect(
+        capturedRequest?.url.path,
+        '/v1/rdb/rest/rpc/page_squad_plan_discussion',
+      );
+      expect(jsonDecode(capturedRequest!.body), {
+        'p_squad_id': 'squad-1',
+        'p_plan_id': 'plan-1',
+        'p_limit': 50,
+      });
+      expect(
+        result.match((failure) => failure, (entries) => entries.single.planId),
+        'plan-1',
+      );
     });
   });
 }

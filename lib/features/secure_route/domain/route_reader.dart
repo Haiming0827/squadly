@@ -12,3 +12,10 @@ abstract interface class RouteReader {
 final class RouteKeyMissing implements Exception {
   const RouteKeyMissing();
 }
+
+final class RouteDecryptionException implements Exception {
+  const RouteDecryptionException();
+
+  @override
+  String toString() => 'RouteDecryptionException';
+}

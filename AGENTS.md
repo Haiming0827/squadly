@@ -20,14 +20,14 @@
 1. 当前源码和测试：真实实现状态优先。
 2. `CLAUDE.md`：仓库级开发规则和架构约束。
 3. `docs/development-plan.md`：产品、数据库、阶段规划和详细设计。
-4. `README.md`：当前仍是 Flutter 默认模板，除非后续更新，否则不要把它当作产品事实源。
+4. `README.md`：仓库概览和启动入口；具体实现以源码、测试及对应设计/运维文档为准。
 
 如果需要改变架构、技术栈、隐私策略或核心数据模型，先更新对应文档，再实现代码。
 
 ## 技术栈
 
-- Flutter 3.x + Dart。
-- Riverpod 2.x + `riverpod_annotation`，依赖注入使用 Riverpod 内置机制。
+- Flutter 3.47.4 + Dart 3.13.3（升级时同步更新根 app、集成测试宿主和 CI）。
+- Riverpod 3.x + `riverpod_annotation` 4.x，依赖注入使用 Riverpod 内置机制；生成器版本以 `pubspec.yaml` / `pubspec.lock` 为准。
 - `go_router` 负责声明式路由和登录重定向。
 - 腾讯云 CloudBase for Supabase 版（PostgreSQL 环境）作为目标后端；身份认证使用 `cloudbase_flutter`，PostgreSQL 使用 CloudBase PG REST API（由 data 层封装）。
 - `dio` 用于 CloudBase PG REST 和第三方 API；presentation/domain 层不得直连 SDK。
@@ -55,7 +55,7 @@ supabase/migrations/    # 旧 Supabase migrations（迁移完成前仅作转换�
 docs/                   # 产品和开发设计文档
 ```
 
-现有功能模块包括 `auth`、`squad`、`fitness`、`finance`。规划中的 `travel` 和 `food` 应按同样结构创建。
+现有功能模块包括 `auth`、`squad`、`fitness`、`finance`、`travel`、`food`、`plan`、`social`、`conversation` 和 `activity_import`；新增模块继续采用相同分层。
 
 ## 架构规则
 
@@ -145,7 +145,7 @@ flutter run \
 - `cloudbase/migrations/` 下 14 位 UTC 时间戳前缀的有序 SQL 文件是 CloudBase PG 目标 migration；修改后运行 `scripts/check_cloudbase_migrations.sh` 做本地空库语法/对象和敏感数据 RLS 检查，并按 CloudBase CLI migration 命令部署到 staging。
 - 旧 `supabase/migrations/001`–`007` 只作为转换来源；不要直接向 CloudBase 部署旧目录。
 - `test/core`、`test/app`、`test/features` 下的基础单元/组件测试。
-- `integration_test/app_smoke_test.dart` 端到端冒烟测试。
+- `integration_test/integration_test/app_smoke_test.dart` 端到端冒烟测试，由独立 Flutter 测试宿主运行；执行前进入 `integration_test/` 并运行 `flutter pub get`。
 - `.github/workflows/flutter-ci.yml` CI 工作流。
 
 优先补齐方向：

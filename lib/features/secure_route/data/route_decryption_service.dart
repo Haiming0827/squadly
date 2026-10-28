@@ -7,12 +7,10 @@ import 'route_device_key_store.dart';
 /// cloud, analytics or an unprotected disk cache.
 final class RouteDecryptionService implements RouteReader {
   const RouteDecryptionService({
-    required RouteDeviceKeyStore keyStore,
-    required RouteBundleRepository repository,
-    required RouteCrypto crypto,
-  }) : _keyStore = keyStore,
-       _repository = repository,
-       _crypto = crypto;
+    required this._keyStore,
+    required this._repository,
+    required this._crypto,
+  });
 
   final RouteDeviceKeyStore _keyStore;
   final RouteBundleRepository _repository;

@@ -34,20 +34,21 @@ final class CloudBasePostgresClient {
 
 final class _CloudBaseAuthHttpClient extends http.BaseClient {
   _CloudBaseAuthHttpClient({
-    required http.Client delegate,
-    required AccessTokenReader accessTokenReader,
-    required String publishableKey,
-  }) : _delegate = delegate,
-       _accessTokenReader = accessTokenReader,
-       _publishableKey = publishableKey;
+    required this._delegate,
+    required this._accessTokenReader,
+    required this._publishableKey,
+  });
 
   final http.Client _delegate;
   final AccessTokenReader _accessTokenReader;
   final String _publishableKey;
+  bool _closed = false;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (_closed) throw http.ClientException('Client is closed', request.url);
     final accessToken = await _accessTokenReader();
+    if (_closed) throw http.ClientException('Client is closed', request.url);
     final token = accessToken?.trim().isNotEmpty == true
         ? accessToken!.trim()
         : _publishableKey;
@@ -64,5 +65,8 @@ final class _CloudBaseAuthHttpClient extends http.BaseClient {
   }
 
   @override
-  void close() => _delegate.close();
+  void close() {
+    _closed = true;
+    _delegate.close();
+  }
 }

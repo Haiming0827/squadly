@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-28",
+  "scope": "shared-memory upload boundary regression",
+  "cloudFailureBeforeFix": {
+    "runtime": "Nodejs20.19",
+    "reservationRpcHttp": 200,
+    "storageRequestHttp": null,
+    "errorType": "TypeError",
+    "safeBuiltinMessage": "ArrayBuffer: SharedArrayBuffer is not allowed."
+  },
+  "localFailureBeforeFix": {
+    "runtime": "Node 26.8.2",
+    "ordinaryBuffer": "pass",
+    "sharedBuffer": "failed byte-equality check",
+    "fixtureBytesExpected": 633,
+    "bytesReceived": 1015
+  },
+  "afterFix": {
+    "ordinaryAndSharedHttpTestsPassed": 2,
+    "photoAndCleanupNodeTestsPassed": 19,
+    "temporaryInstrumentationRemoved": true,
+    "diagnosticRuntimeEnvironmentRemoved": true
+  },
+  "backendSourceSha256": "93219c5b2b2c154ce4d60f731e416d294af0daabffedbedda0f4473eaacf3e06"
+}

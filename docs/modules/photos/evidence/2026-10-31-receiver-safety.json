@@ -1,0 +1,324 @@
+{
+  "date": "2026-10-31",
+  "scope": "A8 receiver hide/report",
+  "local": {
+    "fullVerifyAllPassed": true,
+    "fullVerifyBaselineFlutterPassed": 595,
+    "fullFlutterAfterSmallScreenAndHiddenReadTestsPassed": 598,
+    "skipped": 3,
+    "realModeTestsPassed": 14,
+    "swiftWidgetTestsPassed": 52,
+    "photosNodeWithCleanupPassed": 23,
+    "actualPgConcurrentPublicAndPrivateHead": true,
+    "finalRootAnalyzePassed": true
+  },
+  "ios": {
+    "syntheticUiFlowPassed": 1,
+    "screenshotsReviewed": 4,
+    "simulatorBuild": true,
+    "unsignedDeviceBuild": true,
+    "extensionCredentialIsolationPassed": true,
+    "installedOnAAndB": true,
+    "physicalDeviceVerified": false,
+    "launchSucceededOnAAndB": true
+  },
+  "staging": {
+    "migrationVersion": "20261031000200",
+    "taskId": "task-0822f5967e1c464e",
+    "taskStatus": "Succeed",
+    "applied": 21,
+    "pending": 0,
+    "conflicts": 0,
+    "photosFunction": {
+      "active": true,
+      "runtime": "Nodejs20.19",
+      "systemLogsDisabled": true,
+      "triggers": 0
+    },
+    "ordinaryUserVerification": {
+      "scope": "real ordinary A/B/C receiver safety with real synthetic media",
+      "checks": [
+        {
+          "check": "a_identity_http",
+          "passed": true
+        },
+        {
+          "check": "a_ordinary_identity",
+          "passed": true
+        },
+        {
+          "check": "a_profile_http",
+          "passed": true
+        },
+        {
+          "check": "a_own_profile_positive",
+          "passed": true
+        },
+        {
+          "check": "b_identity_http",
+          "passed": true
+        },
+        {
+          "check": "b_ordinary_identity",
+          "passed": true
+        },
+        {
+          "check": "b_profile_http",
+          "passed": true
+        },
+        {
+          "check": "b_own_profile_positive",
+          "passed": true
+        },
+        {
+          "check": "c_identity_http",
+          "passed": true
+        },
+        {
+          "check": "c_ordinary_identity",
+          "passed": true
+        },
+        {
+          "check": "c_profile_http",
+          "passed": true
+        },
+        {
+          "check": "c_own_profile_positive",
+          "passed": true
+        },
+        {
+          "check": "create_owned_fixture",
+          "passed": true
+        },
+        {
+          "check": "invite_b",
+          "passed": true
+        },
+        {
+          "check": "b_redeems_real_invite",
+          "passed": true
+        },
+        {
+          "check": "a_synthetic_device_registered",
+          "passed": true
+        },
+        {
+          "check": "b_synthetic_device_registered",
+          "passed": true
+        },
+        {
+          "check": "publish_synthetic_0",
+          "passed": true
+        },
+        {
+          "check": "own_object_authority_0",
+          "passed": true
+        },
+        {
+          "check": "publish_synthetic_1",
+          "passed": true
+        },
+        {
+          "check": "own_object_authority_1",
+          "passed": true
+        },
+        {
+          "check": "a_head",
+          "passed": true
+        },
+        {
+          "check": "b_head",
+          "passed": true
+        },
+        {
+          "check": "same_initial_projection",
+          "passed": true
+        },
+        {
+          "check": "b_bytes_before_hide",
+          "passed": true
+        },
+        {
+          "check": "real_bytes_positive",
+          "passed": true
+        },
+        {
+          "check": "b_hide",
+          "passed": true
+        },
+        {
+          "check": "hide_confirmation",
+          "passed": true
+        },
+        {
+          "check": "scoped_private_hint_inspection",
+          "passed": true
+        },
+        {
+          "check": "hide_only_hints_receiver_devices",
+          "passed": true
+        },
+        {
+          "check": "b_head",
+          "passed": true
+        },
+        {
+          "check": "private_version_and_fallback",
+          "passed": true
+        },
+        {
+          "check": "a_head",
+          "passed": true
+        },
+        {
+          "check": "author_head_unchanged",
+          "passed": true
+        },
+        {
+          "check": "a_bytes_after_b_hide",
+          "passed": true
+        },
+        {
+          "check": "author_bytes_unchanged",
+          "passed": true
+        },
+        {
+          "check": "hidden_bytes_denied",
+          "passed": true
+        },
+        {
+          "check": "hidden_parent_http",
+          "passed": true
+        },
+        {
+          "check": "hidden_parent_denied",
+          "passed": true
+        },
+        {
+          "check": "hidden_wall_http",
+          "passed": true
+        },
+        {
+          "check": "hidden_wall_excludes_target",
+          "passed": true
+        },
+        {
+          "check": "receiver_timeline_http",
+          "passed": true
+        },
+        {
+          "check": "hidden_timeline_tombstone",
+          "passed": true
+        },
+        {
+          "check": "repeat_hide",
+          "passed": true
+        },
+        {
+          "check": "b_head",
+          "passed": true
+        },
+        {
+          "check": "repeat_hide_keeps_version",
+          "passed": true
+        },
+        {
+          "check": "self_report_denied",
+          "passed": true
+        },
+        {
+          "check": "c_hide_denied",
+          "passed": true
+        },
+        {
+          "check": "c_report_denied",
+          "passed": true
+        },
+        {
+          "check": "anonymous_hide_denied",
+          "passed": true
+        },
+        {
+          "check": "anonymous_report_denied",
+          "passed": true
+        },
+        {
+          "check": "free_form_reason_rejected",
+          "passed": true
+        },
+        {
+          "check": "b_report",
+          "passed": true
+        },
+        {
+          "check": "report_confirmation",
+          "passed": true
+        },
+        {
+          "check": "b_head",
+          "passed": true
+        },
+        {
+          "check": "report_hides_last_photo",
+          "passed": true
+        },
+        {
+          "check": "repeat_report",
+          "passed": true
+        },
+        {
+          "check": "scoped_server_report_inspection",
+          "passed": true
+        },
+        {
+          "check": "one_original_report_case",
+          "passed": true
+        },
+        {
+          "check": "a_report_table_denied",
+          "passed": true
+        },
+        {
+          "check": "b_report_table_denied",
+          "passed": true
+        },
+        {
+          "check": "c_report_table_denied",
+          "passed": true
+        },
+        {
+          "check": "scoped_fixture_and_object_cleanup",
+          "passed": true
+        }
+      ],
+      "passed": 63,
+      "failed": 0,
+      "serviceKeyUsedForUserAssertions": false,
+      "serviceKeyUsedForScopedReportInspectionAndCleanup": true,
+      "globalClaimAttempted": false,
+      "providerInvoked": false,
+      "completePhotoLoop": false
+    }
+  },
+  "sourceSha256": {
+    "cloudbase/migrations/20261031000200_photo_receiver_safety.sql": "08c6589440cb949b53174f3ca5a3e4b0426d0af09a06fa0e8081abfb2558fefa",
+    "cloudbase/functions/photos/index.js": "8a4ca060fdbdb07e8d8c52913cf5d8643b7cbfd4647bca38173342881b1852f8",
+    "lib/features/photos/domain/photo.dart": "10b76f1d0b255f3735feb760dc6826af425603430751a203c3cc058ce3fdbbf6",
+    "lib/features/photos/domain/photo_safety_repository.dart": "8fcf20b4b00f715bbaac20268bb87ccd929076d25413098b73a1987be8be1a01",
+    "lib/features/photos/domain/coordinated_photo_safety.dart": "4cd10a1f7c3be6af1f8e6cbc3e799adb43c4f893dac2433e6361586eba38b832",
+    "lib/features/photos/data/cloudbase_photo_repository.dart": "5a57054bab42dd1cbd9df9dc36e0296bd92c3dfd51aa971779eb7e11a695342d",
+    "lib/features/photos/presentation/photo_message_view.dart": "83755fe8c6743d05cefed9337e598fa7b4303a51eef80984341181a85130673a",
+    "lib/features/photo_widget/domain/photo_widget_service.dart": "5799eed7ff0b7ee8203901ab369978e06cf27879ecd9f4e87a98d1eaf9d98776",
+    "scripts/verify_photo_receiver_staging.py": "c4c6401ac8ec0701987fe4c1daef3d40dcab75f4bcb38fb925114a2fb38e4854",
+    "scripts/sql/check_photo_receiver_safety.sql": "9588311ef59edb33dc86774054082f93d5c61c5bc80d873690a6394349fecede",
+    "scripts/sql/check_photo_head_concurrency.py": "72c7fbc51be8f22893de1186e6df7612ce13a3c070b070e44bb13b115bfb0902"
+  },
+  "notVerified": [
+    "APNs provider delivery",
+    "system widget paint after hiding",
+    "physical devices",
+    "manual moderation operations",
+    "cold-launch SDK coordination and long-session refresh"
+  ],
+  "completePhotoLoop": false
+}

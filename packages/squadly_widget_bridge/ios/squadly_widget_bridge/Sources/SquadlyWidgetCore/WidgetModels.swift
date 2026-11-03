@@ -14,6 +14,9 @@ public struct WidgetSession: Codable, Equatable {
   public let scope: String
   public let generation: String
   public let expiresAt: Date
+  public init(scope: String, generation: String, expiresAt: Date) {
+    self.scope = scope; self.generation = generation; self.expiresAt = expiresAt
+  }
   public func valid(at clock: WidgetClock) -> Bool { clock.now < expiresAt }
 }
 

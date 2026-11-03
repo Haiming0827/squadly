@@ -145,7 +145,9 @@ class _PhotoComposerScreenState extends ConsumerState<PhotoComposerScreen>
         case PhotoSubmissionPending(:final failure):
           setState(() {
             _failure = failure;
-            _queueMessage = '已保存待发，联网后会继续重试';
+            _queueMessage = failure is NetworkFailure
+                ? '已保存待发，联网后会继续重试'
+                : '已保存待发，可稍后使用原照片重试';
           });
         case PhotoSubmissionUnconfirmed(:final failure):
           setState(() {

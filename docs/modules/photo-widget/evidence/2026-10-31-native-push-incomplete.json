@@ -1,0 +1,35 @@
+{
+  "scope": "simulator-notification-delivery",
+  "passed": false,
+  "systemCallbackProven": false,
+  "APNsProviderDeliveryProven": false,
+  "desktopPaintProven": false,
+  "observed": {
+    "defaultFlutterHostEntitlementsEmpty": true,
+    "sourceAPSEntitlementAloneDidNotProveDelivery": true,
+    "provisionalAuthorizationGranted": true,
+    "backgroundRefreshAvailable": true,
+    "protectedDataAvailable": true,
+    "registrationCallbackObserved": false
+  },
+  "signingTrials": [
+    {
+      "kind": "ad-hoc-with-APS",
+      "outcome": "launch_denied",
+      "domain": "FBSOpenApplicationServiceErrorDomain",
+      "code": 1
+    },
+    {
+      "kind": "existing-Apple-Development-identity",
+      "outcome": "launch_denied",
+      "domain": "FBSOpenApplicationServiceErrorDomain",
+      "code": 1
+    }
+  ],
+  "cleanup": {
+    "unsupportedSigningHelpersRemoved": true,
+    "standardTestBundleRestored": true,
+    "nativeCDenialRetestPassed": true
+  },
+  "completePhotoLoop": false
+}

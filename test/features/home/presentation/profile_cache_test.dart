@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:squadly/app/demo/demo_store.dart';
 import 'package:squadly/app/providers/conversation_cache_provider.dart';
 import 'package:squadly/features/conversation/domain/conversation_cache.dart';
-import 'package:squadly/features/home/presentation/screens/profile_screen.dart';
+import 'package:squadly/features/home/presentation/screens/profile_settings_screen.dart';
 
 void main() {
   testWidgets(
@@ -21,7 +21,13 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(home: Scaffold(body: ProfileScreen())),
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ProfileSettingsScreen(
+                section: ProfileSettingsSection.privacy,
+              ),
+            ),
+          ),
         ),
       );
       await tester.pumpAndSettle();

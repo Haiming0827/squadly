@@ -1,0 +1,86 @@
+{
+  "date": "2026-10-31",
+  "scope": "bounded existing-engine SDK to native credential handoff",
+  "local": {
+    "flutterPassed": 636,
+    "skipped": 3,
+    "realModePassed": 14,
+    "swiftCorePassed": 20,
+    "swiftBackgroundPassed": 41,
+    "rootAndHostAnalyzePassed": true,
+    "formatUnchanged": true,
+    "sameOriginalNotificationDeadline": true,
+    "lateSdkAndLateVaultRejected": true,
+    "sameScopePositiveLifecycleDeferred": true,
+    "otherScopeAndLogoutNotDeferred": true
+  },
+  "staging": {
+    "ordinaryCSdkNativeHandoffWithDelayedRegistrationPassed": 1,
+    "sdkRefreshGrantAndRotationObserved": true,
+    "nativeCommitAccepted": true,
+    "nonmemberRejectedBeforeMedia": true,
+    "cOwnProfilePositiveControl": true,
+    "ordinaryANativePhotoFetchPassed": 1,
+    "aSdkRefreshOrSessionMutationByAcceptanceScript": false,
+    "sdkNativeMemberMediaPositiveProven": false,
+    "privateFixturesRemoved": true,
+    "cRotatedMaterialCollected": true
+  },
+  "coldPersistence": {
+    "seedPassed": 1,
+    "newProcessVerifyPassed": 1,
+    "syntheticIdentityAndRepository": true,
+    "systemPushProven": false
+  },
+  "build": {
+    "simulator": true,
+    "unsignedDevice": true,
+    "extensionCredentialIsolation": true,
+    "installedAndLaunchedOnMainAB": true
+  },
+  "sourceSha256": {
+    "lib/app/providers/photo_widget_providers.dart": "7a7e14288905ff384771a51ed800a9cdbb8aad636b59b9d481b8532b4311821c",
+    "lib/features/photo_widget/domain/photo_widget_lifecycle.dart": "f6ed7756fd49946e1449c4aa9e4de8981f1fa6487dc41686b4c187021e47c0f3",
+    "lib/features/photo_widget/domain/photo_widget.dart": "8ca10d7da42ad1fb3ecb061c722f4ad0c42a147dc39a052a75a7c1b173cfe16a",
+    "lib/features/photo_widget/data/native_photo_widget_store.dart": "d92f4e70d2b15fd0c4f51afb7cae49429b8c0817dd7918198bfbf9c04ef83b97",
+    "lib/features/photo_widget/data/photo_background_renewal.dart": "2e2dcec92f15ab4b762b93468c38ec91e37da885de8c779a44e134eb00839648",
+    "lib/core/network/cloudbase_auth_gate.dart": "da7c89ecf434876e11b98c192ca33728b1b4dd40b9bd851f728eebf4bc967791",
+    "test/features/photo_widget/photo_background_renewal_test.dart": "3f048f9854cd9268c76b560a1e7ae3b125dd2d84334956855cdc5db3dc7faf18",
+    "test/features/photo_widget/photo_widget_lifecycle_test.dart": "b44a0312fb0472ebd87a7e2c331d98261beec73e57a2bac3394ce019ce466112",
+    "test/app/providers/photo_widget_authority_test.dart": "be8a707d6c77bdc66c57b5328ad5b89b8665f2f6c1d230ff27a36f1a8763452f",
+    "integration_test/integration_test/sdk_session_recovery_staging_test.dart": "7fe1d918ad5216cc67f366c1957dcc83dea610ab4b84002fbf406d70ce1b6185",
+    "scripts/prepare_sdk_session_staging.py": "f3e220e11f2c16af08facb3e971107bd068c2fab9453e8f26cf897051b4ddee8",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/SquadlyWidgetCore/WidgetModels.swift": "3a6fe0074588730d8babaaf6e50e9d762f95c881515b3eaa94ba907aadcabff3",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/SquadlyWidgetCore/WidgetStore.swift": "7ac06c1dc35f63e0e90a5d951eb085131300b370f9561d9ffde5000d99eaf298",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/SquadlyWidgetBackground/BackgroundCredential.swift": "9d6e61e3c24c369522d4602583848b03fcd1af0dba90140b62f8884e32be2c41",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/SquadlyWidgetBackground/BackgroundCredentialRenewal.swift": "0c756acedc5e2b716062d712e856f1ec992950647aa4e149ab7695648d5dfa91",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/SquadlyWidgetBackground/BackgroundPhotoSync.swift": "0ffdc0fe57d4b77a48df655fc421856fd5c876803b53f96470ea6b3c5ffcc170",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/squadly_widget_bridge/PhotoBackgroundRuntime.swift": "069b131947aea66a68284c5653eebad08e90b129bb2fe5d7228bcb9916d6bec0",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/squadly_widget_bridge/SquadlyWidgetBridgePlugin.swift": "a11958d785d6364d21869d01ab3ff06cd1b349bb65af7e3d217aeb266b0f4050",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Tests/SquadlyWidgetBackgroundTests/BackgroundCredentialTests.swift": "68d1510270e98326201de52aa0c976fc11baf084b4cde1bb5e7162d2cfc08236",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Tests/SquadlyWidgetBackgroundTests/BackgroundPhotoSyncTests.swift": "67cd53ee7620040eb47017f0c1efb936f1e9f940a46e3edd7791e5d758820343"
+  },
+  "logSha256": {
+    "flutter": "65e5ee0a00fb2568a980659abd1474a1982b3f5db108927c225fae1cde68255a",
+    "realMode": "69bfb28199adb67f511eec47d334d07d4f43d772e02e27a319a67edf351d290e",
+    "swift": "e7f17ed63c70c0b485fc03f448baa923ad8ddba18aacfcf5788b90e9029e57ed",
+    "rootAnalyze": "da6443b9783362a38768d017553fe39b81aafbd4d985e26fc27451d003183e38",
+    "hostAnalyze": "c9bf7b8c9fc881f1ba59d6f27b93df38ebd16bf73d53753a8032a5622a0b5352",
+    "sdkNativeC": "f4fbf63151691333a73b8d5f8a56a15ae52baeae04e22679721c0e5ee32f5b08",
+    "nativePositiveA": "fc045f58f8ac3bf571b86a7ca6d93ae7c495d5e012c7905120171a433add2bf4",
+    "coldSeed": "93111dd5d1ba14740571338979b5164b8756f5159f1da1935fd1dd59f5570cf4",
+    "coldVerify": "c4b494a68125fc655f835d60916e3a97738ab6e29858f7f29d75c8f20b4beb5a",
+    "simulatorBuild": "89b70b70ccd6ad1ae93ea382d880979c3c82a5287f55fe2150fcad8195a19696",
+    "unsignedDeviceBuild": "5e7b36af9d29b8b688f7d078153ad8e1bb81d9fcaeed488f49efa15f3c182e3b",
+    "extensionIsolation": "c130b21d513f8e559d27e6e526120f215d76b86d1a79051594fbe45eaed36c1b",
+    "format": "b49d9e17b7a90a1d6fa59a3e73fd6e073ef664681a4a0b310596c97fd47f9680"
+  },
+  "unverified": [
+    "single real member SDK rotation to native media positive flow",
+    "normal app bootstrap and actual system cold notification handoff",
+    "APNs delivery and desktop painting",
+    "signed-device lock reboot force-quit low-power and long absence matrix",
+    "Android A6 and B/C and release gates"
+  ],
+  "completePhotoLoop": false
+}

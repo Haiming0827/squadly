@@ -1,0 +1,253 @@
+{
+  "date": "2026-10-31",
+  "scope": "A8 revocation/member invalidation hints, server contract only",
+  "sourceSha256": {
+    "cloudbase/functions/push-deliveries/apns-transport.js": "76d44e972d0c1a5a41751c6fc0e753704306114921b14f5cff02532991113031",
+    "cloudbase/functions/push-deliveries/apns-transport.test.js": "188d58c67265f9208c658a95dc973141b15bf1013e76174a59e5bb101068069e",
+    "cloudbase/functions/push-deliveries/apns.js": "6024759c5cdc838f46b1594c8fede362cdc0aee42b605664e05b615e3e07c371",
+    "cloudbase/functions/push-deliveries/deployment.test.js": "af22551c45103f21932d2c38b0c395dcad1f4dcdf17caf7eaab12ea5eea16c75",
+    "cloudbase/functions/push-deliveries/index.js": "3d4456e57c49544d036a9001433aa5287b8b7ddf83fd9389663cd8c2f7c2b7a8",
+    "cloudbase/functions/push-deliveries/index.test.js": "087711205e8af354eec2ea9b69d75e6e572dea6c907922be2b347eab55ec6cff",
+    "cloudbase/functions/push-deliveries/mipush.js": "dd84d3f977858396c622256078ea74a74cfb785461246c984a370c6291f6c6bc",
+    "cloudbase/migrations/20261031000100_photo_revocation_sync.sql": "e38500227197330f1ed039a3524bd4263ea42f7fbd9952a29cde231f028b53b9",
+    "scripts/check_cloudbase_migrations.sh": "1b08de3d3fc5c1fccbbceab824aff40358d6c514ea3b5152fec25d305fd7852b",
+    "scripts/sql/check_photo_revocation_sync.sql": "72746907d9712b4fa3cb2f666d5dbb2c6573d9331612d8c627f9fbc7aa63a637",
+    "scripts/sql/check_photo_sync_concurrency.py": "73c6d707b06f50f1c1fd6d1390453d031e5888b2e5dfeb048d59dcee6e29d676",
+    "scripts/verify_photo_sync_events_staging.py": "4dc4f06a168b0dbd5993e37aa88fc2fac69c6548cf7c145c7012b19516e003c7",
+    "scripts/verify_photo_sync_staging.py": "0337b705701a6b75432a8c46f9fb151c4c0f5eb969bb83567610b69639e634d4"
+  },
+  "local": {
+    "fullVerifierPassed": true,
+    "flutterPassed": 580,
+    "flutterSkipped": 3,
+    "realModePassed": 14,
+    "swiftWidgetPassed": 52,
+    "pushWorkerPassed": 29,
+    "actualConcurrentPostgresClaimsAndReceiptRace": true,
+    "finalExpandedSqlPassed": true,
+    "fullVerifierScope": "Full baseline, then expanded lease-reclaim/eight-attempt SQL rerun separately"
+  },
+  "iosPrivateKeychainLatest": {
+    "passed": 1,
+    "systemNotificationVerified": false
+  },
+  "stagingMigration": {
+    "version": "20261031000100",
+    "taskId": "task-e80b8395076449e5",
+    "status": "Succeed",
+    "localCount": 20,
+    "remoteCount": 20,
+    "pending": 0
+  },
+  "stagingPermissions": {
+    "environment": "staging",
+    "ordinaryActor": "controlled_nonmember_c",
+    "serviceKeyUsed": false,
+    "dispatchAttempted": false,
+    "checks": [
+      {
+        "check": "ordinary_identity_positive",
+        "passed": true,
+        "httpStatus": 200
+      },
+      {
+        "check": "own_profile_positive",
+        "passed": true,
+        "httpStatus": 200
+      },
+      {
+        "check": "ordinary_table_denied",
+        "passed": true,
+        "httpStatus": 403
+      },
+      {
+        "check": "ordinary_claim_denied",
+        "passed": true,
+        "httpStatus": 403
+      },
+      {
+        "check": "ordinary_quiet_claim_denied",
+        "passed": true,
+        "httpStatus": 403
+      },
+      {
+        "check": "ordinary_enqueue_denied",
+        "passed": true,
+        "httpStatus": 403
+      },
+      {
+        "check": "ordinary_complete_denied",
+        "passed": true,
+        "httpStatus": 403
+      },
+      {
+        "check": "ordinary_quiet_complete_denied",
+        "passed": true,
+        "httpStatus": 403
+      },
+      {
+        "check": "anonymous_table_denied",
+        "passed": true,
+        "httpStatus": 401
+      },
+      {
+        "check": "anonymous_claim_denied",
+        "passed": true,
+        "httpStatus": 401
+      }
+    ],
+    "passed": 10,
+    "failed": 0
+  },
+  "worker": {
+    "active": true,
+    "runtime": "Nodejs20.19",
+    "systemLogsDisabled": true,
+    "timerCount": 0,
+    "providerConfigured": false,
+    "gatewayChecks": [
+      {
+        "check": "method",
+        "httpStatus": 405,
+        "passed": true
+      },
+      {
+        "check": "unauthorized",
+        "httpStatus": 401,
+        "passed": true
+      },
+      {
+        "check": "closed",
+        "httpStatus": 503,
+        "passed": true
+      }
+    ],
+    "dispatchAttempted": false
+  },
+  "unverified": [
+    "real A/B revocation and departure event-to-desktop clearing",
+    "APNs platform delivery",
+    "cold-launch SDK/native coordination",
+    "physical device signing/lock/reboot/widget rendering",
+    "Android privacy hints"
+  ],
+  "stagingEvents": {
+    "environment": "staging",
+    "scope": "C-owned synthetic status/removal/delete event fixture",
+    "ordinaryJwtUsedForIdentityCreationRegistrationAndDenial": true,
+    "serverKeyUsedOnlyForScopedSyntheticMutationAndInspection": true,
+    "globalClaimAttempted": false,
+    "providerInvoked": false,
+    "actualUserPhotoUsed": false,
+    "checks": [
+      {
+        "check": "ordinary_c_identity_positive",
+        "passed": true
+      },
+      {
+        "check": "ordinary_c_created_own_fixture",
+        "passed": true
+      },
+      {
+        "check": "ordinary_c_registered_synthetic_token",
+        "passed": true
+      },
+      {
+        "check": "scoped_server_read",
+        "passed": true
+      },
+      {
+        "check": "no_other_account_in_fixture",
+        "passed": true
+      },
+      {
+        "check": "no_quiet_event_before_change",
+        "passed": true
+      },
+      {
+        "check": "synthetic_activation",
+        "passed": true
+      },
+      {
+        "check": "synthetic_inactivation",
+        "passed": true
+      },
+      {
+        "check": "scoped_server_read",
+        "passed": true
+      },
+      {
+        "check": "no_other_account_in_fixture",
+        "passed": true
+      },
+      {
+        "check": "inactivation_trigger_generated_hint",
+        "passed": true
+      },
+      {
+        "check": "repeat_state_write",
+        "passed": true
+      },
+      {
+        "check": "scoped_server_read",
+        "passed": true
+      },
+      {
+        "check": "no_other_account_in_fixture",
+        "passed": true
+      },
+      {
+        "check": "unchanged_state_did_not_enqueue",
+        "passed": true
+      },
+      {
+        "check": "synthetic_member_removal",
+        "passed": true
+      },
+      {
+        "check": "scoped_server_read",
+        "passed": true
+      },
+      {
+        "check": "no_other_account_in_fixture",
+        "passed": true
+      },
+      {
+        "check": "former_member_still_receives_hint",
+        "passed": true
+      },
+      {
+        "check": "ordinary_c_access_removed",
+        "passed": true
+      },
+      {
+        "check": "synthetic_squad_deleted",
+        "passed": true
+      },
+      {
+        "check": "scoped_server_read",
+        "passed": true
+      },
+      {
+        "check": "no_other_account_in_fixture",
+        "passed": true
+      },
+      {
+        "check": "hint_survives_squad_deletion",
+        "passed": true
+      },
+      {
+        "check": "synthetic_fixture_cleanup",
+        "passed": true
+      }
+    ],
+    "passed": 25,
+    "failed": 0
+  },
+  "iosSimulatorMainApp": {
+    "installedOnAAndB": true,
+    "launchSucceededOnAAndB": true,
+    "dataPreserved": true,
+    "loginStatusVerified": false
+  }
+}

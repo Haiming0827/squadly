@@ -1,0 +1,205 @@
+{
+  "date": "2026-10-31",
+  "scope": "ordinary C actual SDK rotation to native member media",
+  "testPassed": true,
+  "nativeMemberPhoto": {
+    "passed": true,
+    "renewalAndFetchMilliseconds": 10979,
+    "duplicateDidNotRenew": true,
+    "readCursorUnchanged": true
+  },
+  "checks": [
+    {
+      "check": "a_identity_http",
+      "passed": true
+    },
+    {
+      "check": "a_ordinary_identity",
+      "passed": true
+    },
+    {
+      "check": "a_profile_http",
+      "passed": true
+    },
+    {
+      "check": "a_own_profile",
+      "passed": true
+    },
+    {
+      "check": "c_identity_http",
+      "passed": true
+    },
+    {
+      "check": "c_ordinary_identity",
+      "passed": true
+    },
+    {
+      "check": "c_profile_http",
+      "passed": true
+    },
+    {
+      "check": "c_own_profile",
+      "passed": true
+    },
+    {
+      "check": "create_fixture",
+      "passed": true
+    },
+    {
+      "check": "issue_c_invite",
+      "passed": true
+    },
+    {
+      "check": "c_redeems_invite",
+      "passed": true
+    },
+    {
+      "check": "c_members_http",
+      "passed": true
+    },
+    {
+      "check": "exact_two_ordinary_members",
+      "passed": true
+    },
+    {
+      "check": "publish_synthetic",
+      "passed": true
+    },
+    {
+      "check": "own_object_authority",
+      "passed": true
+    },
+    {
+      "check": "c_visible_head_http",
+      "passed": true
+    },
+    {
+      "check": "c_visible_synthetic_photo",
+      "passed": true
+    },
+    {
+      "check": "initial_read_cursor_http",
+      "passed": true
+    },
+    {
+      "check": "no_initial_read_cursor",
+      "passed": true
+    },
+    {
+      "check": "rotated_c_collected",
+      "passed": true
+    },
+    {
+      "check": "scoped_media_lookup",
+      "passed": true
+    },
+    {
+      "check": "scoped_attempt_lookup",
+      "passed": true
+    },
+    {
+      "check": "author_revoke",
+      "passed": true
+    },
+    {
+      "check": "delete_scoped_object",
+      "passed": true
+    },
+    {
+      "check": "object_absent",
+      "passed": true
+    },
+    {
+      "check": "clear_fixture_media_cycle",
+      "passed": true
+    },
+    {
+      "check": "delete_fixture_squad_messages",
+      "passed": true
+    },
+    {
+      "check": "delete_fixture_photo_upload_attempts",
+      "passed": true
+    },
+    {
+      "check": "delete_fixture_photo_media",
+      "passed": true
+    },
+    {
+      "check": "delete_fixture_squads",
+      "passed": true
+    },
+    {
+      "check": "delete_fixture_photo_sync_deliveries",
+      "passed": true
+    },
+    {
+      "check": "verify_squads",
+      "passed": true
+    },
+    {
+      "check": "squads_absent",
+      "passed": true
+    },
+    {
+      "check": "verify_squad_messages",
+      "passed": true
+    },
+    {
+      "check": "squad_messages_absent",
+      "passed": true
+    },
+    {
+      "check": "verify_photo_media",
+      "passed": true
+    },
+    {
+      "check": "photo_media_absent",
+      "passed": true
+    },
+    {
+      "check": "verify_photo_sync_deliveries",
+      "passed": true
+    },
+    {
+      "check": "photo_sync_deliveries_absent",
+      "passed": true
+    }
+  ],
+  "serviceKeyUsedForUserAssertions": false,
+  "serviceKeyUsedForScopedCleanup": true,
+  "pushProviderInvoked": false,
+  "globalClaimAttempted": false,
+  "completePhotoLoop": false,
+  "verification": {
+    "flutterPassed": 636,
+    "flutterSkipped": 3,
+    "rootAndHostAnalyzePassed": true,
+    "privateFixtureAndLedgerRemoved": true,
+    "freshControlledCRotationCollected": true,
+    "nativeMethodChannelFlow": true,
+    "actualApnsOrDesktopPainting": false,
+    "normalAppBootstrapAndCompositionProven": false
+  },
+  "sourceSha256": {
+    "scripts/verify_sdk_native_member_staging.py": "101105b799bee5c31caa860f35e6d34e05f4bdda2fc3e6fa583bb636c2fe6d03",
+    "scripts/prepare_sdk_session_staging.py": "f3e220e11f2c16af08facb3e971107bd068c2fab9453e8f26cf897051b4ddee8",
+    "integration_test/integration_test/sdk_session_recovery_staging_test.dart": "4648b9e6621b9099570ea7b9064f91e1c76fe11a5201381fa997cedd8ef6ebd9",
+    "lib/features/photo_widget/data/photo_background_renewal.dart": "2e2dcec92f15ab4b762b93468c38ec91e37da885de8c779a44e134eb00839648",
+    "lib/app/providers/photo_widget_providers.dart": "7a7e14288905ff384771a51ed800a9cdbb8aad636b59b9d481b8532b4311821c",
+    "lib/core/network/cloudbase_auth_gate.dart": "da7c89ecf434876e11b98c192ca33728b1b4dd40b9bd851f728eebf4bc967791",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/SquadlyWidgetBackground/BackgroundCredentialRenewal.swift": "0c756acedc5e2b716062d712e856f1ec992950647aa4e149ab7695648d5dfa91",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/SquadlyWidgetBackground/BackgroundCredential.swift": "9d6e61e3c24c369522d4602583848b03fcd1af0dba90140b62f8884e32be2c41",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/SquadlyWidgetBackground/BackgroundPhotoSync.swift": "0ffdc0fe57d4b77a48df655fc421856fd5c876803b53f96470ea6b3c5ffcc170",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/squadly_widget_bridge/PhotoBackgroundRuntime.swift": "069b131947aea66a68284c5653eebad08e90b129bb2fe5d7228bcb9916d6bec0"
+  },
+  "logSha256": {
+    "nativeMember": "18528d96f8cb2dbd0dd30994328b2dba99e70388c93a941cb40b3320a53fde1c",
+    "prepare": "d0a0dc1ad509d74b5545dee7596ef68284281808438701ee01f32fc52e5f545f",
+    "cleanup": "8f6e954dd155d56e716017503c718a956d9e85ee0e322c9dd9627aa2a88e49e6",
+    "flutter": "2bfd50471ef9fb3c492bf8e80aa7634376bb335a157fabfaab744105492cafec",
+    "rootAnalyze": "8b3b966d8871f608161c94b67857d57f996172f1d310687f639b0d22db56c3ee",
+    "hostAnalyze": "d5f18eca1f8549343c63ca5dab37f4787cf9ddee46ebd6c07046a655aaf063e2",
+    "format": "cf8e9465623cd9a08ab643e8d533c7295412963551328013eca98d5757a6a858"
+  }
+}

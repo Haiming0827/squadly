@@ -1,0 +1,50 @@
+{
+  "scope": "native-bounded-photo-fetch",
+  "verifiedAt": 1793377439,
+  "nativeSwift": {
+    "widgetCorePassed": 20,
+    "backgroundPassed": 32
+  },
+  "stagingNativeHTTPS": {
+    "memberAPassed": true,
+    "ordinaryNonmemberCPassed": true,
+    "cIdentityAndProfilePositiveControl": true,
+    "cMemberQueryHTTPStatus": 200,
+    "cFailureCode": "authorization",
+    "cCachedSyntheticPhotoCleared": true,
+    "cPrivateMaterialCleared": true,
+    "fixtureInBuildFlags": false,
+    "APNsOrBackgroundDeliveryProven": false
+  },
+  "build": {
+    "simulatorDebug": true,
+    "unsignedDeviceDebug": true,
+    "extensionCredentialCodeIsolated": true
+  },
+  "systemPushReport": "2026-10-31-native-push-incomplete.json",
+  "notVerified": [
+    "system_notification_callback",
+    "APNs_provider_delivery",
+    "actual_widget_paint",
+    "cold_engine_launch",
+    "long_background_session_recovery",
+    "physical_device"
+  ],
+  "completePhotoLoop": false,
+  "sourceSHA256": {
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/SquadlyWidgetBackground/BackgroundPhotoSync.swift": "2c2f422a8f490afa632cfce15c440760e2e440dbdf7b154dc35c63006f3dd14a",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/SquadlyWidgetBackground/BoundedHTTPTransport.swift": "528d00b7045f74418d4b3ad629b1e36af47077de74462d7584d5e16b86c5ea2b",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/SquadlyWidgetBackground/BoundedCompletion.swift": "84ca7cfa8ff9df542a807d741f9327c8c4782742d4e63652db0d0d0de5e6237e",
+    "packages/squadly_widget_bridge/ios/squadly_widget_bridge/Sources/squadly_widget_bridge/PhotoBackgroundRuntime.swift": "99d9377f720775deadb253ca479a9dbd97cc15c5b15756113b9744b782f802f6",
+    "ios/Runner/AppDelegate.swift": "bb712b458c78a734f648a15dd1146931adfbe71b029ed4ed89af06c603654559",
+    "scripts/prepare_native_photo_staging.py": "31454b0cc23a9f6b3e507a1278969944f69e072437f51b784c3b3527e8196c82",
+    "integration_test/integration_test/native_photo_fetch_staging_test.dart": "69b81fc34844f096fae668c5bfc3a79b53399fcd1955d852ea015e8c27df0ffd"
+  },
+  "latestRegression": {
+    "fullVerifierPassed": true,
+    "flutterPassed": 580,
+    "flutterSkipped": 3,
+    "realModePassed": 14,
+    "privateKeychainIntegrationPassed": 1
+  }
+}

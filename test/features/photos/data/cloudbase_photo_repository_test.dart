@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cryptography/cryptography.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:squadly/core/error/failures.dart';
 import 'package:squadly/features/photos/data/cloudbase_photo_repository.dart';
 import 'package:squadly/features/photos/domain/photo.dart';
+import 'package:squadly/features/photos/domain/photo_safety_repository.dart';
 
 const squad = '10000000-0000-4000-8000-000000000001';
 const message = '10000000-0000-4000-8000-000000000002';
@@ -62,9 +64,117 @@ CloudBasePhotoRepository repository(
 );
 Map<String, dynamic> body(RequestOptions options) => options.data is String
     ? jsonDecode(options.data as String) as Map<String, dynamic>
+    : options.data is Uint8List
+    ? jsonDecode(utf8.decode(options.data as Uint8List)) as Map<String, dynamic>
     : Map<String, dynamic>.from(options.data as Map);
 
 void main() {
+  test('camera-sized JPEG crosses the text gateway limit through the real Dio byte stream', () async {
+    final imageBytes = File('test/features/photos/fixtures/large_sanitized.jpg')
+        .readAsBytesSync();
+    final sha = (await Sha256().hash(imageBytes)).bytes
+        .map((v) => v.toRadixString(16).padLeft(2, '0'))
+        .join();
+    expect(imageBytes.length, greaterThan(100 * 1024));
+    final large = draft(parent: message).copyWith(
+      image: PhotoImage(
+        bytes: imageBytes,
+        width: 640,
+        height: 480,
+        sha256: sha,
+      ),
+    );
+    var calls = 0;
+    final transport = _WireAdapter((options, encoded) {
+      calls++;
+      // Mirrors the observed external gateway contract, before our worker runs.
+      if (options.contentType == 'application/json' &&
+          encoded.length > 100 * 1024) {
+        return json({'code': 'EXCEED_MAX_PAYLOAD_SIZE'}, 413);
+      }
+      expect(options.contentType, 'application/octet-stream');
+      final envelope = jsonDecode(utf8.decode(encoded)) as Map<String, dynamic>;
+      expect(envelope['client_nonce'], nonce);
+      expect(envelope['reply_to_message_id'], message);
+      expect(envelope['source_sha256'], sha);
+      expect(base64Decode(envelope['bytes'] as String), imageBytes);
+      return json(published(parent: message));
+    });
+    final result = await repository(Dio()..httpClientAdapter = transport)
+        .publish(large);
+    expect(calls, 1);
+    expect(
+      result.isRight(),
+      isTrue,
+      reason:
+          'A valid confirmed photo must not hit the 100KB text gateway limit.',
+    );
+  });
+
+  test('platform 413 is a size failure rather than an offline or generic server failure', () async {
+    final repo = repository(
+      dioWith((_) => json({'code': 'EXCEED_MAX_PAYLOAD_SIZE'}, 413)),
+    );
+    final result = await repo.publish(draft());
+    expect(
+      result.getLeft().toNullable(),
+      const Failure.validation(message: '照片上传请求过大，请更新应用后重试'),
+    );
+  });
+
+  for (final report in [false, true]) {
+    test(
+      '${report ? 'report' : 'hide'} only confirms current-account server acknowledgement',
+      () async {
+        final repo = repository(
+          dioWith((options) {
+            expect(body(options), {
+              'action': report ? 'report' : 'hide',
+              'squad_id': squad,
+              'message_id': message,
+              if (report) 'reason': 'privacy',
+            });
+            return json({'hidden': true, if (report) 'reported': true});
+          }),
+        );
+        final result = report
+            ? await repo.report(
+                squadId: squad,
+                messageId: message,
+                reason: PhotoReportReason.privacy,
+              )
+            : await repo.hide(squadId: squad, messageId: message);
+        expect(result.isRight(), isTrue);
+      },
+    );
+  }
+  test(
+    'safety rejects missing acknowledgement and a late account switch',
+    () async {
+      final missing = repository(dioWith((_) => json({'hidden': true})));
+      expect(
+        (await missing.report(
+          squadId: squad,
+          messageId: message,
+          reason: PhotoReportReason.other,
+        )).isLeft(),
+        isTrue,
+      );
+      var current = true;
+      final switched = repository(
+        dioWith((_) {
+          current = false;
+          return json({'hidden': true});
+        }),
+        reader: () async => current ? credentials : null,
+      );
+      expect(
+        (await switched.hide(squadId: squad, messageId: message)).isLeft(),
+        isTrue,
+      );
+    },
+  );
+
   test('publishes only prepared content and fixed target; retries retain nonce and bytes', () async {
     final calls = <Map<String, dynamic>>[];
     final repo = repository(
@@ -292,6 +402,26 @@ final class _Adapter implements HttpClientAdapter {
     Stream<Uint8List>? stream,
     Future<void>? cancelFuture,
   ) async => handle(options);
+  @override
+  void close({bool force = false}) {}
+}
+
+final class _WireAdapter implements HttpClientAdapter {
+  _WireAdapter(this.handle);
+  final ResponseBody Function(RequestOptions, Uint8List) handle;
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? stream,
+    Future<void>? cancelFuture,
+  ) async {
+    final content = BytesBuilder(copy: false);
+    await for (final chunk in stream!) {
+      content.add(chunk);
+    }
+    return handle(options, content.takeBytes());
+  }
+
   @override
   void close({bool force = false}) {}
 }

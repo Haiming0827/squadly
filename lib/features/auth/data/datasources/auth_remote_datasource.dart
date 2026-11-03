@@ -2,6 +2,7 @@ import 'package:cloudbase_flutter/cloudbase_flutter.dart' hide CloudBaseConfig;
 import 'package:postgrest/postgrest.dart';
 
 import '../../../../core/error/exceptions.dart';
+import '../../../../core/network/cloudbase_auth_gate.dart';
 import '../../domain/chinese_phone.dart';
 import '../models/user_dto.dart';
 
@@ -11,6 +12,7 @@ class AuthRemoteDatasource {
   AuthRemoteDatasource(this._app, this._client);
 
   final CloudBase _app;
+  CloudBaseAuthGate get _gate => CloudBaseAuthGate.forAuth(_app.auth);
   final PostgrestClient _client;
 
   Future<SignInRes> Function(VerifyOtpParams)? _emailSignupVerifier;
@@ -29,8 +31,10 @@ class AuthRemoteDatasource {
     required String password,
     required String nickname,
   }) async {
-    final response = await _app.auth.signUp(
-      SignUpReq(email: email.trim(), password: password, nickname: nickname),
+    final response = await _gate.mutate(
+      () => _app.auth.signUp(
+        SignUpReq(email: email.trim(), password: password, nickname: nickname),
+      ),
     );
     if (!response.isSuccess) _throwAuth(response.error);
     final verifier = response.data?.verifyOtp;
@@ -50,7 +54,9 @@ class AuthRemoteDatasource {
     if (verifier == null) {
       throw const ServerException(message: '请重新提交注册信息');
     }
-    final response = await verifier(VerifyOtpParams(token: code.trim()));
+    final response = await _gate.mutate(
+      () => verifier(VerifyOtpParams(token: code.trim())),
+    );
     if (!response.isSuccess) _throwAuth(response.error);
     final user = response.data?.user;
     if (user?.id == null) {
@@ -69,8 +75,10 @@ class AuthRemoteDatasource {
     required String email,
     required String password,
   }) async {
-    final response = await _app.auth.signInWithPassword(
-      SignInWithPasswordReq(email: email.trim(), password: password),
+    final response = await _gate.mutate(
+      () => _app.auth.signInWithPassword(
+        SignInWithPasswordReq(email: email.trim(), password: password),
+      ),
     );
     if (!response.isSuccess) _throwAuth(response.error);
     final user = response.data?.user;
@@ -79,7 +87,9 @@ class AuthRemoteDatasource {
   }
 
   Future<void> requestPasswordRecovery({required String email}) async {
-    final response = await _app.auth.resetPasswordForEmail(email.trim());
+    final response = await _gate.mutate(
+      () => _app.auth.resetPasswordForEmail(email.trim()),
+    );
     if (!response.isSuccess) _throwAuth(response.error);
     final verifier = response.data?.updateUser;
     if (verifier == null) {
@@ -93,27 +103,37 @@ class AuthRemoteDatasource {
     required String code,
     required String newPassword,
   }) async {
-    if (await _currentSession() != null) {
-      throw const ServerException(message: '请先退出当前账号，再找回密码');
-    }
     final verifier = _passwordRecoveryVerifier;
     if (verifier == null) {
       throw const ServerException(message: '请重新申请密码重置验证码');
     }
-    final response = await verifier(
-      UpdateUserAttributes(nonce: code.trim(), password: newPassword),
-    );
+    final response = await _gate.mutate(() async {
+      // Do not call the gate recursively from this SDK transaction.
+      final existing = await _app.auth.getSession();
+      if (!existing.isSuccess && existing.error?.code != 'no_session') {
+        _throwAuth(existing.error);
+      }
+      if (existing.data?.session != null) {
+        throw const ServerException(message: '请先退出当前账号，再找回密码');
+      }
+      final verified = await verifier(
+        UpdateUserAttributes(nonce: code.trim(), password: newPassword),
+      );
+      if (verified.isSuccess) await _app.auth.signOut();
+      return verified;
+    });
     if (!response.isSuccess) _throwAuth(response.error);
     _passwordRecoveryVerifier = null;
-    await _app.auth.signOut();
   }
 
   Future<void> sendPhoneVerification({required String phone}) async {
     final normalized = ChinesePhone.toE164(phone);
-    final response = await _app.auth.signInWithOtp(
-      SignInWithOtpReq(
-        phone: normalized,
-        options: SignInWithOtpOptions(shouldCreateUser: true),
+    final response = await _gate.mutate(
+      () => _app.auth.signInWithOtp(
+        SignInWithOtpReq(
+          phone: normalized,
+          options: SignInWithOtpOptions(shouldCreateUser: true),
+        ),
       ),
     );
     if (!response.isSuccess) _throwAuth(response.error);
@@ -128,12 +148,14 @@ class AuthRemoteDatasource {
   }) async {
     final verifier = _phoneLoginVerifier;
     if (verifier == null) throw const ServerException(message: '请重新发送验证码');
-    final response = await verifier(VerifyOtpParams(token: code.trim()));
+    final response = await _gate.mutate(
+      () => verifier(VerifyOtpParams(token: code.trim())),
+    );
     if (!response.isSuccess) _throwAuth(response.error);
     final user = response.data?.user;
     if (user?.id == null) throw const ServerException(message: '手机号验证未建立会话');
     _phoneLoginVerifier = null;
-    final profileResponse = await _app.auth.getUser();
+    final profileResponse = await _gate.read(() => _app.auth.getUser());
     if (!profileResponse.isSuccess) _throwAuth(profileResponse.error);
     final currentUser = profileResponse.data?.user ?? user!;
     final needsPasswordSetup = currentUser.userMetadata?.hasPassword == false;
@@ -141,13 +163,13 @@ class AuthRemoteDatasource {
   }
 
   Future<bool> currentUserNeedsPasswordSetup() async {
-    final response = await _app.auth.getUser();
+    final response = await _gate.read(() => _app.auth.getUser());
     if (!response.isSuccess) _throwAuth(response.error);
     return response.data?.user?.userMetadata?.hasPassword == false;
   }
 
   Future<void> sendPasswordSetupVerification() async {
-    final response = await _app.auth.reauthenticate();
+    final response = await _gate.mutate(() => _app.auth.reauthenticate());
     if (!response.isSuccess) _throwAuth(response.error);
     final verifier = response.data?.updateUser;
     if (verifier == null) {
@@ -164,16 +186,18 @@ class AuthRemoteDatasource {
     if (verifier == null) {
       throw const ServerException(message: '请先获取密码设置验证码');
     }
-    final response = await verifier(
-      UpdateUserAttributes(nonce: code.trim(), password: password),
+    final response = await _gate.mutate(
+      () => verifier(
+        UpdateUserAttributes(nonce: code.trim(), password: password),
+      ),
     );
     if (!response.isSuccess) _throwAuth(response.error);
     _passwordSetupVerifier = null;
   }
 
   Future<void> requestEmailChange({required String email}) async {
-    final response = await _app.auth.updateUser(
-      UpdateUserReq(email: email.trim()),
+    final response = await _gate.mutate(
+      () => _app.auth.updateUser(UpdateUserReq(email: email.trim())),
     );
     if (!response.isSuccess) _throwAuth(response.error);
     final verifier = response.data?.verifyOtp;
@@ -190,8 +214,8 @@ class AuthRemoteDatasource {
     if (verifier == null || email == null) {
       throw const ServerException(message: '请重新申请邮箱验证码');
     }
-    final response = await verifier(
-      UpdateUserVerifyParams(token: code.trim(), email: email),
+    final response = await _gate.mutate(
+      () => verifier(UpdateUserVerifyParams(token: code.trim(), email: email)),
     );
     if (!response.isSuccess) _throwAuth(response.error);
     final user = response.data?.user ?? (await _currentSession())?.user;
@@ -203,8 +227,8 @@ class AuthRemoteDatasource {
 
   Future<void> requestPhoneChange({required String phone}) async {
     final normalized = ChinesePhone.toE164(phone);
-    final response = await _app.auth.updateUser(
-      UpdateUserReq(phone: normalized),
+    final response = await _gate.mutate(
+      () => _app.auth.updateUser(UpdateUserReq(phone: normalized)),
     );
     if (!response.isSuccess) _throwAuth(response.error);
     _phoneChangeVerifier = response.data?.verifyOtp;
@@ -220,8 +244,10 @@ class AuthRemoteDatasource {
     if (_pendingPhoneChange != normalized) {
       throw const ServerException(message: '请重新申请手机号验证码');
     }
-    final response = await _app.auth.resend(
-      ResendReq(phone: normalized, type: ResendType.phoneChange),
+    final response = await _gate.mutate(
+      () => _app.auth.resend(
+        ResendReq(phone: normalized, type: ResendType.phoneChange),
+      ),
     );
     if (!response.isSuccess) _throwAuth(response.error);
     _phoneChangeMessageId = response.data?.messageId;
@@ -237,12 +263,14 @@ class AuthRemoteDatasource {
     }
     final messageId = _phoneChangeMessageId;
     if (messageId == null) throw const ServerException(message: '请重新申请手机号验证码');
-    final response = await _app.auth.verifyOtp(
-      VerifyOtpReq(
-        phone: normalized,
-        token: code.trim(),
-        messageId: messageId,
-        type: VerifyOtpType.phoneChange,
+    final response = await _gate.mutate(
+      () => _app.auth.verifyOtp(
+        VerifyOtpReq(
+          phone: normalized,
+          token: code.trim(),
+          messageId: messageId,
+          type: VerifyOtpType.phoneChange,
+        ),
       ),
     );
     if (!response.isSuccess) _throwAuth(response.error);
@@ -272,7 +300,7 @@ class AuthRemoteDatasource {
   }
 
   Future<void> signOut() async {
-    final response = await _app.auth.signOut();
+    final response = await _gate.mutate(() => _app.auth.signOut());
     if (!response.isSuccess) _throwAuth(response.error);
     _clearPendingVerifications();
   }
@@ -311,7 +339,7 @@ class AuthRemoteDatasource {
   }
 
   Future<Session?> _currentSession() async {
-    final response = await _app.auth.getSession();
+    final response = await _gate.session();
     if (!response.isSuccess) {
       if (response.error?.code == 'no_session') return null;
       _throwAuth(response.error);
@@ -327,6 +355,9 @@ class AuthRemoteDatasource {
     _phoneChangeVerifier = null;
     _phoneChangeMessageId = null;
     _pendingPhoneChange = null;
+    _emailChangeVerifier = null;
+    _pendingEmailChange = null;
+    _passwordSetupVerifier = null;
   }
 
   Never _throwAuth(AuthError? error) {

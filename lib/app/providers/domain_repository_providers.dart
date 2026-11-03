@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/network/cloudbase_auth_gate.dart';
 import '../../core/network/cloudbase_client_provider.dart';
 import '../../features/conversation/data/cached_conversation_repository.dart';
 import '../../features/conversation/data/cloudbase_conversation_repository.dart';
@@ -116,7 +117,9 @@ final socialRepositoryProvider = Provider<SocialRepository>((ref) {
 });
 
 Future<String?> _currentUserId(Ref ref) async {
-  final response = await ref.read(cloudBaseAppProvider).auth.getSession();
+  final response = await CloudBaseAuthGate.forAuth(
+    ref.read(cloudBaseAppProvider).auth,
+  ).session();
   if (!response.isSuccess) return null;
   return response.data?.session?.user?.id;
 }

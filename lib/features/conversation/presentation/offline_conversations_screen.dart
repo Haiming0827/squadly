@@ -216,7 +216,11 @@ String _preview(TimelineEntry entry) =>
 String _body(TimelineEntry entry) => entry.kind == TimelineEntryKind.text
     ? entry.text ?? ''
     : entry.kind == TimelineEntryKind.photo
-    ? (entry.photo?.isRevoked == true ? '照片已撤回' : '照片需联网查看')
+    ? (entry.photo?.isHidden == true
+          ? '照片已对你隐藏'
+          : entry.photo?.isRevoked == true
+          ? '照片已撤回'
+          : '照片需联网查看')
     : '卡片摘要：${entry.cardSnapshot?.payload['title'] ?? '小队里的这一刻'}';
 String _time(DateTime value) {
   final local = value.toLocal();

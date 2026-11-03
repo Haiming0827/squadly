@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-31",
+  "scope": "single-isolate SDK auth ordering prerequisite for bounded native renewal",
+  "originalReproductions": {
+    "sdkLogoutRace": "Completed app logout was overwritten by a delayed actual-SDK refresh",
+    "pendingVerifier": "Email-change verifier was still invoked after app logout"
+  },
+  "local": {
+    "fullFlutterPassed": 625,
+    "skipped": 3,
+    "realModePassed": 14,
+    "rootAnalyzePassed": true,
+    "hostAnalyzePassed": true,
+    "sdkQueueCases": 5,
+    "authRemoteContractCases": 11,
+    "actualSdkLogoutAndLoginCompetition": true,
+    "newReadsAfterLoginUseNewAccount": true,
+    "synchronousSdkListenerReentryCompleted": true,
+    "callerTimeoutDoesNotReleaseUnfinishedSdkWork": true,
+    "recoveryCheckVerifyAndSignoutAtomic": true,
+    "allPendingVerifiersClearedAtLogout": true
+  },
+  "staging": {
+    "actualSdkCRefreshAndOwnProfilePassed": 1,
+    "ordinaryUserPositiveControl": true,
+    "sameGateUsedBySdkAndPgReader": true,
+    "mainABSessionsUnchanged": true,
+    "rotatedCCollected": true,
+    "fixtureAndOutputRemoved": true
+  },
+  "build": {
+    "simulator": true,
+    "unsignedDevice": true,
+    "extensionCredentialIsolation": true,
+    "installedAndLaunchedOnMainAB": true
+  },
+  "sourceSha256": {
+    "lib/core/network/cloudbase_auth_gate.dart": "da7c89ecf434876e11b98c192ca33728b1b4dd40b9bd851f728eebf4bc967791",
+    "lib/core/network/cloudbase_client_provider.dart": "34348756a319a87eba762200de918b5931f47d1a83b28b6642f8290fbb7c93d8",
+    "lib/features/auth/data/datasources/auth_remote_datasource.dart": "7e9b716b92225169cc0fa15eb5a3d4eedc4f21cea7cb86c99c1679a4750343c0",
+    "lib/features/auth/presentation/providers/auth_provider.dart": "441e5cf61ad67f105b1edb09e49302f3d884982d7ef380cf1f308cdf2bcee5c6",
+    "lib/app/providers/account_postgres_provider.dart": "27b4d5a3ee2489189dd00c2439f81113db2e9e13e63e3dcac2c20b360244448d",
+    "lib/app/providers/domain_repository_providers.dart": "3458f5ba3f536bbfec8f80dd57bf56f01800d3f49352aacea730f3849d0f7c1d",
+    "lib/app/providers/photo_providers.dart": "c1d04015551131ba157b143e83074f84f5555f81a2866306e226dce728572350",
+    "lib/app/providers/route_providers.dart": "3497dde24a3c00f8e935d38c766579b71290e33c3b77b299a1ccd5e60de2d0c2",
+    "lib/app/providers/photo_widget_providers.dart": "c25ae8d47f3bc1da484bcf0a04fb7675ef0321b8ffea58c5e46a6620710bffce",
+    "test/core/network/cloudbase_auth_ordering_test.dart": "4a6c74d5bd1f498664af87b15647bf0b291184d7a1bc6bf195d1216419e7b630",
+    "test/features/auth/data/auth_remote_contract_test.dart": "81b0b09f00771893f1a60e33cb33fde8524ed9d49b373a51c3023c316168eb17",
+    "integration_test/integration_test/sdk_session_recovery_staging_test.dart": "972fcb53decaff76856bdcde5e304358d79c4f2672f87f1d8b21d030b719399b"
+  },
+  "logSha256": {
+    "originalSdkLogoutRed": "9751dd091d837f75ab2b2d5ad8a21f776031fe7f0767b96e4ae9f9d8d0585c99",
+    "pendingVerifierRed": "9ab6593deb72c353a3377b749a5aa016acd05229b88ac314ea4a8b3b9bc2e8dd",
+    "focusedOrdering": "743417982c5f2fdcb960475253420641cc3cdb7c200a6cc960055ce738c2c55e",
+    "fullFlutter": "c1a101a49a2179482c6ed35a5df46a9d70dc3e63f8ad9cef8727b9cc5dc44194",
+    "realMode": "a4d69f3ebc74e4e1ff9245d8e314f236e3fa860b1c5cb62cddf8a70503de01b4",
+    "rootAnalyze": "da6443b9783362a38768d017553fe39b81aafbd4d985e26fc27451d003183e38",
+    "hostAnalyze": "8336c9ef38180b528250e346a1b377864440053b73ff9bdc8c17e35883e30839",
+    "actualSdkC": "d49a0441c0ca09293ad592e057db900d654630128f261a862cae9027a39400e2",
+    "simulatorBuild": "6ed5743abe451a968fe177b87365a72a893facb16b657c75e14c50461f7da54a",
+    "unsignedDeviceBuild": "d7ab18a1f304c141e68d52fdcb5d8079b13855dee2d785d1cde4addd42a1ed79",
+    "extensionIsolation": "c130b21d513f8e559d27e6e526120f215d76b86d1a79051594fbe45eaed36c1b"
+  },
+  "unverified": [
+    "budgeted SDK/native background handoff",
+    "cross-engine or cross-isolate refresh coordination",
+    "actual APNs/system cold notification",
+    "signed physical-device and desktop painting matrix",
+    "Android A6 and B/C product stages"
+  ],
+  "completePhotoLoop": false
+}

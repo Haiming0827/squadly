@@ -329,6 +329,7 @@ final class DriftConversationCache
             'height': entry.photo!.height,
             'byte_length': entry.photo!.byteLength,
             'revoked': entry.photo!.isRevoked,
+            if (entry.photo!.isHidden) 'hidden': true,
           },
     'reply_to_message_id': entry.replyToEntryId,
     'client_nonce': entry.clientNonce,

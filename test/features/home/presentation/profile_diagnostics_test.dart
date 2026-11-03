@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:squadly/app/providers/diagnostics_provider.dart';
-import 'package:squadly/features/home/presentation/screens/profile_screen.dart';
+import 'package:squadly/features/home/presentation/screens/profile_settings_screen.dart';
 
 void main() {
   testWidgets('unconfigured error reporting is disabled by default', (
@@ -10,7 +10,13 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const ProviderScope(
-        child: MaterialApp(home: Scaffold(body: ProfileScreen())),
+        child: MaterialApp(
+          home: Scaffold(
+            body: ProfileSettingsScreen(
+              section: ProfileSettingsSection.privacy,
+            ),
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -30,7 +36,13 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [diagnosticsProvider.overrideWith((ref) => controller)],
-          child: const MaterialApp(home: Scaffold(body: ProfileScreen())),
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ProfileSettingsScreen(
+                section: ProfileSettingsSection.privacy,
+              ),
+            ),
+          ),
         ),
       );
       await tester.pumpAndSettle();

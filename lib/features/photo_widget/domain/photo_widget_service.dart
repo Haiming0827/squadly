@@ -49,9 +49,41 @@ final class PhotoWidgetService {
   final DateTime Function() clock;
   bool _active = true;
   int _refreshRevision = 0;
+  final _suppressed = <(String, String, String)>{};
+  bool _hidden(PhotoWidgetContext owner, String squadId, String messageId) =>
+      _suppressed.contains((
+        '${owner.environmentId}:${owner.userId}',
+        squadId,
+        messageId,
+      ));
+
+  /// Fence foreground and native work before an explicit hide/report request.
+  /// Server confirmation may be delayed; do not briefly restore those pixels.
+  Future<void> suppressPhoto(String squadId, String messageId) async {
+    final owner = _current();
+    if (owner == null) return;
+    final scope = '${owner.environmentId}:${owner.userId}';
+    _suppressed.removeWhere((value) => value.$1 != scope);
+    _suppressed.add((scope, squadId, messageId));
+    _refreshRevision++;
+    final state = (await read()).getRight().toNullable();
+    if (state != null &&
+        _same(owner) &&
+        _owned(state) &&
+        state.binding!.squadId == squadId) {
+      try {
+        await store.invalidate(expected: state, failed: true);
+      } catch (_) {
+        /* Store remains bounded by its existing lease. */
+      }
+    }
+  }
+
   Future<void> _syncTail = Future.value();
   static const _changed = Failure.unauthorized(message: '账号或组件已变化，请重新打开');
   static const _unavailable = Failure.server(message: '桌面组件暂不可用，请稍后重试');
+  void cancelPendingRefresh() => _refreshRevision++;
+
   void dispose() {
     _active = false;
     _refreshRevision++;
@@ -181,6 +213,9 @@ final class PhotoWidgetService {
     }
     if (!validPhotoHeadRevision(head.revision) ||
         (head.photo != null &&
+            (_hidden(owner, id, head.photo!.id) ||
+                head.photo!.photo?.isHidden == true)) ||
+        (head.photo != null &&
             (head.revision == '0' || !_photo(head.photo!, id)))) {
       await store.invalidate(expected: state, failed: true);
       return left(_unavailable);
@@ -244,6 +279,7 @@ final class PhotoWidgetService {
           final photo = parent.getRight().toNullable();
           if (photo == null ||
               photo.id != entry.messageId ||
+              _hidden(owner, entry.squadId, photo.id) ||
               !_photo(photo, entry.squadId)) {
             return left(
               parent.getLeft().getOrElse(
@@ -293,7 +329,8 @@ final class PhotoWidgetService {
       e.squadId == squadId &&
       e.planId == null &&
       e.kind == TimelineEntryKind.photo &&
-      e.photo?.isRevoked == false;
+      e.photo?.isRevoked == false &&
+      e.photo?.isHidden == false;
   Future<Either<Failure, T>> _guard<T>(
     Future<Either<Failure, T>> Function() work,
   ) async {

@@ -86,3 +86,29 @@ remaining = fallback['photo']
 sql(f"SET ROLE authenticated; SET request.jwt.claims='{{\"sub\":\"{remaining['sender_id']}\"}}'; SELECT public.revoke_photo_message('{team}','{remaining['id']}');")
 assert head() == {'revision': '4', 'photo': None}, 'Empty head lost revocation version'
 print('Concurrent publication row-lock/commit order and latest-photo revocation fallback passed (local PG only).')
+
+# A private hide can commit independently of a new public publication. The sum
+# is monotone for the receiver and does not change the author's public view.
+prepared3 = json.loads(sql(f"SET ROLE authenticated; SET request.jwt.claims='{{\"sub\":\"{actors[0]}\"}}'; SELECT public.reserve_photo_upload('{team}','{uuid.uuid4()}',repeat('a',64),NULL);"))
+# Recreate one visible photo for the hide target.
+visible = json.loads(sql(f"SET ROLE service_role; SELECT public.complete_photo_upload('{prepared3['media_id']}','{prepared3['attempt_id']}',repeat('b',64),4,3,500);"))
+target_id = visible['message_id']
+prepared4 = json.loads(sql(f"SET ROLE authenticated; SET request.jwt.claims='{{\"sub\":\"{actors[0]}\"}}'; SELECT public.reserve_photo_upload('{team}','{uuid.uuid4()}',repeat('a',64),NULL);"))
+hiding = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+try:
+    hiding.stdin.write(f"BEGIN; SET ROLE authenticated; SET request.jwt.claims='{{\"sub\":\"{actors[1]}\"}}'; SELECT public.hide_photo_message('{team}','{target_id}'); SELECT 'private_hide_uncommitted';\n")
+    hiding.stdin.flush()
+    while hiding.stdout.readline().strip() != 'private_hide_uncommitted':
+        if hiding.poll() is not None:
+            raise RuntimeError('Hide transaction failed before checkpoint')
+    published = json.loads(sql(f"SET ROLE service_role; SELECT public.complete_photo_upload('{prepared4['media_id']}','{prepared4['attempt_id']}',repeat('c',64),4,3,500);"))
+    hiding.stdin.write('COMMIT;\n');hiding.stdin.close();hiding.wait(timeout=5)
+    assert hiding.returncode == 0
+finally:
+    if hiding.poll() is None:
+        hiding.kill();hiding.wait()
+receiver = json.loads(sql(f"SET ROLE authenticated; SET request.jwt.claims='{{\"sub\":\"{actors[1]}\"}}';" + head_sql))
+assert head()['revision'] == '6', 'Private hide changed public version'
+assert receiver['revision'] == '7', 'Concurrent private/public revision was lost'
+assert receiver['photo']['id'] != target_id, 'Hidden photo returned after concurrent publication'
+print('Concurrent private hide/public publication preserves account-specific monotone heads (local PG only).')

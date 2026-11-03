@@ -86,6 +86,49 @@ class DemoAppStore extends StateNotifier<DemoAppState> {
 
   User? getCurrentUser() => state.currentUser;
 
+  DemoAppState get snapshot => state;
+
+  void updateSquadProfile(
+    String squadId, {
+    required String name,
+    required String description,
+    required String? avatar,
+  }) {
+    _requireCaptain(squadId);
+    state = state.copyWith(
+      squads: [
+        for (final squad in state.squads)
+          if (squad.id == squadId)
+            squad.copyWith(
+              name: name,
+              description: description.isEmpty ? null : description,
+              avatarUrl: avatar,
+            )
+          else
+            squad,
+      ],
+    );
+  }
+
+  void updateAvatar(String? avatar) {
+    final current = _requireUser();
+    final updated = current.copyWith(avatarUrl: avatar);
+    state = state.copyWith(
+      currentUser: updated,
+      users: [
+        for (final user in state.users)
+          if (user.id == current.id) updated else user,
+      ],
+      members: [
+        for (final member in state.members)
+          if (member.userId == current.id)
+            member.copyWith(avatarUrl: avatar)
+          else
+            member,
+      ],
+    );
+  }
+
   User updateNickname(String nickname) {
     final current = _requireUser();
     final updated = current.copyWith(nickname: nickname);

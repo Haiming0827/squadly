@@ -15,6 +15,7 @@ abstract class PhotoAttachment with _$PhotoAttachment {
     required int height,
     required int byteLength,
     required bool isRevoked,
+    @Default(false) bool isHidden,
   }) = _PhotoAttachment;
 }
 

@@ -56,7 +56,11 @@ async function dispatch(provider, claims, configuration, counters, apnsTransport
     let outcome = 'retry';
     let reason = null;
     try {
-      if (claim.provider !== provider || !['text', 'card', 'photo'].includes(claim.message_kind)) {
+      if (claim.provider !== provider
+        || !['message', 'photo_sync'].includes(claim.lease_kind)
+        || (claim.lease_kind === 'message' && !['text', 'card', 'photo'].includes(claim.message_kind))
+        || (claim.lease_kind === 'photo_sync'
+          && (provider !== 'apns' || claim.message_kind !== 'photo_sync'))) {
         throw new Error('Invalid claim');
       }
       const push = provider === 'apns'
@@ -95,7 +99,8 @@ async function dispatch(provider, claims, configuration, counters, apnsTransport
     } catch (_) {
       reason = 'transport_error';
     }
-    const acknowledged = await rpc('complete_push_delivery', {
+    const acknowledged = await rpc('complete_push_work', {
+      p_lease_kind: claim.lease_kind,
       p_delivery_id: claim.delivery_id,
       p_claim_id: claim.claim_id,
       p_outcome: outcome,
@@ -155,7 +160,7 @@ async function handle(event, apnsTransport) {
       const configuration = { environment, jwt: await createApnsJwt(
         required('APNS_TEAM_ID'), required('APNS_KEY_ID'), required('APNS_PRIVATE_KEY'),
       ) };
-      apnsClaims = await rpc('claim_push_deliveries_v2', {
+      apnsClaims = await rpc('claim_push_work', {
         p_limit: 20,
         p_provider: 'apns',
       });
@@ -163,7 +168,7 @@ async function handle(event, apnsTransport) {
     })());
     if (miPushEnabled) channels.push((async () => {
       if (!miPushConfigured) throw new Error('Mi Push configuration is incomplete');
-      miPushClaims = await rpc('claim_push_deliveries_v2', {
+      miPushClaims = await rpc('claim_push_work', {
         p_limit: 20,
         p_provider: 'mipush',
       });

@@ -1,0 +1,123 @@
+{
+  "date": "2026-10-31",
+  "cause": "CloudBase text JSON request body limit rejects base64 camera-sized photos",
+  "officialSource": "https://docs.cloudbase.net/error-code/EXCEED_MAX_PAYLOAD_SIZE",
+  "network": {
+    "kind": "actual-iOS-simulator-URLSession",
+    "noCredentialsUsed": true,
+    "passed": true,
+    "devices": [
+      {
+        "device": "a",
+        "checks": [
+          {
+            "elapsedMs": 1253,
+            "httpStatus": 200,
+            "passed": true,
+            "receivedBytes": 68,
+            "target": "internet_https"
+          },
+          {
+            "elapsedMs": 1659,
+            "httpStatus": 401,
+            "passed": true,
+            "receivedBytes": 165,
+            "target": "cloudbase_gateway"
+          },
+          {
+            "elapsedMs": 1568,
+            "httpStatus": 405,
+            "passed": true,
+            "receivedBytes": 30,
+            "target": "photo_worker"
+          }
+        ],
+        "passed": true
+      },
+      {
+        "device": "b",
+        "checks": [
+          {
+            "elapsedMs": 1488,
+            "httpStatus": 200,
+            "passed": true,
+            "receivedBytes": 68,
+            "target": "internet_https"
+          },
+          {
+            "elapsedMs": 1826,
+            "httpStatus": 401,
+            "passed": true,
+            "receivedBytes": 165,
+            "target": "cloudbase_gateway"
+          },
+          {
+            "elapsedMs": 2935,
+            "httpStatus": 405,
+            "passed": true,
+            "receivedBytes": 30,
+            "target": "photo_worker"
+          }
+        ],
+        "passed": true
+      }
+    ]
+  },
+  "redWitness": {
+    "nativeUiRetry": "same pending photo remained server-unavailable",
+    "textBody131072Bytes": {
+      "httpStatus": 413,
+      "error": "EXCEED_MAX_PAYLOAD_SIZE"
+    },
+    "jpeg1451294BytesTextPublishStatus": 413,
+    "jpeg1451294BytesTextReplyStatus": 413,
+    "regressionFailuresBeforeFix": 3
+  },
+  "greenWitness": {
+    "sameJpegBinaryPublishStatus": 200,
+    "sameJpegBinaryReplyStatus": 200,
+    "realSimulatorDioRunsPassed": 2,
+    "inputJpegBytes": 1451294,
+    "downloadedSanitizedJpegBytes": 1289831,
+    "dimensions": [
+      1600,
+      1200
+    ],
+    "sameNonceIdentity": true,
+    "parentIdentity": true,
+    "downloadAndRevoke": true
+  },
+  "verification": {
+    "flutterPassed": 643,
+    "flutterSkipped": 3,
+    "realModeLocalPassed": 18,
+    "photoFocusedPassed": 29,
+    "photosAndCleanupNodePassed": 24,
+    "rootAnalyze": "no issues",
+    "hostAnalyze": "no issues",
+    "iosSimulatorBuild": "passed"
+  },
+  "cleanup": {
+    "syntheticObjectsDeletedAnd404": 6,
+    "revokedSyntheticTombstonesRetained": 6,
+    "scope": "exact ordinary B + fixed synthetic squad + explicitly recorded nonces",
+    "retainedWidgetFixtureUntouched": true
+  },
+  "install": {
+    "bOriginalTargetPendingBeforeFinalInstall": 1,
+    "bOriginalTargetPendingAfterFinalInstall": 1,
+    "rootAppsInstalledAndLaunched": 2
+  },
+  "notVerified": [
+    "original pending flower-photo UI retry after fix: Mac locked",
+    "other member actual screen receiving the original user photo",
+    "physical camera and signed physical devices",
+    "APNs delivery"
+  ],
+  "hashes": {
+    "lib/features/photos/data/cloudbase_photo_repository.dart": "26e70b1a0cb113079d75339b6744506137a96e1f022c2b730eb634901a5379e8",
+    "lib/features/photos/presentation/photo_composer_screen.dart": "51cca083d00c85c859b0d0cbe8e3f130b53ceae4dd590000862ee52947bac522",
+    "integration_test/integration_test/photo_upload_transport_staging_test.dart": "4612fde6034cffef16c6e76d2388b0bd72cd8b4f36a957dedadbe60eea61831a",
+    "test/features/photos/fixtures/large_sanitized.jpg": "48ccf6991dea867bb6049fd8226e8d77345b428f293c72b5f5e8a2b9a530c869"
+  }
+}

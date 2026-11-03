@@ -1,5 +1,9 @@
 # CloudBase 迁移清单
 
+2026-11-03 会话管理检查点：第 22 个 `conversation_customization` 已部署 staging（`task-4b1e8d006ec742bd` / Succeed），CLI 22/22、pending/conflicts 0；个人备注、置顶、最近访问与队长共享头像/名称接口接入，普通 A/B 云端 32 项检查通过。本地 Flutter 658 通过/3 跳过，权限及迁移回归通过；原生界面验收与平台边界见[专项记录](../conversation/evidence/2026-11-03-customization.md)。
+
+2026-10-31 接收端安全检查点：第 21 个 `photo_receiver_safety` 已部署 staging（`task-0822f5967e1c464e` / Succeed），CLI 21/21、无待执行项。本人隐藏、基本举报、私有头与媒体过滤接入；真实普通 A/B/C 63 项检查和合成测试对象清理通过，iOS 合成 UI 1 条通过，全量 Flutter 598 通过/3 跳过。平台后台/桌面/签名真机与人工处置仍未完成。[证据](../photos/evidence/2026-10-31-receiver-safety.md)。
+
 2026-10-28 版本化照片头检查点：第 19 个 `versioned_photo_heads` 已部署 staging，任务 `task-d3808fa44bf24db3` 为 Succeed；CLI **19/19**、无待执行项。普通 A/B/C 照片 HTTP **72 项通过**；前台下载后复核与真实 iOS App Group 版本写入通过，本地全量 Flutter 570 通过、3 跳过。原生私有凭据桥/后台获取、APNs/桌面与签名真机仍未验收。[验证范围](../photo-widget/evidence/2026-10-28-versioned-photo-heads.md)。
 
 2026-10-28 后续：第 18 个 `push_photo_hints` 已部署 staging，任务 `task-bcf39f266388429c` 为 Succeed；CLI 本地/远端 18/18、无待执行项。A/B 验收 App 重新登录并取得 C 普通用户会话后，照片 HTTP 57 项通过，真实对象清理/保留检查通过。修复共享 Buffer 上传 503；推送 worker 以无 provider、无 timer 的关闭态部署，HTTP/2 与基础网关守卫通过，原生后台/平台回执/桌面仍未验。见[照片验证](../photos/evidence/2026-10-28-staging-media-verification.md)及[推送证据](../photo-widget/evidence/2026-10-28-push-worker-infrastructure.json)。

@@ -1,5 +1,11 @@
 # CloudBase PostgreSQL Migration Runbook
 
+2026-11-03 会话管理检查点：第 22 个 `conversation_customization` 已部署 staging（`task-4b1e8d006ec742bd` / Succeed），CLI 22/22、pending/conflicts 0；个人备注、置顶、最近访问与队长共享头像/名称接口接入，普通 A/B 云端 32 项检查通过。本地 Flutter 658 通过/3 跳过，权限及迁移回归通过；原生界面验收与平台边界见[专项记录](../conversation/evidence/2026-11-03-customization.md)。
+
+2026-10-31 接收端安全检查点：第 21 个 `photo_receiver_safety` 已部署 staging（`task-0822f5967e1c464e` / Succeed），CLI 21/21、无待执行项。本人隐藏、基本举报、私有头与媒体过滤接入；真实普通 A/B/C 63 项检查和合成测试对象清理通过，iOS 合成 UI 1 条通过，全量 Flutter 598 通过/3 跳过。平台后台/桌面/签名真机与人工处置仍未完成。[证据](../photos/evidence/2026-10-31-receiver-safety.md)。
+
+2026-10-31 撤权提示检查点：第 20 个 `photo_revocation_sync` 已部署，任务 `task-e80b8395076449e5` 为 Succeed；CLI 20/20、无 pending/conflicts。普通 C/匿名 10 项队列权限检查通过；临时 C 专属小队验证队伍失效、成员移除和删除提示，测试对象已清理。worker 更新统一 work 接口后继续无 provider/无 timer，系统日志关闭；APNs/桌面/签名真机仍未通过。[具体范围](../photo-widget/evidence/2026-10-31-revocation-sync.md)。
+
 2026-10-28 版本化照片头检查点：第 19 个 `versioned_photo_heads` 已部署 staging，任务 `task-d3808fa44bf24db3` 为 Succeed；CLI **19/19**、无待执行项。普通 A/B/C 照片 HTTP **72 项通过**；前台下载后复核与真实 iOS App Group 版本写入通过，本地全量 Flutter 570 通过、3 跳过。原生私有凭据桥/后台获取、APNs/桌面与签名真机仍未验收。[验证范围](../photo-widget/evidence/2026-10-28-versioned-photo-heads.md)。
 
 2026-10-28 后续：第 18 个 `push_photo_hints` 已部署 staging，任务 `task-bcf39f266388429c` 为 Succeed；CLI 本地/远端 18/18、无待执行项。A/B 验收 App 重新登录并取得 C 普通用户会话后，照片 HTTP 57 项通过，真实对象清理/保留检查通过。修复共享 Buffer 上传 503；推送 worker 以无 provider、无 timer 的关闭态部署，HTTP/2 与基础网关守卫通过，原生后台/平台回执/桌面仍未验。见[照片验证](../photos/evidence/2026-10-28-staging-media-verification.md)及[推送证据](../photo-widget/evidence/2026-10-28-push-worker-infrastructure.json)。
@@ -14,7 +20,7 @@
 
 ## 迁移文件
 
-`cloudbase/migrations/` 下当前有 19 个 14 位 UTC 时间戳前缀文件，按字典序执行。Staging 已部署前 12 个；2026-10-18 通过 CloudBase CLI 3.8.6 复核本地/远端 12/12。第 13 个 `20261020000100_unified_plan_legacy_and_discussions.sql` 已于 2026-10-21 部署 staging，任务 `task-1dc2591291ba46b4` 为 Succeed；随后 list 本地/远端 13/13、dry-run 无待执行项或冲突。真实 JWT/RLS 验收仍未完成。该命名符合 CloudBase CLI PostgreSQL migration 管理要求。2026-10-22 新增第 14 个 `20261022000100_conversation_read_cursors.sql`，本地权限检查已通过，并于 2026-10-23 部署 staging：任务 `task-8dab9a5dc968479b` / request `be6419c0-aed6-4562-baeb-327318820b21` 为 Succeed；复核 list 本地/远端 14/14、dry-run 无待执行项或冲突。文件内容基于旧 Supabase migrations 转换及后续产品设计，主要变化：
+`cloudbase/migrations/` 下当前有 22 个 14 位 UTC 时间戳前缀文件，按字典序执行。Staging 已部署前 12 个；2026-10-18 通过 CloudBase CLI 3.8.6 复核本地/远端 12/12。第 13 个 `20261020000100_unified_plan_legacy_and_discussions.sql` 已于 2026-10-21 部署 staging，任务 `task-1dc2591291ba46b4` 为 Succeed；随后 list 本地/远端 13/13、dry-run 无待执行项或冲突。真实 JWT/RLS 验收仍未完成。该命名符合 CloudBase CLI PostgreSQL migration 管理要求。2026-10-22 新增第 14 个 `20261022000100_conversation_read_cursors.sql`，本地权限检查已通过，并于 2026-10-23 部署 staging：任务 `task-8dab9a5dc968479b` / request `be6419c0-aed6-4562-baeb-327318820b21` 为 Succeed；复核 list 本地/远端 14/14、dry-run 无待执行项或冲突。文件内容基于旧 Supabase migrations 转换及后续产品设计，主要变化：
 
 - 业务用户身份列与相关 SQL 函数参数使用 `text`；不直接对 CloudBase 系统 `auth.users` 建业务外键，以兼容 staging 实际列类型。
 - Profile trigger 使用默认昵称；当前 staging 没有 `user_metadata` 列。
@@ -34,7 +40,7 @@
 scripts/check_cloudbase_migrations.sh
 ```
 
-脚本启动一次性 PostgreSQL 容器，以 UUID 类型 ID 且不含 `user_metadata` 的 `auth.users` fixture 顺序执行 15 个目标 migrations，并重放 registration migration 验证失败重试安全；`scripts/sql/conversation_read_cursors_test.sql` 验证游标推进、作者专属投影、离队重入和敏感元数据隔离；同时验证基金流水余额触发器、计划和 Social 可见边界、一次性分享快照、私有素材、Reaction、私人资产和健康快照隔离。容器退出后自动删除。此检查不替代 CloudBase JWT/RLS 环境验证。
+脚本启动一次性 PostgreSQL 容器，以 UUID 类型 ID 且不含 `user_metadata` 的 `auth.users` fixture 顺序执行全部目标 migrations，并重放 registration migration 验证失败重试安全；`scripts/sql/conversation_read_cursors_test.sql` 验证游标推进、作者专属投影、离队重入和敏感元数据隔离；同时验证基金流水余额触发器、计划和 Social 可见边界、一次性分享快照、私有素材、Reaction、私人资产和健康快照隔离。容器退出后自动删除。此检查不替代 CloudBase JWT/RLS 环境验证。
 
 ## Staging 部署
 
@@ -55,7 +61,7 @@ scripts/check_cloudbase_migrations.sh
 6. 从 `cloudbase/` 部署 `cloudbaserc.json` 中的 `push-deliveries` 和 `push-deliveries-cron`（腾讯云 CLI 示例：`tcb fn deploy push-deliveries -e <environment-id>`，对 cron function 重复执行）。HTTP gateway 保持身份验证开启；timer function 只由定时触发器调用，并在 CloudBase 函数安全规则中设置 `push-deliveries-cron.invoke=false`，此规则不拦截定时触发器。
 7. 仅在 CloudBase 函数服务端环境设置 `CLOUDBASE_PG_REST_URL`、`CLOUDBASE_APIKEY`（service_role API Key）、`PUSH_WORKER_SECRET`、APNs `.p8` 及 bundle/environment 配置；Mi Push 三项凭据只在启用通道时配置。API Key 绕过 RLS，严禁写入 Flutter、仓库、函数日志或 CI 的公开输出。配置 `PUSH_WORKER_URL` 指向 CloudBase HTTP gateway 的 worker endpoint。Cron function 通过 Bearer API Key 和共享 worker secret 请求 HTTP worker。
    Cron 对 HTTP worker 请求设置 130 秒客户端截止时间，早于 cron 云函数的 150 秒硬超时；worker 的 HTTP 函数超时为 120 秒。超过截止时间时 timer 会失败并在下一次周期重试，部署后需通过 staging 回执验证实际耗时。
-8. 在 staging 触发 worker 和 timer，确认两个 `claim_push_deliveries` 通道及 `complete_push_delivery` 回执按租约工作；检查请求/日志无设备 token、API Key、APNs 私钥和消息正文。完成 APNs sandbox 及 Mi Push 真机回执验收后，再停用旧 Supabase webhook/cron/function，避免双重派送。
+8. 在 staging 触发 worker 和 timer，确认两个 `claim_push_work` 通道及 `complete_push_work` 回执按租约工作（旧 claim/complete 保留回滚参考）；检查请求/日志无设备 token、API Key、APNs 私钥和消息正文。完成 APNs sandbox 及 Mi Push 真机回执验收后，再停用旧 Supabase webhook/cron/function，避免双重派送。
 9. 记录 migration list、RLS allow/deny、Auth/OTP/Apple、双机消息、推送和恢复验收。任一项失败时修 migration/adapters 并在空环境重放。
 
 推送 worker Node 合约检查：

@@ -15,10 +15,16 @@ final class PhotoBackgroundRuntime {
   let store: WidgetStore
   let credentials: BackgroundCredentialManager
   let sync: BackgroundPhotoSync
+  let renewal: BackgroundCredentialRenewal
+  func synchronize(deadline: TimeInterval) async -> BackgroundPhotoSyncResult {
+    guard await renewal.renew(deadline: deadline) else { return .noData }
+    return await sync.synchronize(deadline: deadline)
+  }
   private init(directory: URL, applicationID: String) {
     let store = WidgetStore(directory: directory)
     let credentials = BackgroundCredentialManager(store: store, vault: KeychainCredentialVault(applicationID: applicationID))
     self.store = store; self.credentials = credentials
+    renewal = BackgroundCredentialRenewal(credentials: credentials)
     sync = BackgroundPhotoSync(store: store, credentials: credentials, changed: {
       DispatchQueue.main.async { WidgetCenter.shared.reloadTimelines(ofKind: "SquadPhotoWidget") }
     })
@@ -30,10 +36,11 @@ public enum PhotoBackgroundNotificationHandler {
   @discardableResult
   public static func handle(_ userInfo: [AnyHashable: Any], completion: @escaping (UIBackgroundFetchResult) -> Void) -> Bool {
     guard BackgroundPhotoSync.isPhotoHint(userInfo) else { return false }
-    let once = PhotoNotificationCompletion(completion)
+    let once = BoundedCompletion<UIBackgroundFetchResult>(timeout: 27, timeoutValue: .failed, callback: completion)
     guard let runtime = PhotoBackgroundRuntime.shared else { once.finish(.noData); return true }
+    let deadline = ProcessInfo.processInfo.systemUptime + 25
     Task {
-      let result = await runtime.sync.synchronize()
+      let result = await runtime.synchronize(deadline: deadline)
       switch result {
       case .newData: once.finish(.newData)
       case .noData: once.finish(.noData)
@@ -44,24 +51,4 @@ public enum PhotoBackgroundNotificationHandler {
   }
 }
 
-private final class PhotoNotificationCompletion {
-  private let lock = NSLock()
-  private var callback: ((UIBackgroundFetchResult) -> Void)?
-  private var timer: DispatchWorkItem?
-  init(_ callback: @escaping (UIBackgroundFetchResult) -> Void) {
-    self.callback = callback
-    // Keep the completion alive even if an OS/Keychain operation stalls. The
-    // fetcher has its own earlier 25s monotonic deadline before any file write.
-    let timer = DispatchWorkItem { self.finish(.failed) }
-    self.timer = timer
-    DispatchQueue.global().asyncAfter(deadline: .now() + 27, execute: timer)
-  }
-  func finish(_ result: UIBackgroundFetchResult) {
-    lock.lock()
-    let callback = self.callback
-    self.callback = nil; timer?.cancel(); timer = nil
-    lock.unlock()
-    if let callback { DispatchQueue.main.async { callback(result) } }
-  }
-}
 #endif

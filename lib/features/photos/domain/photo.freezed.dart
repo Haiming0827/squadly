@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PhotoAttachment {
 
- String get mediaId; int get width; int get height; int get byteLength; bool get isRevoked;
+ String get mediaId; int get width; int get height; int get byteLength; bool get isRevoked; bool get isHidden;
 /// Create a copy of PhotoAttachment
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -27,20 +27,20 @@ $PhotoAttachmentCopyWith<PhotoAttachment> get copyWith => _$PhotoAttachmentCopyW
 @override
 bool operator ==(Object other) {
   final _this = this as PhotoAttachment;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PhotoAttachment&&(identical(other.mediaId, _this.mediaId) || other.mediaId == _this.mediaId)&&(identical(other.width, _this.width) || other.width == _this.width)&&(identical(other.height, _this.height) || other.height == _this.height)&&(identical(other.byteLength, _this.byteLength) || other.byteLength == _this.byteLength)&&(identical(other.isRevoked, _this.isRevoked) || other.isRevoked == _this.isRevoked));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PhotoAttachment&&(identical(other.mediaId, _this.mediaId) || other.mediaId == _this.mediaId)&&(identical(other.width, _this.width) || other.width == _this.width)&&(identical(other.height, _this.height) || other.height == _this.height)&&(identical(other.byteLength, _this.byteLength) || other.byteLength == _this.byteLength)&&(identical(other.isRevoked, _this.isRevoked) || other.isRevoked == _this.isRevoked)&&(identical(other.isHidden, _this.isHidden) || other.isHidden == _this.isHidden));
 }
 
 
 @override
 int get hashCode {
   final _this = this as PhotoAttachment;
-  return Object.hash(runtimeType,_this.mediaId,_this.width,_this.height,_this.byteLength,_this.isRevoked);
+  return Object.hash(runtimeType,_this.mediaId,_this.width,_this.height,_this.byteLength,_this.isRevoked,_this.isHidden);
 }
 
 @override
 String toString() {
   final _this = this as PhotoAttachment;
-  return 'PhotoAttachment(mediaId: ${_this.mediaId}, width: ${_this.width}, height: ${_this.height}, byteLength: ${_this.byteLength}, isRevoked: ${_this.isRevoked})';
+  return 'PhotoAttachment(mediaId: ${_this.mediaId}, width: ${_this.width}, height: ${_this.height}, byteLength: ${_this.byteLength}, isRevoked: ${_this.isRevoked}, isHidden: ${_this.isHidden})';
 }
 
 
@@ -51,7 +51,7 @@ abstract mixin class $PhotoAttachmentCopyWith<$Res>  {
   factory $PhotoAttachmentCopyWith(PhotoAttachment value, $Res Function(PhotoAttachment) _then) = _$PhotoAttachmentCopyWithImpl;
 @useResult
 $Res call({
- String mediaId, int width, int height, int byteLength, bool isRevoked
+ String mediaId, int width, int height, int byteLength, bool isRevoked, bool isHidden
 });
 
 
@@ -68,13 +68,14 @@ class _$PhotoAttachmentCopyWithImpl<$Res>
 
 /// Create a copy of PhotoAttachment
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? mediaId = null,Object? width = null,Object? height = null,Object? byteLength = null,Object? isRevoked = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? mediaId = null,Object? width = null,Object? height = null,Object? byteLength = null,Object? isRevoked = null,Object? isHidden = null,}) {
   return _then(PhotoAttachment(
 mediaId: null == mediaId ? _self.mediaId : mediaId // ignore: cast_nullable_to_non_nullable
 as String,width: null == width ? _self.width : width // ignore: cast_nullable_to_non_nullable
 as int,height: null == height ? _self.height : height // ignore: cast_nullable_to_non_nullable
 as int,byteLength: null == byteLength ? _self.byteLength : byteLength // ignore: cast_nullable_to_non_nullable
 as int,isRevoked: null == isRevoked ? _self.isRevoked : isRevoked // ignore: cast_nullable_to_non_nullable
+as bool,isHidden: null == isHidden ? _self.isHidden : isHidden // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -160,10 +161,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String mediaId,  int width,  int height,  int byteLength,  bool isRevoked)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String mediaId,  int width,  int height,  int byteLength,  bool isRevoked,  bool isHidden)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PhotoAttachment() when $default != null:
-return $default(_that.mediaId,_that.width,_that.height,_that.byteLength,_that.isRevoked);case _:
+return $default(_that.mediaId,_that.width,_that.height,_that.byteLength,_that.isRevoked,_that.isHidden);case _:
   return orElse();
 
 }
@@ -181,10 +182,10 @@ return $default(_that.mediaId,_that.width,_that.height,_that.byteLength,_that.is
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String mediaId,  int width,  int height,  int byteLength,  bool isRevoked)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String mediaId,  int width,  int height,  int byteLength,  bool isRevoked,  bool isHidden)  $default,) {final _that = this;
 switch (_that) {
 case _PhotoAttachment():
-return $default(_that.mediaId,_that.width,_that.height,_that.byteLength,_that.isRevoked);case _:
+return $default(_that.mediaId,_that.width,_that.height,_that.byteLength,_that.isRevoked,_that.isHidden);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +202,10 @@ return $default(_that.mediaId,_that.width,_that.height,_that.byteLength,_that.is
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String mediaId,  int width,  int height,  int byteLength,  bool isRevoked)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String mediaId,  int width,  int height,  int byteLength,  bool isRevoked,  bool isHidden)?  $default,) {final _that = this;
 switch (_that) {
 case _PhotoAttachment() when $default != null:
-return $default(_that.mediaId,_that.width,_that.height,_that.byteLength,_that.isRevoked);case _:
+return $default(_that.mediaId,_that.width,_that.height,_that.byteLength,_that.isRevoked,_that.isHidden);case _:
   return null;
 
 }
@@ -216,7 +217,7 @@ return $default(_that.mediaId,_that.width,_that.height,_that.byteLength,_that.is
 
 
 class _PhotoAttachment implements PhotoAttachment {
-  const _PhotoAttachment({required this.mediaId, required this.width, required this.height, required this.byteLength, required this.isRevoked});
+  const _PhotoAttachment({required this.mediaId, required this.width, required this.height, required this.byteLength, required this.isRevoked, this.isHidden = false});
   
 
 @override final  String mediaId;
@@ -224,6 +225,7 @@ class _PhotoAttachment implements PhotoAttachment {
 @override final  int height;
 @override final  int byteLength;
 @override final  bool isRevoked;
+@override@JsonKey() final  bool isHidden;
 
 /// Create a copy of PhotoAttachment
 /// with the given fields replaced by the non-null parameter values.
@@ -235,18 +237,18 @@ _$PhotoAttachmentCopyWith<_PhotoAttachment> get copyWith => __$PhotoAttachmentCo
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PhotoAttachment&&(identical(other.mediaId, mediaId) || other.mediaId == mediaId)&&(identical(other.width, width) || other.width == width)&&(identical(other.height, height) || other.height == height)&&(identical(other.byteLength, byteLength) || other.byteLength == byteLength)&&(identical(other.isRevoked, isRevoked) || other.isRevoked == isRevoked));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PhotoAttachment&&(identical(other.mediaId, mediaId) || other.mediaId == mediaId)&&(identical(other.width, width) || other.width == width)&&(identical(other.height, height) || other.height == height)&&(identical(other.byteLength, byteLength) || other.byteLength == byteLength)&&(identical(other.isRevoked, isRevoked) || other.isRevoked == isRevoked)&&(identical(other.isHidden, isHidden) || other.isHidden == isHidden));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,mediaId,width,height,byteLength,isRevoked);
+    return Object.hash(runtimeType,mediaId,width,height,byteLength,isRevoked,isHidden);
 }
 
 @override
 String toString() {
-    return 'PhotoAttachment(mediaId: $mediaId, width: $width, height: $height, byteLength: $byteLength, isRevoked: $isRevoked)';
+    return 'PhotoAttachment(mediaId: $mediaId, width: $width, height: $height, byteLength: $byteLength, isRevoked: $isRevoked, isHidden: $isHidden)';
 }
 
 
@@ -257,7 +259,7 @@ abstract mixin class _$PhotoAttachmentCopyWith<$Res> implements $PhotoAttachment
   factory _$PhotoAttachmentCopyWith(_PhotoAttachment value, $Res Function(_PhotoAttachment) _then) = __$PhotoAttachmentCopyWithImpl;
 @override @useResult
 $Res call({
- String mediaId, int width, int height, int byteLength, bool isRevoked
+ String mediaId, int width, int height, int byteLength, bool isRevoked, bool isHidden
 });
 
 
@@ -274,13 +276,14 @@ class __$PhotoAttachmentCopyWithImpl<$Res>
 
 /// Create a copy of PhotoAttachment
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? mediaId = null,Object? width = null,Object? height = null,Object? byteLength = null,Object? isRevoked = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? mediaId = null,Object? width = null,Object? height = null,Object? byteLength = null,Object? isRevoked = null,Object? isHidden = null,}) {
   return _then(_PhotoAttachment(
 mediaId: null == mediaId ? _self.mediaId : mediaId // ignore: cast_nullable_to_non_nullable
 as String,width: null == width ? _self.width : width // ignore: cast_nullable_to_non_nullable
 as int,height: null == height ? _self.height : height // ignore: cast_nullable_to_non_nullable
 as int,byteLength: null == byteLength ? _self.byteLength : byteLength // ignore: cast_nullable_to_non_nullable
 as int,isRevoked: null == isRevoked ? _self.isRevoked : isRevoked // ignore: cast_nullable_to_non_nullable
+as bool,isHidden: null == isHidden ? _self.isHidden : isHidden // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

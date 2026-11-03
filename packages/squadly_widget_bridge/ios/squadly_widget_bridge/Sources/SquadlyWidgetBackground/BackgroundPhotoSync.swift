@@ -26,6 +26,12 @@ public actor BackgroundPhotoSync {
   private let changed: () -> Void
   private var current: Task<BackgroundPhotoSyncResult, Never>?
   private var trailing = false
+  private var stage = "idle"
+  private var failureCode: String?
+  private var httpStatus: Int?
+  public func diagnostics() -> [String: Any] {
+    ["stage": stage, "failure": failureCode as Any? ?? NSNull(), "httpStatus": httpStatus as Any? ?? NSNull()]
+  }
   public init(store: WidgetStore, credentials: BackgroundCredentialManager,
               transport: BackgroundHTTPTransport = BoundedHTTPTransport(),
               clock: @escaping () -> WidgetClock = { WidgetClock() }, changed: @escaping () -> Void = {}) {
@@ -37,9 +43,10 @@ public actor BackgroundPhotoSync {
       hint["type"] as? String == "photo_sync" else { return false }
     return true
   }
-  public func synchronize() async -> BackgroundPhotoSyncResult {
+  public func synchronize(deadline external: TimeInterval? = nil) async -> BackgroundPhotoSyncResult {
+    if let external, !external.isFinite || external <= clock().uptime { return .noData }
     if let current { trailing = true; return await current.value }
-    let deadline = clock().uptime + 25
+    let deadline = min(clock().uptime + 25, external ?? .infinity)
     trailing = false
     let task = Task { await self.batch(deadline: deadline) }
     current = task
@@ -58,6 +65,7 @@ public actor BackgroundPhotoSync {
     return result
   }
   private func pass(deadline: TimeInterval) async -> BackgroundPhotoSyncResult {
+    stage = "credential"; failureCode = nil; httpStatus = nil
     var owner: BackgroundCredential?
     var observed: WidgetHeadStamp?
     do {
@@ -66,13 +74,16 @@ public actor BackgroundPhotoSync {
       let state = try store.read()
       observed = state.head
       guard let binding = state.binding, binding.id == credential.bindingID else { return .noData }
+      stage = "membership_initial"
       try await membership(credential, squad: binding.squadID, deadline: deadline)
+      stage = "head_initial"
       let head = try await photoHead(credential, squad: binding.squadID, deadline: deadline)
       if let current = state.head, let incoming = photoHeadRevision(head.revision), incoming < current.revision { return .noData }
       if !state.failure, state.head?.revision == photoHeadRevision(head.revision), state.head?.messageID == head.photo?.id,
          head.photo == nil || (state.photo?.valid(at: clock()) == true && state.photo!.expiresAt <= credential.expiresAt) { return .noData }
       let photo: WidgetHeadPhoto?
       if let input = head.photo {
+        stage = "media"
         let response = try await request(credential, url: credential.gateway, body: ["action": "load", "squad_id": binding.squadID, "message_id": input.id], limit: 3 * 1024 * 1024, deadline: deadline)
         guard let map = response as? [String: Any], Set(map.keys) == ["bytes", "width", "height", "sha256"],
           int(map["width"]) == input.width, int(map["height"]) == input.height,
@@ -81,13 +92,17 @@ public actor BackgroundPhotoSync {
           let bytes = Data(base64Encoded: encoded), bytes.count == input.length,
           bytes.starts(with: [0xff, 0xd8]), bytes.suffix(2) == Data([0xff, 0xd9]),
           SHA256.hash(data: bytes).map({ String(format: "%02x", $0) }).joined() == sha else { throw BackgroundSyncError.invalid }
+        stage = "render"
         let jpeg = try BackgroundPhotoRenderer.thumbnail(bytes, width: input.width, height: input.height)
+        stage = "membership_final"
         try await membership(credential, squad: binding.squadID, deadline: deadline)
+        stage = "head_final"
         let confirmation = try await photoHead(credential, squad: binding.squadID, deadline: deadline)
         guard confirmation == head else { throw BackgroundSyncError.changed }
         photo = WidgetHeadPhoto(messageID: input.id, createdAt: input.createdAt, jpeg: jpeg)
       } else { photo = nil }
       try budget(deadline)
+      stage = "apply"
       let before = try store.read()
       _ = try credentials.withCurrent(credential) {
         try store.applyHead(bindingID: credential.bindingID, sessionGeneration: credential.sessionGeneration,
@@ -96,8 +111,15 @@ public actor BackgroundPhotoSync {
       let after = try store.read()
       if before != after { changed(); return .newData }
       return .noData
-    } catch WidgetStoreError.stale { return .noData }
+    } catch WidgetStoreError.stale { failureCode = "stale"; return .noData }
     catch {
+      switch error {
+      case BackgroundSyncError.authorization: failureCode = "authorization"
+      case BackgroundSyncError.changed: failureCode = "changed"
+      case BackgroundSyncError.deadline: failureCode = "deadline"
+      case BackgroundSyncError.transport: failureCode = "transport"
+      default: failureCode = "invalid"
+      }
       guard let owner else { return .failed }
       let denied = (error as? BackgroundSyncError) == .authorization
       if (try? credentials.failIfCurrent(owner, observedHead: observed, authorizationDenied: denied)) == true {
@@ -125,6 +147,7 @@ public actor BackgroundPhotoSync {
     request.setValue("no-store", forHTTPHeaderField: "Cache-Control")
     if let body { request.httpBody = try JSONSerialization.data(withJSONObject: body) }
     let result = try await transport.send(request, maximumBytes: limit, timeout: min(10, deadline - clock().uptime))
+    httpStatus = result.status
     try budget(deadline)
     _ = try credentials.withCurrent(credential) { true }
     if result.status == 401 || result.status == 403 { throw BackgroundSyncError.authorization }

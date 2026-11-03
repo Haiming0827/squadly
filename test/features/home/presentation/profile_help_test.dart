@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:squadly/features/home/presentation/screens/help_screen.dart';
-import 'package:squadly/features/home/presentation/screens/profile_screen.dart';
+import 'package:squadly/features/home/presentation/screens/profile_settings_screen.dart';
 
 void main() {
   testWidgets('notification settings are user initiated', (tester) async {
@@ -11,7 +11,10 @@ void main() {
       ProviderScope(
         child: MaterialApp(
           home: Scaffold(
-            body: ProfileScreen(onManageNotifications: () => opened = true),
+            body: ProfileSettingsScreen(
+              section: ProfileSettingsSection.appearance,
+              onManageNotifications: () => opened = true,
+            ),
           ),
         ),
       ),
@@ -29,7 +32,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const ProviderScope(
-        child: MaterialApp(home: Scaffold(body: ProfileScreen())),
+        child: MaterialApp(home: Scaffold(body: ProfileSettingsScreen())),
       ),
     );
     await tester.pumpAndSettle();

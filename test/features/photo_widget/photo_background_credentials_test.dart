@@ -46,6 +46,7 @@ class _Bridge implements PhotoBackgroundCredentialBridge {
   final cancelled = <String>[];
   bool failCommit = false;
   Completer<String>? prepareGate;
+  Completer<void>? clearGate;
   @override
   Future<String> prepare(PhotoWidgetSnapshot expected) async {
     prepares++;
@@ -72,6 +73,7 @@ class _Bridge implements PhotoBackgroundCredentialBridge {
   @override
   Future<void> clear() async {
     clears++;
+    if (clearGate != null) await clearGate!.future;
     pending = null;
   }
 }
@@ -210,6 +212,25 @@ void main() {
       gate.complete(_material());
       await one;
       expect(reads, 1);
+      expect(bridge.commits, 1);
+    },
+  );
+  test(
+    'new preparation waits until an older reset has finished clearing',
+    () async {
+      final gate = Completer<void>();
+      bridge.clearGate = gate;
+      final clearing = controller.reset();
+      final preparing = controller.accept(_state());
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        bridge.prepares,
+        0,
+        reason: 'A late clear must not erase a new credential',
+      );
+      gate.complete();
+      await clearing;
+      await preparing;
       expect(bridge.commits, 1);
     },
   );

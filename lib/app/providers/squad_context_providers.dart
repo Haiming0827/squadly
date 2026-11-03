@@ -36,6 +36,7 @@ final squadMembersProvider = FutureProvider.family<List<SquadMember>, String>((
   ref,
   squadId,
 ) async {
+  ref.watch(currentUserProvider);
   final result = await ref
       .watch(squadRepositoryProvider)
       .getSquadMembers(squadId: squadId);

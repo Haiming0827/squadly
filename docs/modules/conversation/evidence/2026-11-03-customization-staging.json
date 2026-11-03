@@ -1,0 +1,141 @@
+{
+  "date": "2026-11-03",
+  "environment": "staging",
+  "passed": true,
+  "checks": [
+    {
+      "check": "create_owned_squad",
+      "passed": true
+    },
+    {
+      "check": "nonmember_save_conversation_preference",
+      "passed": true
+    },
+    {
+      "check": "nonmember_record_conversation_open",
+      "passed": true
+    },
+    {
+      "check": "nonmember_update_squad_profile",
+      "passed": true
+    },
+    {
+      "check": "captain_invitation",
+      "passed": true
+    },
+    {
+      "check": "member_joins_real_invite",
+      "passed": true
+    },
+    {
+      "check": "a_save_private_remark",
+      "passed": true
+    },
+    {
+      "check": "a_open_once",
+      "passed": true
+    },
+    {
+      "check": "a_open_twice",
+      "passed": true
+    },
+    {
+      "check": "a_load_preferences",
+      "passed": true
+    },
+    {
+      "check": "a_visit_count",
+      "passed": true
+    },
+    {
+      "check": "b_load_preferences",
+      "passed": true
+    },
+    {
+      "check": "b_cannot_see_a_remark",
+      "passed": true
+    },
+    {
+      "check": "read_members",
+      "passed": true
+    },
+    {
+      "check": "b_read_a_preferences",
+      "passed": true
+    },
+    {
+      "check": "b_preferences_rls",
+      "passed": true
+    },
+    {
+      "check": "b_read_a_visits",
+      "passed": true
+    },
+    {
+      "check": "b_visits_rls",
+      "passed": true
+    },
+    {
+      "check": "b_save_own_remark",
+      "passed": true
+    },
+    {
+      "check": "b_open_once",
+      "passed": true
+    },
+    {
+      "check": "a_load_preferences",
+      "passed": true
+    },
+    {
+      "check": "a_remark_unchanged",
+      "passed": true
+    },
+    {
+      "check": "member_cannot_update_shared_profile",
+      "passed": true
+    },
+    {
+      "check": "captain_saves_avatar_name",
+      "passed": true
+    },
+    {
+      "check": "b_read_shared_profile",
+      "passed": true
+    },
+    {
+      "check": "b_sees_shared_avatar_name",
+      "passed": true
+    },
+    {
+      "check": "external_avatar_url_rejected",
+      "passed": true
+    },
+    {
+      "check": "anonymous_preferences_denied",
+      "passed": true
+    },
+    {
+      "check": "anonymous_rpc_denied",
+      "passed": true
+    },
+    {
+      "check": "direct_update_denied",
+      "passed": true
+    },
+    {
+      "check": "b_load_preferences",
+      "passed": true
+    },
+    {
+      "check": "b_alias_independent",
+      "passed": true
+    }
+  ],
+  "retainedFixture": "Synthetic two-member Squad retained for Device Hub UI verification; no original Squad modified",
+  "notVerified": [
+    "physical device",
+    "Android native avatar picker",
+    "leave/rejoin on CloudBase (local SQL regression only)"
+  ]
+}

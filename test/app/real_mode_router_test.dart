@@ -44,6 +44,10 @@ void main() {
     expect(find.textContaining('本地演示'), findsNothing);
     await tester.tap(find.text('我的'));
     await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('设置'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('账号与资料'));
+    await tester.pumpAndSettle();
     expect(find.text('账号与联系方式'), findsOneWidget);
     await tester.tap(find.text('账号与联系方式'));
     await tester.pumpAndSettle();

@@ -1,0 +1,53 @@
+BEGIN;
+CREATE FUNCTION pg_temp.check(ok boolean,label text) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN IF ok IS DISTINCT FROM true THEN RAISE EXCEPTION '%',label; END IF; END $$;
+GRANT EXECUTE ON FUNCTION pg_temp.check(boolean,text) TO authenticated,anon;
+INSERT INTO auth.users(id) VALUES('96000000-0000-4000-8000-000000000001'),('96000000-0000-4000-8000-000000000002'),('96000000-0000-4000-8000-000000000003');
+INSERT INTO public.squads(id,name,created_by,status) VALUES('96000000-0000-4000-8000-000000000010','Customization fixture','96000000-0000-4000-8000-000000000001','active');
+INSERT INTO public.squad_members(squad_id,user_id,role) VALUES
+('96000000-0000-4000-8000-000000000010','96000000-0000-4000-8000-000000000001','captain'),
+('96000000-0000-4000-8000-000000000010','96000000-0000-4000-8000-000000000002','member');
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims','{"sub":"96000000-0000-4000-8000-000000000001"}',true);
+SELECT pg_temp.check(public.save_conversation_preference('96000000-0000-4000-8000-000000000010','  My private alias  ',true)->>'saved'='true','Captain personal save');
+SELECT pg_temp.check(public.record_conversation_open('96000000-0000-4000-8000-000000000010')->>'saved'='true','First open');
+SELECT public.record_conversation_open('96000000-0000-4000-8000-000000000010') FROM generate_series(1,110);
+SELECT pg_temp.check((SELECT p->>'recent_open_count' FROM public.get_conversation_preferences() p)='100','Daily open cap');
+SELECT pg_temp.check((SELECT p->>'remark' FROM public.get_conversation_preferences() p)='My private alias','Trim remark');
+SELECT pg_temp.check(public.save_conversation_preference('96000000-0000-4000-8000-000000000010',repeat('x',41),true)->>'error'='invalid','Oversized alias');
+SELECT pg_temp.check(public.update_squad_profile('96000000-0000-4000-8000-000000000010','Renamed','Shared description',NULL)->>'saved'='true','Captain update');
+SELECT pg_temp.check(public.update_squad_profile('96000000-0000-4000-8000-000000000010','','',NULL)->>'error'='invalid','Empty name');
+SELECT pg_temp.check(public.update_squad_profile('96000000-0000-4000-8000-000000000010','Renamed','','https://example.com/avatar.png')->>'error'='invalid_avatar','External avatar URL');
+SELECT pg_temp.check(public.update_squad_profile('96000000-0000-4000-8000-000000000010','Renamed','','data:image/png;base64,QQ==')->>'error'='invalid_avatar','Invalid avatar');
+SELECT pg_temp.check(public.update_squad_profile('96000000-0000-4000-8000-000000000010','Renamed','','data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAIAAABt+uBvAAAApElEQVR4nO3QQQ0AIBDAsJOCKvw7AQd82aPJBCyds5cezfeDeIAAAQIEKBwgQIAAAQoHCBAgQIDCAQIECBCgcIAAAQIEKBwgQIAAAQoHCBAgQIDCAQIECBCgcIAAAQIEKBwgQIAAAQoHCBAgQIDCAQIECBCgcIAAAQIEKBwgQIAAAQoHCBAgQIDCAQIECBCgcIAAAQIEKBwgQIAAAQoHCBAgQD+7Hox3DZw3IKwAAAAASUVORK5CYII=')->>'saved'='true','Valid avatar save');
+SELECT set_config('request.jwt.claims','{"sub":"96000000-0000-4000-8000-000000000002"}',true);
+SELECT pg_temp.check((SELECT count(*) FROM public.conversation_preferences)=0,'Peer cannot read private rows');
+SELECT pg_temp.check((SELECT count(*) FROM public.conversation_open_days)=0,'Peer cannot read activity');
+SELECT pg_temp.check((SELECT p->>'remark' FROM public.get_conversation_preferences() p)='','Peer RPC cannot read alias');
+SELECT pg_temp.check(public.save_conversation_preference('96000000-0000-4000-8000-000000000010','B alias',true)->>'saved'='true','Member personal save');
+SELECT pg_temp.check(public.update_squad_profile('96000000-0000-4000-8000-000000000010','Hacked','',NULL)->>'error'='forbidden','Member cannot update shared profile');
+SELECT pg_temp.check(NOT has_table_privilege('authenticated','public.squads','UPDATE'),'No direct squad updates');
+SELECT pg_temp.check(NOT has_table_privilege('authenticated','public.conversation_preferences','INSERT'),'No spoofed preference writes');
+SELECT set_config('request.jwt.claims','{"sub":"96000000-0000-4000-8000-000000000003"}',true);
+SELECT pg_temp.check((SELECT count(*) FROM public.get_conversation_preferences())=0,'Nonmember RPC');
+SELECT pg_temp.check((SELECT count(*) FROM public.conversation_preferences)=0,'Nonmember RLS');
+SELECT pg_temp.check(public.record_conversation_open('96000000-0000-4000-8000-000000000010')->>'error'='forbidden','Nonmember cannot record');
+SELECT pg_temp.check(public.save_conversation_preference('96000000-0000-4000-8000-000000000010','forged',true)->>'error'='forbidden','Nonmember cannot save');
+SELECT pg_temp.check(public.update_squad_profile('96000000-0000-4000-8000-000000000010','Hacked','',NULL)->>'error'='forbidden','Nonmember cannot update');
+SELECT pg_temp.check(NOT has_function_privilege('anon','public.save_conversation_preference(uuid,text,boolean)','EXECUTE'),'Anonymous RPC denied');
+SELECT pg_temp.check(NOT has_table_privilege('anon','public.conversation_preferences','SELECT'),'Anonymous table denied');
+RESET ROLE;
+-- Expired visits are ignored, including future days.
+UPDATE public.conversation_open_days SET opened_day=(now() AT TIME ZONE 'Asia/Shanghai')::date-7;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims','{"sub":"96000000-0000-4000-8000-000000000001"}',true);
+SELECT pg_temp.check((SELECT p->>'recent_open_count' FROM public.get_conversation_preferences() p)='0','Seven-day expiry');
+SELECT pg_temp.check(public.save_conversation_preference('96000000-0000-4000-8000-000000000010','',false)->>'saved'='true','Clear alias and unpin');
+SELECT pg_temp.check((SELECT p->>'pinned_at' FROM public.get_conversation_preferences() p) IS NULL,'Unpin clears time');
+RESET ROLE;
+DELETE FROM public.squad_members WHERE user_id='96000000-0000-4000-8000-000000000002';
+INSERT INTO public.squad_members(squad_id,user_id,role) VALUES('96000000-0000-4000-8000-000000000010','96000000-0000-4000-8000-000000000002','member');
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims','{"sub":"96000000-0000-4000-8000-000000000002"}',true);
+SELECT pg_temp.check((SELECT p->>'remark' FROM public.get_conversation_preferences() p)='','Rejoin does not resurrect private settings');
+ROLLBACK;

@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
 
-enum ConversationActivityFilter { all, withMessages, withoutMessages }
+enum ConversationActivityFilter {
+  all,
+  squads,
+  plans,
+  pinned,
+  withMessages,
+  withoutMessages,
+}
 
 bool matchesConversationActivity(
   ConversationActivityFilter filter,
-  bool hasMessages,
-) => switch (filter) {
+  bool hasMessages, {
+  bool isPlan = false,
+  bool isPinned = false,
+}) => switch (filter) {
   ConversationActivityFilter.all => true,
+  ConversationActivityFilter.squads => !isPlan,
+  ConversationActivityFilter.plans => isPlan,
+  ConversationActivityFilter.pinned => !isPlan && isPinned,
   ConversationActivityFilter.withMessages => hasMessages,
   ConversationActivityFilter.withoutMessages => !hasMessages,
 };
@@ -45,7 +57,35 @@ final class ConversationListControls extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('会话', style: Theme.of(context).textTheme.headlineSmall),
+          Row(
+            children: [
+              PopupMenuButton<ConversationActivityFilter>(
+                key: const ValueKey('conversation-filter-menu'),
+                tooltip: '筛选会话',
+                position: PopupMenuPosition.under,
+                initialValue: filter,
+                icon: const Icon(Icons.filter_list_rounded),
+                onSelected: onFilterChanged,
+                itemBuilder: (_) => [
+                  for (final option in ConversationActivityFilter.values)
+                    CheckedPopupMenuItem(
+                      key: ValueKey('conversation-filter-${option.name}'),
+                      value: option,
+                      checked: filter == option,
+                      child: Text(_labelFor(option)),
+                    ),
+                ],
+              ),
+              Text('会话', style: Theme.of(context).textTheme.headlineSmall),
+              const Spacer(),
+              if (filter != ConversationActivityFilter.all)
+                TextButton(
+                  onPressed: () =>
+                      onFilterChanged(ConversationActivityFilter.all),
+                  child: Text('${_labelFor(filter)} · 清除'),
+                ),
+            ],
+          ),
           const SizedBox(height: 12),
           TextField(
             key: const ValueKey('conversation-search-field'),
@@ -67,19 +107,6 @@ final class ConversationListControls extends StatelessWidget {
                     ),
             ),
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              for (final option in ConversationActivityFilter.values)
-                ChoiceChip(
-                  label: Text(_labelFor(option)),
-                  selected: filter == option,
-                  onSelected: (_) => onFilterChanged(option),
-                ),
-            ],
-          ),
         ],
       ),
     );
@@ -87,6 +114,9 @@ final class ConversationListControls extends StatelessWidget {
 
   String _labelFor(ConversationActivityFilter value) => switch (value) {
     ConversationActivityFilter.all => '全部',
+    ConversationActivityFilter.squads => '小队会话',
+    ConversationActivityFilter.plans => '计划讨论',
+    ConversationActivityFilter.pinned => '已置顶',
     ConversationActivityFilter.withMessages => '有消息',
     ConversationActivityFilter.withoutMessages => '暂无消息',
   };

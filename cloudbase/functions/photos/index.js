@@ -16,7 +16,7 @@ function check(result) {
   if (result.error) {
     const statuses = { unauthenticated: 401, not_member: 403, not_found: 404,
       nonce_conflict: 409, upload_busy: 409, revoked: 410, upload_expired: 409,
-      invalid_reply: 422, squad_inactive: 403, invalid_photo: 422, rate_limited: 429 };
+      invalid_report: 422, invalid_reply: 422, squad_inactive: 403, invalid_photo: 422, rate_limited: 429 };
     if (!Object.hasOwn(statuses, result.error)) throw new PhotoError('backend_unavailable', 503);
     throw new PhotoError(result.error, statuses[result.error]);
   }
@@ -116,6 +116,16 @@ function createHandler({ backend, sanitize = sanitizePhoto, cleanupSecret }) {
         if (before.media_id !== after.media_id || before.sha256 !== after.sha256
           || bytes.length !== after.byte_length || digest(bytes) !== after.sha256) throw new PhotoError('not_found', 404);
         return response(200, { bytes: bytes.toString('base64'), width: after.width, height: after.height, sha256: after.sha256 });
+      }
+      if (body.action === 'hide' || body.action === 'report') {
+        keys(body, body.action === 'hide' ? ['action','squad_id','message_id'] : ['action','squad_id','message_id','reason']);
+        uuid(body.message_id);
+        if (body.action === 'report' && !['spam','harassment','privacy','other'].includes(body.reason)) throw new PhotoError('invalid_report', 422);
+        const params = { p_squad_id: body.squad_id, p_message_id: body.message_id };
+        if (body.action === 'report') params.p_reason = body.reason;
+        const result = check(await backend.userRpc(body.action === 'hide' ? 'hide_photo_message' : 'report_photo_message', params, token));
+        if (result.hidden !== true || (body.action === 'report' && result.reported !== true)) throw new PhotoError('invalid_backend_response', 503);
+        return response(200, body.action === 'hide' ? { hidden: true } : { hidden: true, reported: true });
       }
       if (body.action === 'revoke') {
         keys(body, ['action','squad_id','message_id']); uuid(body.message_id);

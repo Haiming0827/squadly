@@ -39,6 +39,24 @@ function fixture(overrides = {}) {
   return { backend, calls, handle: createHandler({ backend, cleanupSecret: 's'.repeat(32) }) };
 }
 
+test('camera-sized binary gateway event decodes the full JSON envelope and sanitizes actual JPEG pixels', async () => {
+  const large = fs.readFileSync(path.join(__dirname, '../../../test/features/photos/fixtures/large_sanitized.jpg'));
+  assert.ok(large.length > 100 * 1024);
+  const input = { ...payload, source_sha256: digest(large), bytes: large.toString('base64') };
+  const f = fixture();
+  const response = await f.handle(event(input, {
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/octet-stream' },
+    isBase64Encoded: true,
+    body: Buffer.from(JSON.stringify(input), 'utf8').toString('base64'),
+  }));
+  assert.equal(response.statusCode, 200);
+  const upload = f.calls.find(c => c.name === 'upload');
+  const clean = await sharp(upload.data).metadata();
+  assert.equal(clean.width, 640); assert.equal(clean.height, 480);
+  assert.equal(clean.exif, undefined);
+  assert.equal(f.calls.find(c => c.name === 'reserve_photo_upload').params.p_client_nonce, nonce);
+});
+
 test('server decodes a real JPEG, strips GPS/time/device EXIF and orients fresh pixels', async () => {
   const source = await sharp({ create: { width: 30, height: 20, channels: 3, background: '#fc6634' } })
     .withExif({ IFD0: { Make: 'SecretDevice', Orientation: '6' },
@@ -173,5 +191,39 @@ test('Storage transport uses fixed HTTPS gateway, no redirects/upsert, service k
   await assert.rejects(backend.upload('../private', bytes));
   for (const origin of ['http://env.api.tcloudbasegateway.com','https://evil.test','https://env.api.tcloudbasegateway.com/path']) {
     assert.throws(() => createBackend({ origin, serviceKey: 'key' }));
+  }
+});
+
+for (const action of ['hide', 'report']) test(`${action} uses the ordinary JWT and returns only confirmation`, async () => {
+  const seen = [];
+  const f = fixture({ async userRpc(name, params, bearer) {
+    seen.push({ name, params, bearer });
+    return { hidden: true, ...(action === 'report' ? { reported: true } : {}), internal_reporter: 'must-not-escape' };
+  } });
+  const reply = await f.handle(event(send(action, { message_id: message, ...(action === 'report' ? { reason: 'privacy' } : {}) })));
+  assert.equal(reply.statusCode, 200);
+  assert.deepEqual(JSON.parse(reply.body), { hidden: true, ...(action === 'report' ? { reported: true } : {}) });
+  assert.deepEqual(seen, [{ name: action === 'hide' ? 'hide_photo_message' : 'report_photo_message',
+    params: { p_squad_id: squad, p_message_id: message, ...(action === 'report' ? { p_reason: 'privacy' } : {}) }, bearer: token }]);
+  assert.equal(f.calls.length, 0); // No service RPC, byte download, upload or copying.
+});
+
+test('receiver safety rejects extra identity/content, arbitrary reasons and missing identity before RPC', async () => {
+  for (const body of [send('hide', { message_id: message, user_id: 'someone-else' }),
+    send('report', { message_id: message, reason: 'privacy', bytes: 'private-photo' }),
+    send('report', { message_id: message, reason: 'free-form-private-text' }),
+    send('report', { message_id: message }), send('hide', { message_id: '../other' })]) {
+    const f = fixture();
+    assert.ok([400, 422].includes((await f.handle(event(body))).statusCode));
+    assert.equal(f.calls.length, 0);
+  }
+});
+
+test('receiver safety cannot confirm denial or missing backend acknowledgement', async () => {
+  for (const [value, status] of [[{ error: 'not_found' }, 404], [{ error: 'invalid_report' }, 422], [{ hidden: true }, 503]]) {
+    const f = fixture({ async userRpc() { return value; } });
+    const reply = await f.handle(event(send('report', { message_id: message, reason: 'other' })));
+    assert.equal(reply.statusCode, status);
+    assert.ok(!reply.body.includes('reported'));
   }
 });

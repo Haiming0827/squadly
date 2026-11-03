@@ -5,6 +5,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/error/failures.dart';
+import '../../core/network/cloudbase_auth_gate.dart';
 import '../../core/network/cloudbase_client_provider.dart';
 import '../../features/photos/data/cloudbase_photo_repository.dart';
 import '../../features/photos/data/method_channel_photo_source.dart';
@@ -71,7 +72,7 @@ final photoRepositoryProvider = Provider<PhotoRepository>((ref) {
     dio: dio,
     credentials: () async {
       if (!active || !ref.read(photoSessionReadyProvider)) return null;
-      final response = await app.auth.getSession();
+      final response = await CloudBaseAuthGate.forAuth(app.auth).session();
       final session = response.data?.session;
       if (!active ||
           !response.isSuccess ||

@@ -168,6 +168,41 @@ void main() {
     registerFallbackValue(now);
     registerFallbackValue(image());
   });
+
+  test(
+    'hide fences in-flight pixels and stale server head/deep link',
+    () async {
+      final h = Harness();
+      await h.init();
+      final pixels = Completer<Either<Failure, PhotoImage>>();
+      h.load = () => pixels.future;
+      final pending = h.service.refresh();
+      while (h.loadCalls == 0) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      await h.service.suppressPhoto(squadId, messageId);
+      pixels.complete(right(image()));
+      expect((await pending).isLeft(), isTrue);
+      expect(h.writes, isEmpty);
+      final calls = h.loadCalls;
+      expect((await h.service.refresh()).isLeft(), isTrue);
+      expect(h.loadCalls, calls);
+      expect(h.writes, isEmpty);
+      expect((await h.service.resolve(h.entry)).isLeft(), isTrue);
+    },
+  );
+  test(
+    'a higher personal head can replace the suppressed latest with empty state',
+    () async {
+      final h = Harness();
+      await h.init();
+      await h.service.suppressPhoto(squadId, messageId);
+      h.latest = () async => right(const PhotoHead(revision: '2'));
+      expect((await h.service.refresh()).isRight(), isTrue);
+      expect(h.state.display, PhotoWidgetDisplay.empty);
+      expect(h.writes, isEmpty);
+    },
+  );
   testWidgets(
     'settings distinguishes hidden binding from zero installed widgets on a narrow screen',
     (tester) async {

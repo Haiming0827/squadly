@@ -54,10 +54,11 @@ jobs:
       - name: Unit and widget tests
         run: flutter test --coverage
 
-      - name: Real-backend auth and routing tests
+      - name: Real-backend auth, routing and widget bootstrap tests
         run: >-
           flutter test --dart-define=USE_DEMO_BACKEND=false
           test/app/real_mode_router_test.dart
+          test/app/providers/photo_widget_bootstrap_test.dart
           test/features/auth/presentation/auth_async_state_test.dart
           test/features/auth/presentation/auth_recovery_state_test.dart
 

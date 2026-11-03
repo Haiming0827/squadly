@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloudbase_flutter/cloudbase_flutter.dart' hide CloudBaseConfig;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -5,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:squadly/core/error/exceptions.dart';
+import 'package:squadly/core/network/cloudbase_auth_gate.dart';
 import 'package:squadly/features/auth/data/datasources/auth_remote_datasource.dart';
 
 class _CloudBaseMock extends Mock implements CloudBase {}
@@ -16,6 +19,8 @@ class _SignInWithPasswordReqFake extends Fake
 
 class _SignUpReqFake extends Fake implements SignUpReq {}
 
+class _UpdateUserReqFake extends Fake implements UpdateUserReq {}
+
 class _SignInWithOtpReqFake extends Fake implements SignInWithOtpReq {}
 
 void main() {
@@ -23,6 +28,7 @@ void main() {
     registerFallbackValue(_SignInWithPasswordReqFake());
     registerFallbackValue(_SignUpReqFake());
     registerFallbackValue(_SignInWithOtpReqFake());
+    registerFallbackValue(_UpdateUserReqFake());
   });
 
   test(
@@ -137,6 +143,156 @@ void main() {
       expect(receivedAttributes?.nonce, '123456');
       expect(receivedAttributes?.password, 'newPassword1');
       verify(() => auth.signOut()).called(1);
+    },
+  );
+
+  test(
+    'recovery keeps temporary session private until SDK logout completes',
+    () async {
+      final app = _CloudBaseMock(), auth = _CloudBaseAuthMock();
+      when(() => app.auth).thenReturn(auth);
+      final logoutStarted = Completer<void>(),
+          logoutRelease = Completer<void>();
+      var temporary = false;
+      when(() => auth.resetPasswordForEmail(any())).thenAnswer(
+        (_) async => ResetPasswordForEmailRes(
+          data: ResetPasswordForEmailResData(
+            updateUser: (_) async {
+              temporary = true;
+              return SignInRes();
+            },
+          ),
+        ),
+      );
+      when(() => auth.getSession()).thenAnswer(
+        (_) async => temporary
+            ? SignInRes(
+                data: SignInResData(
+                  session: Session(user: User(id: 'temporary')),
+                ),
+              )
+            : SignInRes(error: AuthError(code: 'no_session')),
+      );
+      when(() => auth.signOut()).thenAnswer((_) async {
+        logoutStarted.complete();
+        await logoutRelease.future;
+        temporary = false;
+        return SignOutRes();
+      });
+      final pg = PostgrestClient('https://fixture.invalid');
+      addTearDown(pg.dispose);
+      final source = AuthRemoteDatasource(app, pg);
+      await source.requestPasswordRecovery(email: 'fixture@example.test');
+      final recovering = source.completePasswordRecovery(
+        email: 'fixture@example.test',
+        code: '123456',
+        newPassword: 'synthetic-password',
+      );
+      await logoutStarted.future;
+      var readFinished = false;
+      final reading = CloudBaseAuthGate.forAuth(auth).session().then((value) {
+        readFinished = true;
+        return value;
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(readFinished, isFalse);
+      logoutRelease.complete();
+      await recovering;
+      expect((await reading).data?.session, isNull);
+    },
+  );
+
+  test('recovery checks signed-in state inside the SDK transaction', () async {
+    final app = _CloudBaseMock(), auth = _CloudBaseAuthMock();
+    when(() => app.auth).thenReturn(auth);
+    var verified = false;
+    when(() => auth.resetPasswordForEmail(any())).thenAnswer(
+      (_) async => ResetPasswordForEmailRes(
+        data: ResetPasswordForEmailResData(
+          updateUser: (_) async {
+            verified = true;
+            return SignInRes();
+          },
+        ),
+      ),
+    );
+    when(() => auth.getSession()).thenAnswer(
+      (_) async => SignInRes(
+        data: SignInResData(
+          session: Session(user: User(id: 'new-login')),
+        ),
+      ),
+    );
+    final pg = PostgrestClient('https://fixture.invalid');
+    addTearDown(pg.dispose);
+    final source = AuthRemoteDatasource(app, pg);
+    await source.requestPasswordRecovery(email: 'fixture@example.test');
+    final gate = CloudBaseAuthGate.forAuth(auth);
+    final blocked = Completer<void>();
+    final holding = gate.read(() => blocked.future);
+    final recovering = source.completePasswordRecovery(
+      email: 'fixture@example.test',
+      code: '123456',
+      newPassword: 'synthetic-password',
+    );
+    blocked.complete();
+    await holding;
+    await expectLater(recovering, throwsA(isA<ServerException>()));
+    expect(verified, isFalse);
+    verifyNever(() => auth.signOut());
+  });
+
+  test(
+    'logout discards email-change and password-setup SDK verifiers',
+    () async {
+      final app = _CloudBaseMock(), auth = _CloudBaseAuthMock();
+      when(() => app.auth).thenReturn(auth);
+      var emailCalls = 0, passwordCalls = 0;
+      when(() => auth.updateUser(any())).thenAnswer(
+        (_) async => UpdateUserRes(
+          data: UpdateUserResData(
+            verifyOtp: (_) async {
+              emailCalls++;
+              return GetUserRes(error: AuthError(code: 'controlled'));
+            },
+          ),
+        ),
+      );
+      when(() => auth.reauthenticate()).thenAnswer(
+        (_) async => ReauthenticateRes(
+          data: ReauthenticateResData(
+            updateUser: (_) async {
+              passwordCalls++;
+              return SignInRes(error: AuthError(code: 'controlled'));
+            },
+          ),
+        ),
+      );
+      when(() => auth.signOut()).thenAnswer((_) async => SignOutRes());
+      final pg = PostgrestClient('https://fixture.invalid');
+      addTearDown(pg.dispose);
+      final source = AuthRemoteDatasource(app, pg);
+      await source.requestEmailChange(email: 'fixture@example.test');
+      await source.sendPasswordSetupVerification();
+      await source.signOut();
+      await expectLater(
+        source.verifyEmailChange(code: '123456'),
+        throwsA(isA<ServerException>()),
+      );
+      await expectLater(
+        source.setPassword(code: '123456', password: 'synthetic-only'),
+        throwsA(isA<ServerException>()),
+      );
+      expect(
+        emailCalls,
+        0,
+        reason: 'Old email verifier must be discarded at logout',
+      );
+      expect(
+        passwordCalls,
+        0,
+        reason: 'Old password verifier must be discarded at logout',
+      );
     },
   );
 

@@ -21,7 +21,16 @@ TimelineEntry timelineEntryFromJson(Map<String, dynamic> json) {
   PhotoAttachment? photo;
   if (kind == TimelineEntryKind.photo) {
     final value = _map(photoValue);
-    if (value.length != 5 ||
+    if ((value.length != 5 && value.length != 6) ||
+        (value.containsKey('hidden') && value['hidden'] is! bool) ||
+        !{
+          'id',
+          'width',
+          'height',
+          'byte_length',
+          'revoked',
+          'hidden',
+        }.containsAll(value.keys) ||
         !value.keys.toSet().containsAll({
           'id',
           'width',
@@ -54,6 +63,7 @@ TimelineEntry timelineEntryFromJson(Map<String, dynamic> json) {
       height: value['height'] as int,
       byteLength: value['byte_length'] as int,
       isRevoked: value['revoked'] as bool,
+      isHidden: value['hidden'] as bool? ?? false,
     );
   } else if (photoValue != null || json['photo_id'] != null) {
     throw const FormatException('Non-photo entry contains photo data');

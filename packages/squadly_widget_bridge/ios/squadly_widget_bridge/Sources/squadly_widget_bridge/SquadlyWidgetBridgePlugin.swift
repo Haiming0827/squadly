@@ -25,6 +25,42 @@ public final class SquadlyWidgetBridgePlugin: NSObject, FlutterPlugin {
     registrar.addMethodCallDelegate(instance, channel: FlutterMethodChannel(name: "squadly/photo-widget", binaryMessenger: registrar.messenger()))
     FlutterMethodChannel(name: "squadly/photo-background", binaryMessenger: registrar.messenger())
       .setMethodCallHandler(instance.handleCredential)
+    let renewalChannel = FlutterMethodChannel(name: "squadly/photo-renewal", binaryMessenger: registrar.messenger())
+    renewalChannel.setMethodCallHandler { call, result in
+      guard let runtime = PhotoBackgroundRuntime.shared else {
+        result(FlutterError(code: "unavailable", message: "Renewal unavailable", details: nil)); return
+      }
+      switch call.method {
+      case "ready":
+        guard call.arguments == nil else { result(FlutterError(code: "invalid", message: "Invalid renewal request", details: nil)); return }
+        Task {
+          await runtime.renewal.setHandler { request, done in
+            DispatchQueue.main.async {
+              let remaining = Int((request.deadline - ProcessInfo.processInfo.systemUptime) * 1000)
+              guard remaining > 0 else { done(false); return }
+              renewalChannel.invokeMethod("renew", arguments: ["ticket": request.ticket, "scope": request.scope,
+                "remainingMs": min(8000, remaining)]) { value in done(value as? Bool == true) }
+            }
+          }
+          DispatchQueue.main.async { result(true) }
+        }
+      case "close":
+        Task { await runtime.renewal.setHandler(nil); DispatchQueue.main.async { result(true) } }
+      case "commit":
+        do {
+          guard let args = call.arguments as? [String: Any],
+            Set(args.keys) == ["ticket", "environmentId", "userId", "region", "gateway", "accessToken", "expiresAt"],
+            let expiresAt = args["expiresAt"] as? NSNumber, CFGetTypeID(expiresAt) != CFBooleanGetTypeID() else { throw WidgetStoreError.invalid }
+          try runtime.credentials.commitRenewal(ticket: instance.string(args, "ticket"),
+            environmentID: instance.string(args, "environmentId"), userID: instance.string(args, "userId"),
+            region: instance.string(args, "region"), gateway: instance.string(args, "gateway"), token: instance.string(args, "accessToken"),
+            expiresAt: Date(timeIntervalSince1970: expiresAt.doubleValue / 1000))
+          WidgetCenter.shared.reloadTimelines(ofKind: Self.kind)
+          result(true)
+        } catch { result(FlutterError(code: "stale", message: "Renewal context changed", details: nil)) }
+      default: result(FlutterMethodNotImplemented)
+      }
+    }
   }
   private func handleCredential(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     guard let credentials else {
@@ -38,7 +74,7 @@ public final class SquadlyWidgetBridgePlugin: NSObject, FlutterPlugin {
       case "prepare": fields = ["bindingId", "generation"]
       case "commit": fields = ["ticket", "environmentId", "userId", "region", "gateway", "accessToken", "expiresAt"]
       case "cancel": fields = ["ticket"]
-      case "clear", "status", "refresh": fields = []
+      case "clear", "status", "refresh", "diagnostics": fields = []
       default: result(FlutterMethodNotImplemented); return
       }
       guard Set(args.keys) == fields else { throw WidgetStoreError.invalid }
@@ -54,10 +90,17 @@ public final class SquadlyWidgetBridgePlugin: NSObject, FlutterPlugin {
       case "clear": try credentials.clear(); result(true)
       case "status": result(try credentials.read() != nil)
       case "refresh":
+        guard let runtime = PhotoBackgroundRuntime.shared else { throw WidgetStoreError.unavailable }
+        let deadline = ProcessInfo.processInfo.systemUptime + 25
+        Task {
+          let outcome = await runtime.synchronize(deadline: deadline)
+          DispatchQueue.main.async { result(outcome.rawValue) }
+        }
+      case "diagnostics":
         guard let sync = PhotoBackgroundRuntime.shared?.sync else { throw WidgetStoreError.unavailable }
         Task {
-          let outcome = await sync.synchronize()
-          DispatchQueue.main.async { result(outcome.rawValue) }
+          let values = await sync.diagnostics()
+          DispatchQueue.main.async { result(values) }
         }
       default: result(FlutterMethodNotImplemented)
       }
@@ -89,6 +132,9 @@ public final class SquadlyWidgetBridgePlugin: NSObject, FlutterPlugin {
       let args = call.arguments as? [String: Any] ?? [:]
       switch call.method {
       case "read": value = try store.read()
+      case "retainExpired":
+        guard let expiresAt = args["expiresAt"] as? NSNumber else { throw WidgetStoreError.invalid }
+        value = try store.retainExpired(scope: string(args, "scope"), expiresAt: Date(timeIntervalSince1970: expiresAt.doubleValue / 1000))
       case "synchronize":
         value = try store.synchronize(scope: args["scope"] as? String, expiresAt: (args["expiresAt"] as? NSNumber).map { Date(timeIntervalSince1970: $0.doubleValue / 1000) })
       case "bind":

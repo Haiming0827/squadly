@@ -1,6 +1,20 @@
 # 照片三环实施：iOS 优先
 
+2026-11-02：原用户花图的普通App加密待发恢复、真实上传及A/B实际画面已通过，原队待发1→0，原父关系保留；两台联网复查通过，普通重启恢复过期SDK会话而无需重新登录。[补证](evidence/2026-11-02-original-photo-ui.md)。未将前台接收计作APNs/桌面后台通过。
+
+同日最新上传修复：已复现CloudBase文本JSON100KB上限，照片publish改用二进制信封承载；实际模拟器生产Dio完成1.45MB发布/幂等/关联回拍/1.29MB下载，原待发保留。Flutter643/3、Node24、真实模式18；原花图修复后界面往返因Mac再次锁屏待验。[证据](evidence/2026-10-31-photo-upload-413.md)。
+
+最新增量（2026-10-31）：普通根 App 的 A 中尺寸/B 小尺寸组件已实际显示合成照片，A 点击进入绑定队关联回拍，两端普通启动恢复现有账号；冷点击、完整桌面失效/真机/APNs仍待验。[桌面证据](../photo-widget/evidence/2026-10-31-desktop-ui.md)。用户可按[操作与测试手册](../../product-design/squadly-operation-testing-manual-2026-10-31.md)打开 A/B 并交互；[当前状态](../../product-design/squadly-feature-status-2026-10-31.md)优先于下方历史检查点。
+
 日期：2026-10-27。用户已授权按产品 V1.1 顺序开发和验证全部计划，当前优先 iOS；Android 兼容与后续设备验收仍保留。
+
+2026-10-31 SDK 并发前置修复：单实例认证调用顺序、临时恢复会话隔离及退出后全部验证闭包清理已通过回归；Flutter625通过/3跳过，真实模式14通过，iOS普通C真实SDK续期与本人PG读取1条通过。[证据](../photo-widget/evidence/2026-10-31-sdk-auth-ordering.md)。A7预算内SDK→原生交接与系统通知仍待实现，A6/B/C范围不变。
+
+2026-10-31 A7交接增量：原通知总预算内接入既有SDK与一次性原生票据，过期引用不授权取图。Flutter636通过/3跳过、Swift61通过；真实C交接与拒读、A原生取图、跨进程恢复通过。[范围](../photo-widget/evidence/2026-10-31-background-renewal.md)。同成员实际续期后取图正向、平台通知/桌面/真机及A6/B/C仍待验。
+
+2026-10-31 同一成员实际续期后取图正向通过：C从真实SDK轮换到原生验权/取图/写缓存共10,979ms，重复不续租、不推进已读；临时资源精确清理，39项断言通过。[证据](../photo-widget/evidence/2026-10-31-sdk-native-member-positive.md)。生产启动/provider协同及平台/桌面/真机、A6/B/C仍未完成。
+
+2026-10-31 生产provider协同验收：4个本地组合用例、真实C生产AuthNotifier/SDK事件/lifecycle到原生缓存1条通过（14,444ms）；Flutter640通过/跳过3，真实模式18通过。清理的已提交响应不确定恢复已修复，临时资源清空并保留失败记录。[证据](../photo-widget/evidence/2026-10-31-production-provider-native.md)。实际main磁盘启动及平台/桌面/签名真机、A6/B/C仍待验。
 
 ## 媒体与隐私合同（A0）
 
@@ -137,3 +151,13 @@
 ### A7 私有凭据桥检查点（2026-10-28）
 
 2026-10-28 凭据桥检查点：iOS 主 App 短期 JWT 桥已接入；一次性 ticket/原账号与绑定代次、绝对期限、私有 device-only Keychain 及关闭预览清理通过。真实 Keychain 双进程通过，设备二进制确认扩展不链接凭据代码。Flutter 580 通过、3 跳过；组件 Core 18 项与凭据 10 项 Swift 通过。原生后台网络获取、长期恢复、APNs/桌面与签名真机仍待完成。 [验证范围](../photo-widget/evidence/2026-10-28-private-credentials.md)。
+
+### A7 原生有界获取检查点（2026-10-31）
+
+2026-10-31 原生取图检查点：有界原生 HTTPS、重复/乱序与失败恢复、单次 completion 已接入；52 项原生测试、实际普通 A 取图与 C 非成员清理通过，模拟器/无签名设备构建和扩展链接隔离通过。系统通知注入未通过，签名试验已恢复；APNs 凭据、冷启动/长期恢复、桌面/真机及 A8 撤回/离队提示仍待完成。 [验证范围](../photo-widget/evidence/2026-10-31-native-fetch.md)。
+
+2026-10-31 A8 服务端检查点：撤回/成员变更/队伍失效的可合并清理提示已实现，第 20 个 migration 已部署、worker 更新后保持关闭；普通 C/匿名 10 项权限、隔离临时小队云端事件检查、实际 PostgreSQL 并发竞争通过。全量 Flutter 580 通过/3 跳过，真实模式专项 14、原生 52，最新 Keychain 集成 1 项通过；A/B 模拟器已安装并启动原生取图版。系统后台/APNs/桌面仍未通过，接收端隐藏/举报及 A6/B/C 未完成。[A8 证据](../photo-widget/evidence/2026-10-31-revocation-sync.md)。
+
+2026-10-31 接收端安全检查点：隐藏/基本举报、私有可见性版本、媒体/墙/父查询过滤和在途像素隔离接入；第 21 个 migration 及 photos 函数更新完成，真实 A/B/C 63 项通过并清理合成对象。Flutter 598 通过/3 跳过，真实模式14、原生52，iOS 合成 UI 1 条及四图检查通过；A/B 已更新。A8 系统桌面清理与人工处置、A7 冷启动/长期恢复、平台真机及 A6/B/C 仍待完成。[本轮证据](evidence/2026-10-31-receiver-safety.md)。
+
+2026-10-31 会话恢复检查点：冷启动不再无条件重置有效副本，旧 clear 与新凭据间有等待屏障，PG reader 再校验SDK/JWT的身份和最短绝对期限。原生双进程seed/verify各1项、受控C真实SDK过期刷新1项通过；最新Flutter617通过/跳过3，根/宿主分析和iOS两种构建/扩展隔离通过。A7通知预算内SDK/原生交接、系统冷通知和真机桌面、A6/B/C仍未完成。[证据](../photo-widget/evidence/2026-10-31-session-lifecycle.md)。

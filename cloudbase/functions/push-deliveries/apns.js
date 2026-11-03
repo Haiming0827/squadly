@@ -32,7 +32,7 @@ async function createApnsJwt(teamId, keyId, privateKeyPem, issuedAtSeconds = Mat
 function apnsRequest(token, jwt, bundleId, environment, messageKind = 'text') {
   if (typeof token !== 'string' || !/^[0-9a-fA-F]{8,512}$/.test(token)) throw new Error('Invalid APNs token');
   if (environment !== 'sandbox' && environment !== 'production') throw new Error('Invalid APNs environment');
-  if (!['text', 'card', 'photo'].includes(messageKind)) throw new Error('Invalid message kind');
+  if (!['text', 'card', 'photo', 'photo_sync'].includes(messageKind)) throw new Error('Invalid message kind');
   if (!/^[A-Za-z0-9.-]{3,200}$/.test(bundleId) || typeof jwt !== 'string' || !jwt) throw new Error('Invalid APNs configuration');
   const host = environment === 'sandbox'
     ? 'api.sandbox.push.apple.com'
@@ -44,17 +44,19 @@ function apnsRequest(token, jwt, bundleId, environment, messageKind = 'text') {
       headers: {
         authorization: `bearer ${jwt}`,
         'apns-topic': bundleId,
-        'apns-push-type': 'alert',
-        'apns-priority': '10',
+        'apns-push-type': messageKind === 'photo_sync' ? 'background' : 'alert',
+        'apns-priority': messageKind === 'photo_sync' ? '5' : '10',
         'apns-expiration': '0',
         'content-type': 'application/json',
       },
       body: JSON.stringify({
         aps: {
-          alert: { title: '小分队', body: '你的小队有新消息' },
-          ...(messageKind === 'photo' ? { 'content-available': 1 } : {}),
+          ...(messageKind === 'photo_sync' ? {} : {
+            alert: { title: '小分队', body: '你的小队有新消息' },
+          }),
+          ...(['photo', 'photo_sync'].includes(messageKind) ? { 'content-available': 1 } : {}),
         },
-        ...(messageKind === 'photo' ? { squadly: { v: 1, type: 'photo_sync' } } : {}),
+        ...(['photo', 'photo_sync'].includes(messageKind) ? { squadly: { v: 1, type: 'photo_sync' } } : {}),
       }),
     },
   };

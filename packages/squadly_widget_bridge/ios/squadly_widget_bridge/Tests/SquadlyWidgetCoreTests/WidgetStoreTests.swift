@@ -201,4 +201,23 @@ final class WidgetStoreTests: XCTestCase {
     XCTAssertEqual(try store.read().head?.revision, 30)
     XCTAssertEqual(try store.read().photo?.messageID, message)
   }
+  func testPrivateAuthorityDeadlineCanShortenButNotRenewDuplicatePixels() throws {
+    let value = try photo()
+    let first = try store.applyHead(bindingID: value.binding!.id, sessionGeneration: value.session!.generation, revision: "1",
+      photo: WidgetHeadPhoto(messageID: message, createdAt: now, jpeg: image), validUntil: now.addingTimeInterval(50))
+    XCTAssertEqual(first.photo?.expiresAt, now.addingTimeInterval(50))
+    let duplicate = try store.applyHead(bindingID: value.binding!.id, sessionGeneration: value.session!.generation, revision: "1",
+      photo: WidgetHeadPhoto(messageID: message, createdAt: now, jpeg: image), validUntil: now.addingTimeInterval(100))
+    XCTAssertEqual(duplicate.photo?.expiresAt, first.photo?.expiresAt)
+    let capped = try store.applyHead(bindingID: value.binding!.id, sessionGeneration: value.session!.generation, revision: "1",
+      photo: WidgetHeadPhoto(messageID: message, createdAt: now, jpeg: image), validUntil: now.addingTimeInterval(10))
+    XCTAssertEqual(capped.photo?.expiresAt, now.addingTimeInterval(10))
+  }
+  func testOldTransientFailureCannotEraseNewerVersion() throws {
+    let value = try photo()
+    _ = try apply(value, revision: "2", id: message)
+    XCTAssertThrowsError(try store.invalidateIfUnchanged(bindingID: value.binding!.id,
+      sessionGeneration: value.session!.generation, observedHead: nil))
+    XCTAssertEqual(try store.read().head?.revision, 2); XCTAssertNotNil(try store.read().photo)
+  }
 }

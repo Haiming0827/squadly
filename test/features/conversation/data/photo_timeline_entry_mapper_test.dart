@@ -30,6 +30,10 @@ void main() {
     expect(entry.photo!.mediaId, 'media');
     expect(entry.replyToEntryId, 'parent');
     expect(entry.photo!.isRevoked, isFalse);
+    expect(entry.photo!.isHidden, isFalse);
+    (json['photo'] as Map)['hidden'] = true;
+    final hidden = timelineEntryFromJson(json);
+    expect(hidden.photo!.isHidden, isTrue);
     (json['photo'] as Map)['revoked'] = true;
     final revoked = timelineEntryFromJson(json);
     expect(revoked.id, entry.id);
@@ -51,6 +55,7 @@ void main() {
     'noninteger dimensions': (p) => (p['photo'] as Map)['width'] = 1.5,
     'empty image': (p) => (p['photo'] as Map)['byte_length'] = 0,
     'oversize image': (p) => (p['photo'] as Map)['byte_length'] = 2097153,
+    'invalid hidden flag': (p) => (p['photo'] as Map)['hidden'] = 'false',
     'invalid revoked flag': (p) => (p['photo'] as Map)['revoked'] = 'false',
     'text mixed with photo': (p) => p['body'] = 'unexpected',
     'card mixed with photo': (p) => p['card_id'] = 'card',

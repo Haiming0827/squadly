@@ -535,3 +535,18 @@ docker exec --interactive "$container_name" psql \
 printf '\nServer-only V2 photo push hints, per-device leases, retry, channel isolation and departed-member cancellation passed (local fixture only).\n'
 
 python3 "$repo_root/scripts/sql/check_photo_head_concurrency.py" "$container_name"
+
+docker exec --interactive "$container_name" psql \
+  --username postgres --dbname postgres --set ON_ERROR_STOP=1 \
+  < "$repo_root/scripts/sql/check_photo_revocation_sync.sql"
+printf '\nPrivacy sync queue permissions, revocation, membership removal, generation receipts, token reassignment, expiry and cascade checks passed (local fixture only).\n'
+python3 "$repo_root/scripts/sql/check_photo_sync_concurrency.py" "$container_name"
+docker exec --interactive "$container_name" psql \
+  --username postgres --dbname postgres --set ON_ERROR_STOP=1 \
+  < "$repo_root/scripts/sql/check_photo_receiver_safety.sql"
+printf '\nReceiver hide/report isolation, private head ordering, read rejection and hidden-parent checks passed (local fixture only).\n'
+
+docker exec --interactive "$container_name" psql \
+  --username postgres --dbname postgres --set ON_ERROR_STOP=1 \
+  < "$repo_root/scripts/sql/check_conversation_customization.sql"
+printf '\nConversation private preferences, visit expiry, captain profile/avatar and membership cascade checks passed (local fixture only).\n'

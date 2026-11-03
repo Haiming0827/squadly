@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/network/cloudbase_auth_gate.dart';
 import '../../core/network/cloudbase_client_provider.dart';
 import '../../core/network/cloudbase_pg_rest_client.dart';
 import '../../core/network/cloudbase_postgres_client.dart';
@@ -20,7 +21,7 @@ final accountAccessTokenReaderProvider = Provider<AccessTokenReader>((ref) {
     if (!active || userId == null || userId.isEmpty) {
       throw const CloudBaseSessionException('业务账号会话不可用');
     }
-    final response = await app.auth.getSession();
+    final response = await CloudBaseAuthGate.forAuth(app.auth).session();
     final session = response.data?.session;
     final token = session?.accessToken;
     if (!active ||

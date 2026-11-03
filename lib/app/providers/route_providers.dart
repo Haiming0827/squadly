@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/network/cloudbase_auth_gate.dart';
 import '../../core/network/cloudbase_client_provider.dart';
 import '../../features/secure_route/data/cloudbase_route_bundle_repository.dart';
 import '../../features/secure_route/data/route_crypto.dart';
@@ -26,7 +27,7 @@ final routeKeyDirectoryProvider = Provider<RouteKeyDirectory>((ref) {
   return CloudBaseRouteKeyDirectory(
     client: ref.watch(accountPostgresClientProvider).rest,
     userIdReader: () async {
-      final response = await app.auth.getSession();
+      final response = await CloudBaseAuthGate.forAuth(app.auth).session();
       if (!response.isSuccess) return null;
       return response.data?.session?.user?.id;
     },
@@ -51,7 +52,9 @@ final routeReaderProvider = Provider<RouteReader>((ref) {
     repository: CloudBaseRouteBundleRepository(
       client: ref.watch(accountPostgresClientProvider).rest,
       userIdReader: () async {
-        final response = await ref.read(cloudBaseAppProvider).auth.getSession();
+        final response = await CloudBaseAuthGate.forAuth(
+          ref.read(cloudBaseAppProvider).auth,
+        ).session();
         if (!response.isSuccess) return null;
         return response.data?.session?.user?.id;
       },

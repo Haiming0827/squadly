@@ -1,0 +1,94 @@
+{
+  "date": "2026-10-31",
+  "scope": "cold lifecycle and SDK expiry validation",
+  "originalReproductions": {
+    "coldReset": "cached message unexpectedly null before head",
+    "credentialBarrier": "prepare ran before older clear finished",
+    "sdkExpiredReader": "expired SDK token returned after failed refresh"
+  },
+  "local": {
+    "fullVerifierPassed": true,
+    "fullVerifierFlutterBaselinePassed": 615,
+    "latestFullFlutterPassed": 617,
+    "skipped": 3,
+    "realModeTestsPassed": 14,
+    "nativeWidgetSwiftPassed": 52,
+    "migrationsReplayed": 21,
+    "finalAnalyzePassed": true
+  },
+  "nativeColdPersistence": {
+    "seedPassed": 1,
+    "verifyNewProcessPassed": 1,
+    "syntheticIdentityAndRepository": true,
+    "sameGenerationAndPhotoExpiryPreserved": true,
+    "logoutClearsPixelsSessionAndPrivateCredential": true,
+    "lateHeadRejected": true,
+    "systemPushOrPaintProven": false
+  },
+  "realSdkStaging": {
+    "flowPassed": 1,
+    "actor": "controlled_c",
+    "ordinaryRoleVerified": true,
+    "sdkExpiryForcedPast": true,
+    "actualRefreshTokenGrant": true,
+    "accessTokenRotated": true,
+    "validOfflineSnapshotObserved": true,
+    "pgReaderOwnProfilePositiveControl": true,
+    "mainABSessionsModified": false,
+    "sdkPrivateStorageModified": false,
+    "privateFixtureMode": "0600",
+    "rotatedCCollectedAndFixtureRemoved": true,
+    "fixtureAbsenceRechecked": true
+  },
+  "build": {
+    "simulator": true,
+    "unsignedDevice": true,
+    "extensionCredentialIsolation": true,
+    "installedAndLaunchedOnMainAB": true
+  },
+  "sourceSha256": {
+    "lib/app/providers/offline_access_provider.dart": "12c2399f57a4988f0c056a07aa410eab68b33f7b0beffc01eea48393895fa92c",
+    "lib/app/providers/photo_widget_providers.dart": "df75c54537e927efe0f20d9831248cc8fa8dcb467e2b06aeea2e9f0d41f23d84",
+    "lib/core/network/cloudbase_client_provider.dart": "ff8af00e4e4d84578c0ac597a6cc3c0eb5fa9b43bf3df61a772a4d5ca9dbba65",
+    "lib/core/network/cloudbase_session_identity.dart": "5467a2aecb1d22af1c45a9678ca6db7c9ba38c6cc6575dfac4872cd6845e6d36",
+    "lib/features/auth/data/datasources/cloudbase_offline_session_source.dart": "6681f143c73b0d5fca8c51f22e3db8f09b942c8cc98426954d879051028070a8",
+    "lib/features/photo_widget/data/photo_background_credentials.dart": "977b12d2072711697393eb93a6d45dedd765c6dc5b8fde7fcf944774b8258e41",
+    "lib/features/photo_widget/domain/photo_widget_lifecycle.dart": "7afe2144d6ce030002559ee5ea587eb09f8fed34e2d865332040ae3fe947a8b2",
+    "lib/features/photo_widget/domain/photo_widget_service.dart": "911ddeb61acd3a16d19cee732d726abc410a7572e145e80a134d40f0e72644d3",
+    "test/features/photo_widget/photo_widget_lifecycle_test.dart": "e0fca801a1b695e65911622e7e03b2fcfeeb1b988164d1a3882946cc27227123",
+    "test/features/photo_widget/photo_background_credentials_test.dart": "8e5d1bb674b0af979f435d78d41fa663ed85b8c6f46cd6beac7f403b79efa900",
+    "test/app/providers/photo_widget_authority_test.dart": "2044a35816fe5d577e9d818468ffec94654c7583183104f29c39a62a45c40d80",
+    "test/core/network/cloudbase_session_reader_test.dart": "b944aa36167c297504ccc8e527ebe9c10d2b5736d61e20af629f44a259b6fe16",
+    "integration_test/integration_test/photo_widget_cold_lifecycle_test.dart": "5d08fa1a7bbc8c219fbca91b15d2a5da34e2824991f178b41971726146522676",
+    "integration_test/integration_test/sdk_session_recovery_staging_test.dart": "3a7dd14aef9c322c9f43a09bf648eaa85c39c8907dc22e45806c3711ae82caac",
+    "scripts/prepare_sdk_session_staging.py": "9d1b41b6dba62cbf01f4059faf7938fe77b76e9374b421e3119d9e4506a7b119"
+  },
+  "installedSdk": {
+    "version": "cloudbase_flutter 1.2.2",
+    "sourceSha256": {
+      "auth.dart": "d617ea518674bb6c531bed95991c6fb40f49fdbb6b2110c36fff5bbccecc3059",
+      "cloudbase.dart": "f7926a6b867fd977962499d256e16b2578cb6d9b8af56d7c0fd2177a9452c447",
+      "http_client.dart": "03019d8701eb5a2e5958aab0dd5ccedefe9cdc76a632635595c7fc2395b571b9"
+    }
+  },
+  "logSha256": {
+    "coldResetRed": "e6416126aac5377cffebf98874b7cef83eee7ee24de4a3fb8cce309424ca67b6",
+    "initialResetProbeGreen": "01b4a34e465b2b1828c0e8115d092dd239e0a2378491965eaf420e84188dd348",
+    "credentialClearRed": "24b19854aa66aee5f141e82821252001619258a1ed5a2bd83d4309628b5a964c",
+    "expiredSdkReaderRed": "ffad0babb9bce77220fededd6ae00404052b8693e4bc98316d292e78d821b4cd",
+    "fullVerifier": "fb099474265b7c50ee1397d54d151906966a0bd7a777ba2d33bfc5504b23e3b7",
+    "latestFlutter": "b543b4b35c883fcbeddcff191b3beceabbd5887489d53a83db5d33c493d7779c",
+    "nativeSeed": "53b30a128a25b783b22c652236b978a7001e11300f709b4347bae48763966bf9",
+    "nativeVerify": "75bde3971b7147ce1bf1b61e0659750dd9e4cc2405545587bc2531dca9089bc7",
+    "realSdk": "200eb0c36f697c6194065eb3d317ce2f071ba52a592950394d4d2d000defe0c7"
+  },
+  "unverified": [
+    "budgeted SDK/native background handoff",
+    "full SDK account-switch concurrency matrix",
+    "APNs platform delivery and cold notification",
+    "actual widget desktop painting",
+    "signed physical-device/lock/reboot/force-quit matrix",
+    "Android A6 and B/C product stages"
+  ],
+  "completePhotoLoop": false
+}

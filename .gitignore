@@ -50,6 +50,8 @@ app.*.map.json
 /config/test-backend.local.json
 /config/cloudbase-access.local.json
 /config/cloudbase-access.local.json.tmp
+/config/sdk-native-member-photo.local.json
+/config/sdk-native-member-photo.local.tmp
 /config/photo-staging.local.json
 /config/photo-staging-deploy.local.json
 /config/push-staging.local.json
@@ -68,3 +70,7 @@ app.*.map.json
 *.mobileprovision
 # Xiaomi's authenticated/vendor SDK download is local-only and must not be redistributed.
 /android/app/libs/MiPush_SDK_Client*.aar
+
+/config/conversation-acceptance.local.json
+
+/config/profile-avatar-backup.local.json

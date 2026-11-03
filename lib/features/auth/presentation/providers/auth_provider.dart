@@ -8,6 +8,7 @@ import '../../../../app/demo/demo_store.dart';
 import '../../../../app/providers/conversation_cache_provider.dart';
 import '../../../../app/providers/offline_access_provider.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/network/cloudbase_auth_gate.dart';
 import '../../../../core/network/cloudbase_client_provider.dart';
 import '../../../notifications/push_registration_provider.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
@@ -111,10 +112,12 @@ class AuthNotifier extends _$AuthNotifier {
 
   Future<void> _restoreRemoteProfile(int requestVersion) async {
     final app = ref.read(cloudBaseAppProvider);
-    final sessionResponse = await app.auth.getSession().timeout(
-      const Duration(seconds: 8),
-      onTimeout: () => SignInRes(error: AuthError(code: 'session_timeout')),
-    );
+    final sessionResponse = await CloudBaseAuthGate.forAuth(app.auth)
+        .session()
+        .timeout(
+          const Duration(seconds: 8),
+          onTimeout: () => SignInRes(error: AuthError(code: 'session_timeout')),
+        );
     if (!_isCurrentProfileRequest(requestVersion)) return;
     if (!sessionResponse.isSuccess) {
       if (sessionResponse.error?.code == 'no_session') {
@@ -152,10 +155,12 @@ class AuthNotifier extends _$AuthNotifier {
     if (!_isCurrentProfileRequest(requestVersion)) return;
     // A recovery OTP signs in briefly. Its profile request may finish after
     // the recovery session has been closed; never revive that stale identity.
-    final currentSession = await app.auth.getSession().timeout(
-      const Duration(seconds: 8),
-      onTimeout: () => SignInRes(error: AuthError(code: 'session_timeout')),
-    );
+    final currentSession = await CloudBaseAuthGate.forAuth(app.auth)
+        .session()
+        .timeout(
+          const Duration(seconds: 8),
+          onTimeout: () => SignInRes(error: AuthError(code: 'session_timeout')),
+        );
     if (!_isCurrentProfileRequest(requestVersion) ||
         !currentSession.isSuccess ||
         currentSession.data?.session?.accessToken != sessionToken) {

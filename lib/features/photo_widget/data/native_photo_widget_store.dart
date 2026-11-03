@@ -35,6 +35,14 @@ final class NativePhotoWidgetStore implements PhotoWidgetStore {
     'expiresAt': expiresAt?.toUtc().millisecondsSinceEpoch,
   });
   @override
+  Future<PhotoWidgetSnapshot> retainExpired({
+    required String scope,
+    required DateTime expiresAt,
+  }) => _request('retainExpired', {
+    'scope': scope,
+    'expiresAt': expiresAt.toUtc().millisecondsSinceEpoch,
+  });
+  @override
   Future<PhotoWidgetSnapshot> bind({
     required PhotoWidgetLease lease,
     required String squadId,

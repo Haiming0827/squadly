@@ -28,9 +28,14 @@ enum OfflineAccessStatus {
 }
 
 final class OfflineAccessState {
-  const OfflineAccessState(this.status, {this.session});
+  const OfflineAccessState(
+    this.status, {
+    this.session,
+    this.initialRestoration = false,
+  });
   final OfflineAccessStatus status;
   final OfflineSession? session;
+  final bool initialRestoration;
   bool canReadAt(DateTime now) =>
       status == OfflineAccessStatus.available &&
       session?.isValidAt(now) == true;
@@ -47,6 +52,7 @@ final class OfflineAccessController extends StateNotifier<OfflineAccessState> {
            source == null
                ? OfflineAccessStatus.disabled
                : OfflineAccessStatus.checking,
+           initialRestoration: source != null,
          ),
        ) {
     _listen();

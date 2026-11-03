@@ -226,6 +226,51 @@ void main() {
     },
   );
 
+  for (final revoked in [false, true]) {
+    testWidgets(
+      'hidden photo does not advance even if revoked=$revoked or paint is incorrectly reported',
+      (tester) async {
+        final timeline = _Timeline();
+        timeline.entries
+          ..clear()
+          ..add(
+            TimelineEntry(
+              id: 'hidden-photo',
+              squadId: 'squad',
+              authorId: 'bob',
+              authorName: '队友',
+              kind: TimelineEntryKind.photo,
+              clientNonce: 'hidden-nonce',
+              createdAt: DateTime.utc(2026),
+              photo: PhotoAttachment(
+                mediaId: 'media',
+                width: 4,
+                height: 3,
+                byteLength: 600,
+                isRevoked: revoked,
+                isHidden: true,
+              ),
+            ),
+          );
+        final reads = _Reads();
+        late ValueChanged<bool> display;
+        await mount(
+          tester,
+          timeline,
+          reads,
+          photoBuilder: (_, entry, canRead, callback) {
+            display = callback;
+            return const Text('照片已对你隐藏');
+          },
+        );
+        expect(reads.ids, isEmpty);
+        display(true);
+        await tester.pumpAndSettle();
+        expect(reads.ids, isEmpty);
+      },
+    );
+  }
+
   testWidgets('visible foreground newest message advances once', (
     tester,
   ) async {

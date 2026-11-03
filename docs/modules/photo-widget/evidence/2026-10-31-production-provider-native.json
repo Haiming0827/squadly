@@ -1,0 +1,289 @@
+{
+  "date": "2026-10-31",
+  "scope": "ordinary C actual SDK rotation to native member media",
+  "testPassed": true,
+  "nativeMemberPhoto": {
+    "passed": true,
+    "renewalAndFetchMilliseconds": 14444,
+    "duplicateDidNotRenew": true,
+    "readCursorUnchanged": true
+  },
+  "cleanupCompleted": true,
+  "productionProviderBootstrap": true,
+  "checks": [
+    {
+      "check": "a_identity_http",
+      "passed": true
+    },
+    {
+      "check": "a_ordinary_identity",
+      "passed": true
+    },
+    {
+      "check": "a_profile_http",
+      "passed": true
+    },
+    {
+      "check": "a_own_profile",
+      "passed": true
+    },
+    {
+      "check": "c_identity_http",
+      "passed": true
+    },
+    {
+      "check": "c_ordinary_identity",
+      "passed": true
+    },
+    {
+      "check": "c_profile_http",
+      "passed": true
+    },
+    {
+      "check": "c_own_profile",
+      "passed": true
+    },
+    {
+      "check": "create_fixture",
+      "passed": true
+    },
+    {
+      "check": "issue_c_invite",
+      "passed": true
+    },
+    {
+      "check": "c_redeems_invite",
+      "passed": true
+    },
+    {
+      "check": "c_members_http",
+      "passed": true
+    },
+    {
+      "check": "exact_two_ordinary_members",
+      "passed": true
+    },
+    {
+      "check": "publish_synthetic",
+      "passed": true
+    },
+    {
+      "check": "own_object_authority",
+      "passed": true
+    },
+    {
+      "check": "c_visible_head_http",
+      "passed": true
+    },
+    {
+      "check": "c_visible_synthetic_photo",
+      "passed": true
+    },
+    {
+      "check": "initial_read_cursor_http",
+      "passed": true
+    },
+    {
+      "check": "no_initial_read_cursor",
+      "passed": true
+    },
+    {
+      "check": "rotated_c_collected",
+      "passed": true
+    },
+    {
+      "check": "scoped_media_lookup",
+      "passed": true
+    },
+    {
+      "check": "scoped_attempt_lookup",
+      "passed": true
+    },
+    {
+      "check": "author_revoke",
+      "passed": true
+    },
+    {
+      "check": "delete_scoped_object",
+      "passed": true
+    },
+    {
+      "check": "object_absent",
+      "passed": true
+    },
+    {
+      "check": "scoped_media_lookup",
+      "passed": true
+    },
+    {
+      "check": "scoped_attempt_lookup",
+      "passed": true
+    },
+    {
+      "check": "author_revoke",
+      "passed": false
+    },
+    {
+      "check": "scoped_media_lookup",
+      "passed": true
+    },
+    {
+      "check": "scoped_attempt_lookup",
+      "passed": true
+    },
+    {
+      "check": "author_revoke",
+      "passed": false
+    },
+    {
+      "check": "scoped_media_lookup",
+      "passed": true
+    },
+    {
+      "check": "scoped_attempt_lookup",
+      "passed": true
+    },
+    {
+      "check": "author_revoke_already_confirmed",
+      "passed": true
+    },
+    {
+      "check": "delete_scoped_object",
+      "passed": true
+    },
+    {
+      "check": "object_absent",
+      "passed": true
+    },
+    {
+      "check": "clear_fixture_media_cycle",
+      "passed": true
+    },
+    {
+      "check": "delete_fixture_squad_messages",
+      "passed": true
+    },
+    {
+      "check": "delete_fixture_photo_upload_attempts",
+      "passed": true
+    },
+    {
+      "check": "delete_fixture_photo_media",
+      "passed": true
+    },
+    {
+      "check": "delete_fixture_squads",
+      "passed": true
+    },
+    {
+      "check": "delete_fixture_photo_sync_deliveries",
+      "passed": true
+    },
+    {
+      "check": "verify_squads",
+      "passed": true
+    },
+    {
+      "check": "squads_absent",
+      "passed": true
+    },
+    {
+      "check": "verify_squad_messages",
+      "passed": true
+    },
+    {
+      "check": "squad_messages_absent",
+      "passed": true
+    },
+    {
+      "check": "verify_photo_media",
+      "passed": true
+    },
+    {
+      "check": "photo_media_absent",
+      "passed": true
+    },
+    {
+      "check": "verify_photo_sync_deliveries",
+      "passed": true
+    },
+    {
+      "check": "photo_sync_deliveries_absent",
+      "passed": true
+    }
+  ],
+  "controlledFailures": [
+    {
+      "operation": "photo:revoke:POST",
+      "class": "RuntimeError",
+      "causeClass": null,
+      "httpStatus": 503
+    }
+  ],
+  "serviceKeyUsedForUserAssertions": false,
+  "serviceKeyUsedForScopedCleanup": true,
+  "pushProviderInvoked": false,
+  "globalClaimAttempted": false,
+  "completePhotoLoop": false,
+  "verification": {
+    "flutterPassed": 640,
+    "skipped": 3,
+    "realModePassed": 18,
+    "productionCompositionCasesPassed": 4,
+    "stagingProviderNativeFlowPassed": 1,
+    "actualSdkEventsAndPgProfileRestore": true,
+    "injectedSdkAppBinding": true,
+    "injectedBackgroundLifecycleState": true,
+    "sqliteCacheInstanceDisabled": true,
+    "rootAndHostAnalyzePassed": true,
+    "privateFixtureAndLedgerRemoved": true,
+    "rotatedCCollected": true,
+    "ciCommandUpdated": true,
+    "hostedCiRunProven": false,
+    "mainDiskBootstrapProven": false,
+    "actualApnsOrDesktopPaintingProven": false
+  },
+  "cleanupRecovery": {
+    "metadataResetObservedCommittedBeforeCheckpoint": true,
+    "observedMediaState": "preparing",
+    "activeAttemptCleared": true,
+    "revokedTimestampCleared": true,
+    "ordinaryAuthorRevokePreviouslyConfirmed": true,
+    "retryPhotoGatewayStatus": 503,
+    "retryRpcStatus": 400,
+    "resumedFromConfirmedRevoke": true,
+    "finalCleanupCompleted": true,
+    "historicalFailedChecksPreserved": 2
+  },
+  "desktopAttempt": {
+    "macLocked": true,
+    "automaticUnlockFailed": true,
+    "userUnlockRequested": true
+  },
+  "sourceSha256": {
+    "test/app/providers/photo_widget_bootstrap_test.dart": "97ec723c3122134c70eb59a09716dca8e0f1b74182d24a171f2941bbe40021b4",
+    "integration_test/integration_test/sdk_session_recovery_staging_test.dart": "3f1f1d4b166ff64c54e5156bc9ca1f63952238ba13a324eade691203bc1244c8",
+    "scripts/verify_sdk_native_member_staging.py": "735231bac7d4371236a18d4a51a5876fe6d7eb1004215c7727a9027fd1f27c0a",
+    "scripts/verify_all.sh": "3edfb696fd2a109147edaf720a15a2a4f2864db6d8d22910d83f3105d8627a2e",
+    ".github/workflows/flutter-ci.yml": "f4bad9e18a0db4d6a66c6c7cacf1459b61e4c4d5f78271822c8354557ef00f60",
+    "lib/app/providers/photo_widget_providers.dart": "7a7e14288905ff384771a51ed800a9cdbb8aad636b59b9d481b8532b4311821c",
+    "lib/app/providers/conversation_cache_lifecycle_provider.dart": "a8ef1b16721474fb7d259a2540c9cc337644f3b8cb8f341bdc6b62795dbb17d7",
+    "lib/features/photo_widget/domain/photo_widget_lifecycle.dart": "f6ed7756fd49946e1449c4aa9e4de8981f1fa6487dc41686b4c187021e47c0f3",
+    "lib/features/photo_widget/data/photo_background_renewal.dart": "2e2dcec92f15ab4b762b93468c38ec91e37da885de8c779a44e134eb00839648",
+    "lib/features/auth/presentation/providers/auth_provider.dart": "441e5cf61ad67f105b1edb09e49302f3d884982d7ef380cf1f308cdf2bcee5c6",
+    "lib/core/network/cloudbase_auth_gate.dart": "da7c89ecf434876e11b98c192ca33728b1b4dd40b9bd851f728eebf4bc967791"
+  },
+  "logSha256": {
+    "flutter": "6cc4c85f0cafb667fcc44c7d1600142440d7373708cd1594dd5a8b60f1aa9848",
+    "realMode": "543e8660ef3bf70a729733315f3eacc5b4d3ae8f1bfccfc5fb4650441d3499aa",
+    "nativeProviders": "b29d083d330c55d40c20d57c2d74335117ffa64ef4ae6da4a6902d7bd1c8931a",
+    "rootAnalyze": "83bee8cfcbc1f2034fbaf5aea7bb600293ea3772bb3f35fe87042c926037402d",
+    "hostAnalyze": "64505b68d7aabcb1805efa11db55ffba95c0336a144ebd64260c19de0f429c75",
+    "format": "7bc70bc507a3cfb3b7c220c218dd8ab8b40cc9d896ded0e050845455404e3873",
+    "prepare": "d0a0dc1ad509d74b5545dee7596ef68284281808438701ee01f32fc52e5f545f",
+    "cleanupInitial": "57bfcea2eba5ec9eba4f46710b856e6dc343174831639210fee4320a94dc0539",
+    "cleanupRetry": "2bc9cdb5b7aec1e8276685268f87b04f2abeb9608e96b55dccaa441b101e5a88",
+    "cleanupDiagnostic": "ff59a51aee9f2c4555e40f543083a793f60d51d87beda3c9d12c9ea588bc5221",
+    "cleanupResumed": "11a1170eb6c2c1dd45cde86d0bcdc6baf63acdb43181456c08a909502ba37223"
+  }
+}

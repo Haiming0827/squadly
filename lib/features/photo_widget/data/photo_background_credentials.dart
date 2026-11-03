@@ -99,6 +99,7 @@ final class PhotoBackgroundCredentialController {
   bool _active = true;
   String? _key;
   Future<void> _task = Future.value();
+  Future<void> _clearBarrier = Future.value();
 
   Future<void> accept(PhotoWidgetSnapshot snapshot) {
     if (!_active) return Future.value();
@@ -116,21 +117,16 @@ final class PhotoBackgroundCredentialController {
     if (key == _key) return _task;
     _key = key;
     final revision = ++_revision;
-    return _task = _accept(snapshot, revision, enabled);
+    if (!enabled) return _task = _enqueueClear();
+    return _task = _accept(snapshot, revision);
   }
 
   bool _same(int revision) => _active && revision == _revision;
-  Future<void> _accept(
-    PhotoWidgetSnapshot snapshot,
-    int revision,
-    bool enabled,
-  ) async {
+  Future<void> _accept(PhotoWidgetSnapshot snapshot, int revision) async {
     String? ticket;
     try {
-      if (!enabled) {
-        await bridge.clear();
-        return;
-      }
+      await _clearBarrier;
+      if (!_same(revision)) return;
       ticket = await bridge.prepare(snapshot);
       if (!_same(revision)) return;
       final material = await read();
@@ -159,15 +155,18 @@ final class PhotoBackgroundCredentialController {
   Future<void> reset() {
     _revision++;
     _key = null;
-    return _clear();
+    return _enqueueClear();
   }
 
   Future<void> dispose() {
     _active = false;
     _revision++;
     _key = null;
-    return _clear();
+    return _enqueueClear();
   }
+
+  Future<void> _enqueueClear() =>
+      _clearBarrier = _clearBarrier.then((_) => _clear());
 
   Future<void> _clear() async {
     try {

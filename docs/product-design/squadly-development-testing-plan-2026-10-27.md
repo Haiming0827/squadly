@@ -2,9 +2,27 @@
 
 日期：2026-10-27。依据：[产品设计 V1.1](squadly-product-design-v1.1-2026-10-27.md) / [PDF](squadly-product-design-v1.1-2026-10-27.pdf)。本文列出完整待交付范围；局部实现证据见下表与[照片实施台账](../modules/photos/ios-photo-loop.md)，不等于照片闭环已完成。
 
-最近本地验收更新：2026-10-28（Asia/Shanghai，详见 A4 原生证据时间）。
+最近验收更新：2026-10-31（Asia/Shanghai）。历史检查点按原日期保留；当前源码/测试与下列增量证据优先。
+
+2026-10-31 增量：原生有界 HTTPS 取图、私有 JWT Keychain、重复/乱序、失败清理与 completion 已接入；52 项 Swift 原生测试、普通 A 正向取图/C 非成员清图、最新 Keychain 设备集成通过。[A7 证据](../modules/photo-widget/evidence/2026-10-31-native-fetch.md)。A8 已加入撤回/成员变更/队伍失效提示，staging 迁移 20/20；[A8 证据](../modules/photo-widget/evidence/2026-10-31-revocation-sync.md)。当前全量 Flutter 580 通过/3 跳过、真实模式专项 14 通过，verify_all 全部本地检查通过。系统通知、签名真机、桌面绘制与长期 SDK 恢复仍未通过；推送 worker 保持无 provider/无 timer。A8 接收端隐藏/基本举报入口已接入，迁移21/21、真实普通 A/B/C 63项和 iOS 合成 UI 1条通过；[接收端证据](../modules/photos/evidence/2026-10-31-receiver-safety.md)。最新 Flutter598通过/3跳过。A8 系统桌面清理/人工处置与 A6/B/C 仍待完成。
+
+2026-10-31 会话恢复增量：冷启动误清、较早clear覆盖新凭据、失败续期的过期token已用失败测试锁定并修复；原生双进程缓存/Keychain恢复、受控C真实SDK续期与PG读取通过。最新Flutter617通过/跳过3，iOS构建/扩展隔离通过。[生命周期证据](../modules/photo-widget/evidence/2026-10-31-session-lifecycle.md)。下一步仍为通知预算内SDK到原生交接、平台/真机/桌面和后续A6/B/C，不把SDK续期成功等同于App长期关闭仍可达。
+
+2026-10-31 SDK 并发增量：已修复旧刷新覆盖退出/换账号、临时找回会话外泄读取及退出后验证码闭包残留；Flutter625通过/3跳过，真实模式14通过，普通C真实SDK续期与本人PG读取1条通过，iOS构建/扩展隔离通过。[认证顺序证据](../modules/photo-widget/evidence/2026-10-31-sdk-auth-ordering.md)。通知预算内交接仍未实现，平台/真机/桌面、A6和B/C仍未完成。
+
+2026-10-31 A7 SDK交接增量：已有绑定可在原通知预算内等待既有engine恢复SDK，以一次性票据换代短期私有JWT；自然过期只留无权引用。Flutter636通过/3跳过、Swift61通过，真实C交接/拒读、A原生取图、冷恢复双进程通过。[交接证据](../modules/photo-widget/evidence/2026-10-31-background-renewal.md)。下一步补同成员实际续期后取图的单条正向验收；APNs、系统冷启动、桌面、签名真机及A6/B/C仍未完成。
+
+2026-10-31 同成员正向验收：真实C实际SDK续期后以新材料完成原生照片读取并写入组件缓存，1条通过（10,979ms），重复不续租、后台不推进已读；临时A/C小队与对象清理完成，39项准备/权限/清理断言通过。[证据](../modules/photo-widget/evidence/2026-10-31-sdk-native-member-positive.md)。生产App启动/provider协同、APNs/系统冷启动/桌面、签名真机和A6/B/C继续待办。
+
+2026-10-31 生产provider协同通过：真实C实际SDK事件/资料恢复与生产组件provider共同完成原生照片缓存，1条通过（14,444ms），4个本地组合用例通过。Flutter640通过/3跳过、真实模式18通过；临时资源清理恢复完成并保留历史失败。[证据与边界](../modules/photo-widget/evidence/2026-10-31-production-provider-native.md)。main磁盘完整恢复、平台通知/桌面/签名真机、A6/B/C继续待办；桌面验收需解锁Mac。
 
 ## 当前起点与下一步
+
+2026-11-02原图UI增量：10-31因锁屏未验的原花图已在普通B恢复待发并成功发送，A/B实际显示与原父关系核对通过，B待发1→0；两台网络及普通SDK冷启动恢复通过。[补证](../modules/photos/evidence/2026-11-02-original-photo-ui.md)。无需继续等待这张图的解锁验收；后续仍补长前台会话恢复、系统组件与APNs/真机等阶段门。
+
+2026-10-31 真实大图修复：不能再用小图权限通过代表真实照片传输通过。CloudBase文本100KB限制已实测复现；客户端发布使用二进制UTF-8信封、非网络错误不声称断网，新增真实Dio流和二进制网关事件回归。模拟器1.45MB真实生产adapter链路通过，Flutter643/3、Node24、真实模式18；A/B更新保留原队待发1条。下一步在解锁后的普通App完成原花图重试及A接收屏幕证据。[证据](../modules/photos/evidence/2026-10-31-photo-upload-413.md)。
+
+2026-10-31 桌面与交付文档增量：解锁后在普通根 App 验证 A 中尺寸、B 小尺寸组件实际显示保留合成照片；A 点击进入固定队关联回拍。两端普通重启恢复登录，新绑定默认关闭预览。未将前台刷新记成 APNs，也未将 CUA 窗口定位失败后的冷点击记为通过。[桌面证据](../modules/photo-widget/evidence/2026-10-31-desktop-ui.md)；[最新功能状态/规格/操作测试手册](README.md)。接下来补冷点击、到期/关闭/撤权实际桌面、真实来源与签名 APNs，其后按原 A6/B/C 阶段门继续。
 
 | 范围 | 当前证据 | 剩余工作 |
 | --- | --- | --- |

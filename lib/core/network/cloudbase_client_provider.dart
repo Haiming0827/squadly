@@ -4,8 +4,10 @@ import 'package:cloudbase_flutter/cloudbase_flutter.dart' hide CloudBaseConfig;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/cloudbase_config.dart';
+import 'cloudbase_auth_gate.dart';
 import 'cloudbase_pg_rest_client.dart';
 import 'cloudbase_postgres_client.dart';
+import 'cloudbase_session_identity.dart';
 
 /// Supplied once by main after the CloudBase SDK restores its persisted session.
 final cloudBaseAppProvider = Provider<CloudBase>((ref) {
@@ -20,17 +22,35 @@ final useDemoBackendProvider = Provider<bool>(
   (ref) => const bool.fromEnvironment('USE_DEMO_BACKEND', defaultValue: true),
 );
 
+/// One SDK auth instance in production; a separate controlled device session
+/// can be injected by native integration tests without touching A/B storage.
+final cloudBaseAuthProvider = Provider<CloudBaseAuth>(
+  (ref) => ref.watch(cloudBaseAppProvider).auth,
+);
+
 final cloudBaseAccessTokenReaderProvider = Provider<AccessTokenReader>((ref) {
-  final app = ref.watch(cloudBaseAppProvider);
+  final auth = ref.watch(cloudBaseAuthProvider);
   return () async {
-    final sessionResponse = await app.auth.getSession();
+    final sessionResponse = await CloudBaseAuthGate.forAuth(auth).session();
     if (!sessionResponse.isSuccess) {
       if (sessionResponse.error?.code == 'no_session') return null;
       throw CloudBaseSessionException(
         sessionResponse.error?.message ?? 'CloudBase session unavailable',
       );
     }
-    return sessionResponse.data?.session?.accessToken;
+    final session = sessionResponse.data?.session;
+    if (session == null) return null;
+    try {
+      final identity = cloudBaseSessionIdentity(session);
+      if (!DateTime.now().isBefore(identity.expiresAt)) {
+        throw const FormatException('Expired SDK session');
+      }
+    } catch (_) {
+      throw const CloudBaseSessionException(
+        'CloudBase session is expired or inconsistent',
+      );
+    }
+    return session.accessToken;
   };
 });
 

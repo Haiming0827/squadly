@@ -325,12 +325,20 @@ void main() {
 
     await tester.tap(find.byTooltip('清除搜索'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ChoiceChip, '有消息'));
+    await tester.tap(find.byTooltip('筛选会话'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('conversation-filter-withMessages')),
+    );
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('conversation-active')), findsOneWidget);
     expect(find.byKey(const ValueKey('conversation-quiet')), findsNothing);
 
-    await tester.tap(find.widgetWithText(ChoiceChip, '暂无消息'));
+    await tester.tap(find.byTooltip('筛选会话'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('conversation-filter-withoutMessages')),
+    );
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('conversation-quiet')), findsOneWidget);
     expect(find.byKey(const ValueKey('conversation-active')), findsNothing);
@@ -433,6 +441,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('会话'), findsOneWidget);
+    await tester.tap(find.byTooltip('筛选会话'));
+    await tester.pumpAndSettle();
     expect(find.text('全部'), findsOneWidget);
     expect(find.text('有消息'), findsOneWidget);
     expect(find.text('暂无消息'), findsOneWidget);

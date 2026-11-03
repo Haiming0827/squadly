@@ -4,7 +4,19 @@
 
 ---
 
+2026-11-03 会话管理增量：新增个人备注、置顶和常用小队栏，标题左侧下拉筛选，小队详情设置入口及队长共享头像/名称修改；migration 22 部署、普通 A/B 权限 32 项通过。范围、测试与原生平台边界见[规格和操作手册](product-design/squadly-conversation-management-2026-11-03.md)。
+
 > **后端方案已于 2026-10-12 切换为腾讯云 CloudBase for Supabase 版（PostgreSQL 环境）。** 本文后续仍保留的 Supabase schema、SDK、Auth、Realtime、Edge Function 和部署内容是历史方案/当前代码说明，不代表目标后端。CloudBase 的最终架构、功能映射、配置、迁移顺序、费用和验收以 [CloudBase 后端方案](modules/backend_cloudbase/README.md) 及[成本估算](modules/backend_cloudbase/cost-and-capacity.md)为准；迁移完成前不能连接真实用户或将旧 migrations 部署到 CloudBase。
+
+2026-10-31 原生取图检查点：有界原生 HTTPS、重复/乱序与失败恢复、单次 completion 已接入；52 项原生测试、实际普通 A 取图与 C 非成员清理通过，模拟器/无签名设备构建和扩展链接隔离通过。系统通知注入未通过，签名试验已恢复；APNs 凭据、冷启动/长期恢复、桌面/真机及 A8 撤回/离队提示仍待完成。 [验证范围](modules/photo-widget/evidence/2026-10-31-native-fetch.md)。
+
+2026-10-31 SDK 认证并发前置检查点：修复旧刷新覆盖退出/新登录、密码找回临时会话读取与退出后验证码回调残留；全量 Flutter 625 通过/3 跳过，真实模式 14 通过，iOS 普通 C 的真实 SDK 续期与本人 PG 读取 1 条通过。iOS 构建/扩展隔离通过。[范围与证据](modules/photo-widget/evidence/2026-10-31-sdk-auth-ordering.md)。通知预算内 SDK→原生交接、平台/真机/桌面及 A6/B/C 继续待办。
+
+2026-10-31 A7 交接增量：已实现原通知25秒共享预算、既有engine最多8秒SDK恢复、一次性原生票据和过期无权引用；不同账号/退出不延后清理。Flutter636通过/3跳过、Swift61通过、真实C SDK→原生交接及非成员拒读1条、A原生取图1条、冷恢复seed/verify各1条通过。[证据与未验范围](modules/photo-widget/evidence/2026-10-31-background-renewal.md)。同账号实际续期后取图的单条正向链路、APNs/系统冷启动/桌面/签名真机与A6/B/C继续待验。
+
+2026-10-31 同成员正向增量：真实A邀请C进入临时两人小队并上传合成照片，C在iOS实际SDK轮换后经票据完成原生取图/缓存写入，1条通过，续期与获取10,979ms；重复不续租、不推进已读，39项准备/权限/清理断言通过。Flutter636通过/3跳过，根工程/宿主analyze无问题。[证据](modules/photo-widget/evidence/2026-10-31-sdk-native-member-positive.md)。生产启动/provider协同、平台推送、桌面、签名真机及A6/B/C仍待验。
+
+2026-10-31 生产provider协同增量：4个启动/退出/换号组合用例通过；真实C经生产AuthNotifier、SDK事件和组件lifecycle完成原生照片缓存，1条通过（14,444ms）。Flutter640通过/3跳过、真实模式18通过；清理恢复检查点已修复并验证临时资源为空，保留2条历史失败。[证据](modules/photo-widget/evidence/2026-10-31-production-provider-native.md)。磁盘完整启动、系统/APNs/桌面/签名真机及A6/B/C仍未完成；桌面读取确认Mac仍锁屏。
 
 ## 产品方向补充（2026-09-29）
 
@@ -845,3 +857,9 @@ test/
 | 单一状态管理 | Riverpod only，不引入 Bloc/Provider |
 | 中文 UI | 面向中文用户，代码用英文 |
 | 离线容忍 | 核心数据本地缓存，断网可查看历史 |
+
+2026-10-31 A8 撤权提示增量：照片撤回、成员移除和队伍失效已接 service-only 可合并队列，迁移 20/20 已部署，worker 保持无 provider/无 timer；实际权限与临时事件验证见[A8 证据](modules/photo-widget/evidence/2026-10-31-revocation-sync.md)。后台系统投递和桌面绘制仍待签名设备与渠道验收，完整 A/B/C 产品阶段不缩减。
+
+2026-10-31 接收者安全增量：本人隐藏与基本举报已接入，个人计数与公共照片头相加而不改变队友版本；媒体/照片墙/深链统一过滤隐藏项。迁移21/21、真实A/B/C 63项、iOS合成UI与最新Flutter598项通过，详见[证据](modules/photos/evidence/2026-10-31-receiver-safety.md)。平台后台/桌面、真实人工处置和后续阶段仍需验证。
+
+2026-10-31 会话生命周期：初始SDK恢复不再当作退出，前台确认后才取图/建立短期凭据；同账号原生副本保持原期限，后台不重复前台下载，明确撤权不排队等待网络。应用PG token读取拒绝SDK成功回传的过期/不一致token；实际SDK受控C续期和原生双进程检查通过，详见[证据](modules/photo-widget/evidence/2026-10-31-session-lifecycle.md)。通知预算内后台续期交接及完整平台验收仍未通过。

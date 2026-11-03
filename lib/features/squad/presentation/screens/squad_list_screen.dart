@@ -9,6 +9,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/app_loading_state.dart';
 import '../../../../shared/widgets/app_section.dart';
+import '../../../../shared/widgets/squad_avatar.dart';
 import '../../../../shared/widgets/squad_empty_state.dart';
 import '../../../plan/domain/entities/squad_plan.dart';
 import '../../domain/entities/issued_invitation.dart';
@@ -67,7 +68,7 @@ class SquadListScreen extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      CircleAvatar(child: Text(squad.name.characters.first)),
+                      SquadAvatar(name: squad.name, avatar: squad.avatarUrl),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -418,6 +419,12 @@ class _RemoteSquadListState extends ConsumerState<RemoteSquadListScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  SquadAvatar(
+                    name: squad.name,
+                    avatar: squad.avatarUrl,
+                    radius: 28,
+                  ),
+                  const SizedBox(height: 12),
                   if (squad.description?.isNotEmpty == true)
                     Text(squad.description!),
                   const SizedBox(height: 8),

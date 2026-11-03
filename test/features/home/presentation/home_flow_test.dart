@@ -38,14 +38,20 @@ void main() {
     await tester.tap(find.byTooltip('清除搜索'));
     await tester.pumpAndSettle();
     expect(find.text('夜跑搭子'), findsOneWidget);
-    await tester.tap(find.widgetWithText(ChoiceChip, '暂无消息'));
+    await tester.tap(find.byTooltip('筛选会话'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('conversation-filter-withoutMessages')),
+    );
     await tester.pumpAndSettle();
     expect(find.text('夜跑搭子'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('demo-conversation-squad-weekend')),
       findsNothing,
     );
-    await tester.tap(find.widgetWithText(ChoiceChip, '全部'));
+    await tester.tap(find.byTooltip('筛选会话'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('conversation-filter-all')));
     await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('demo-conversation-squad-weekend')),
@@ -61,12 +67,18 @@ void main() {
 
     await tester.tap(find.text('我的'));
     await tester.pumpAndSettle();
-    expect(find.text('数据工坊'), findsOneWidget);
-    await tester.tap(find.text('数据工坊'));
+    expect(find.text('账号与联系方式'), findsNothing);
+    await tester.ensureVisible(find.byKey(const ValueKey('profile-media')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('profile-media')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('私密素材空间'));
     await tester.pumpAndSettle();
     expect(find.text('数据工坊'), findsWidgets);
     expect(find.textContaining('演示导入样本'), findsOneWidget);
 
+    await tester.pageBack();
+    await tester.pumpAndSettle();
     await tester.pageBack();
     await tester.pumpAndSettle();
     await tester.tap(find.text('计划'));
@@ -101,6 +113,10 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.account_circle_outlined));
     await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('设置'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('通知与外观'));
+    await tester.pumpAndSettle();
     await tester.tap(
       find.ancestor(of: find.text('深色'), matching: find.byType(ChoiceChip)),
     );
@@ -117,6 +133,8 @@ void main() {
       Theme.of(tester.element(find.text('外观'))).brightness,
       Brightness.light,
     );
+    await tester.pageBack();
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('退出登录'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('退出登录'));

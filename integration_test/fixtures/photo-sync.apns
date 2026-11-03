@@ -1,0 +1,7 @@
+{
+  "aps": {
+    "content-available": 1,
+    "alert": {"title": "小分队", "body": "小队有新动态"}
+  },
+  "squadly": {"v": 1, "type": "photo_sync"}
+}

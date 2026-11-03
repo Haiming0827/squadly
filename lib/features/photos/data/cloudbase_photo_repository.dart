@@ -8,6 +8,7 @@ import 'package:fpdart/fpdart.dart';
 import '../../../core/error/failures.dart';
 import '../domain/photo.dart';
 import '../domain/photo_repository.dart';
+import '../domain/photo_safety_repository.dart';
 import '../domain/prepared_photo_format.dart';
 
 /// One atomic session snapshot prevents reading a token for a different user.
@@ -20,7 +21,8 @@ final class PhotoCredentials {
 typedef PhotoCredentialsReader = Future<PhotoCredentials?> Function();
 
 /// Authenticated media worker adapter. The worker returns bytes, never URLs.
-final class CloudBasePhotoRepository implements PhotoRepository {
+final class CloudBasePhotoRepository
+    implements PhotoRepository, PhotoSafetyRepository {
   CloudBasePhotoRepository({
     required this._userId,
     required this._endpoint,
@@ -177,6 +179,45 @@ final class CloudBasePhotoRepository implements PhotoRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, void>> hide({
+    required String squadId,
+    required String messageId,
+  }) => _safety(squadId, messageId, null);
+
+  @override
+  Future<Either<Failure, void>> report({
+    required String squadId,
+    required String messageId,
+    required PhotoReportReason reason,
+  }) => _safety(squadId, messageId, reason);
+
+  Future<Either<Failure, void>> _safety(
+    String squadId,
+    String messageId,
+    PhotoReportReason? reason,
+  ) async {
+    if (!_uuid(squadId) || !_uuid(messageId)) {
+      return left(const Failure.validation(message: '照片身份无效'));
+    }
+    try {
+      final response = await _request({
+        'action': reason == null ? 'hide' : 'report',
+        'squad_id': squadId,
+        'message_id': messageId,
+        if (reason != null) 'reason': reason.name,
+      });
+      if (response.length != (reason == null ? 1 : 2) ||
+          response['hidden'] != true ||
+          (reason != null && response['reported'] != true)) {
+        throw const FormatException('Unconfirmed photo safety action');
+      }
+      return right(null);
+    } catch (error) {
+      return left(_failure(error));
+    }
+  }
+
   Future<PhotoCredentials> _session() async {
     final session = await _credentials();
     if (session == null ||
@@ -189,15 +230,23 @@ final class CloudBasePhotoRepository implements PhotoRepository {
 
   Future<Map<String, dynamic>> _request(Map<String, Object?> body) async {
     final session = await _session();
+    // CloudBase's HTTP gateway caps text bodies at 100KB. A confirmed JPEG
+    // remains inside the same bounded JSON envelope, carried as binary UTF-8
+    // so the gateway forwards it as a base64 event to the existing worker.
+    final binaryUpload = body['action'] == 'publish';
     final response = await _dio.postUri<Object?>(
       _endpoint,
-      data: body,
+      data: binaryUpload
+          ? Uint8List.fromList(utf8.encode(jsonEncode(body)))
+          : body,
       options: Options(
         headers: {
           'Authorization': 'Bearer ${session.accessToken}',
           'Cache-Control': 'no-store',
         },
-        contentType: 'application/json',
+        contentType: binaryUpload
+            ? 'application/octet-stream'
+            : 'application/json',
         followRedirects: false,
         sendTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 45),
@@ -225,6 +274,9 @@ final class CloudBasePhotoRepository implements PhotoRepository {
     String? code;
     if (error is _MediaError) code = error.code;
     if (error is DioException) {
+      if (error.response?.statusCode == 413) {
+        return const Failure.validation(message: '照片上传请求过大，请更新应用后重试');
+      }
       final data = error.response?.data;
       if (data is Map && data['error'] is String) {
         code = data['error'] as String;
@@ -249,6 +301,7 @@ final class CloudBasePhotoRepository implements PhotoRepository {
       'upload_expired' => const Failure.server(message: '照片仍在处理中，请稍后重试'),
       'rate_limited' => const Failure.server(message: '发送较频繁，请稍后重试'),
       'invalid_reply' => const Failure.validation(message: '原照片已失效，请返回查看'),
+      'invalid_report' => const Failure.validation(message: '请选择举报原因'),
       'invalid_photo' => const Failure.validation(message: '这张照片无法使用，请换一张'),
       _ => const Failure.server(message: '照片服务暂不可用，请稍后重试'),
     };

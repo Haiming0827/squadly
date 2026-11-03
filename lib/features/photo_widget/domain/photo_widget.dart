@@ -154,6 +154,10 @@ abstract interface class PhotoWidgetStore {
     required String? scope,
     required DateTime? expiresAt,
   });
+  Future<PhotoWidgetSnapshot> retainExpired({
+    required String scope,
+    required DateTime expiresAt,
+  });
   Future<PhotoWidgetSnapshot> bind({
     required PhotoWidgetLease lease,
     required String squadId,

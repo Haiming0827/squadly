@@ -1,0 +1,51 @@
+{
+  "date": "2026-10-31",
+  "timezone": "Asia/Shanghai",
+  "kind": "manual-native-ui",
+  "rootApp": true,
+  "realStaging": true,
+  "syntheticMediaOnly": true,
+  "checks": {
+    "aOrdinaryRestartRestoresLogin": true,
+    "bOrdinaryRestartRestoresLogin": true,
+    "aRebindDefaultsPreviewOff": true,
+    "bRebindDefaultsPreviewOff": true,
+    "aMediumActualPhotoPaint": true,
+    "bSmallActualPhotoPaint": true,
+    "aPhotoClickOpensFixedSquadReply": true,
+    "helperActualLaunchBoth": true
+  },
+  "notVerified": [
+    "system_add_widget_new",
+    "cold_widget_click",
+    "natural_expiry_desktop",
+    "preview_off_desktop_clear",
+    "revocation_across_device_desktop",
+    "apns_delivery",
+    "signed_physical_device",
+    "system_picker_photo_round_trip"
+  ],
+  "coldClickAttempt": "CUA windowNotFoundAtPosition; no final page evidence",
+  "screenshots": [
+    {
+      "file": "a-medium-photo.png",
+      "sha256": "65248185f564c0048c039c209ca26d3d0c5c7c4be9e800a0320f77d2265508f6"
+    },
+    {
+      "file": "a-settings-photo.png",
+      "sha256": "b6c45615bc7bc76432964374a14528620e191e281505588ffe14ca0dcd08c9e2"
+    },
+    {
+      "file": "a-widget-reply.png",
+      "sha256": "6f285e5b21e143d7edda0ffb2144f691d73c144eeb05b4ce084171cbff132b08"
+    },
+    {
+      "file": "b-rebind-preview-off.png",
+      "sha256": "870bb9e85ddddf749efbbf2f35ccfd097763aa56a60e27c65849551b4f12f277"
+    },
+    {
+      "file": "b-small-photo.png",
+      "sha256": "587f9f163158cc62a4dffa8290564347e8535e0c8e0e6e227daa79870b10251c"
+    }
+  ]
+}

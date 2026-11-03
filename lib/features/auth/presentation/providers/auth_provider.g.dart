@@ -143,7 +143,7 @@ final class AuthNotifierProvider
   }
 }
 
-String _$authNotifierHash() => r'8426b166fbf2f6c1492c868eadd4007a237499b4';
+String _$authNotifierHash() => r'38914ccdd686f686c0c78865f80c4daa74d87261';
 
 /// 认证状态 Notifier
 

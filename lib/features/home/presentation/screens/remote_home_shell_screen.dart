@@ -3,18 +3,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/providers/conversation_customization_providers.dart';
 import '../../../../app/providers/conversation_runtime_providers.dart';
 import '../../../../app/providers/current_user_provider.dart';
 import '../../../../app/providers/photo_providers.dart';
 import '../../../../app/providers/photo_widget_providers.dart';
 import '../../../../app/providers/social_providers.dart';
 import '../../../../app/providers/squad_context_providers.dart';
+import '../../../../shared/widgets/squad_avatar.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../cards/presentation/card_composer_screen.dart';
 import '../../../cards/presentation/card_detail_sheet.dart';
 import '../../../conversation/domain/conversation_target.dart';
 import '../../../conversation/presentation/conversation_list_screen.dart';
 import '../../../conversation/presentation/conversation_screen.dart';
+import '../../../conversation/presentation/conversation_settings_screen.dart';
 import '../../../notifications/domain/push_registration.dart';
 import '../../../notifications/push_registration_provider.dart';
 import '../../../photo_widget/presentation/photo_widget_settings_screen.dart';
@@ -30,6 +33,7 @@ import '../../../squad/domain/entities/squad.dart';
 import '../../../squad/presentation/screens/squad_list_screen.dart';
 import 'plan_hub_screen.dart';
 import 'profile_screen.dart';
+import 'profile_settings_screen.dart';
 
 /// The real-backend shell contains no DemoAppStore reads or demo content.
 final class RemoteHomeShellScreen extends ConsumerStatefulWidget {
@@ -191,6 +195,7 @@ final class _RemoteHomeShellScreenState
   }
 
   Future<void> _openConversation(Squad squad) async {
+    unawaited(recordConversationOpen(ref, squad.id));
     ref.read(selectedSquadIdProvider.notifier).state = squad.id;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
@@ -199,15 +204,51 @@ final class _RemoteHomeShellScreenState
             final photosAvailable = routeRef.watch(
               photoSendingAvailableProvider,
             );
+            final current =
+                routeRef
+                    .watch(mySquadsProvider)
+                    .asData
+                    ?.value
+                    .where((s) => s.id == squad.id)
+                    .firstOrNull ??
+                squad;
+            final pref = routeRef.watch(
+              conversationPreferenceMapProvider,
+            )[squad.id];
             return Scaffold(
-              appBar: AppBar(title: Text(squad.name)),
+              appBar: AppBar(
+                title: Row(
+                  children: [
+                    SquadAvatar(
+                      name: current.name,
+                      avatar: current.avatarUrl,
+                      radius: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        pref?.displayName(current.name) ?? current.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  IconButton(
+                    tooltip: '会话设置',
+                    icon: const Icon(Icons.more_horiz_rounded),
+                    onPressed: () => _openConversationSettings(squad.id),
+                  ),
+                ],
+              ),
               body: ConversationScreen(
                 key: ValueKey(squad.id),
                 squadId: squad.id,
-                squadName: squad.name,
-                onCreateCard: () => _openComposer(squad.id, squad.name),
+                squadName: current.name,
+                onCreateCard: () => _openComposer(squad.id, current.name),
                 onCreatePhoto: photosAvailable
-                    ? () => _openPhotoComposer(squad)
+                    ? () => _openPhotoComposer(current)
                     : null,
                 photoBuilder: (_, entry, canRead, onDisplayChanged) =>
                     PhotoMessageView(
@@ -220,9 +261,11 @@ final class _RemoteHomeShellScreenState
                       onDisplayChanged: onDisplayChanged,
                       onChanged: () => unawaited(_refreshPhotos(squad.id)),
                       onReplyPhoto:
-                          photosAvailable && entry.photo?.isRevoked == false
+                          photosAvailable &&
+                              entry.photo?.isRevoked == false &&
+                              entry.photo?.isHidden == false
                           ? () => _openPhotoComposer(
-                              squad,
+                              current,
                               replyToMessageId: entry.id,
                             )
                           : null,
@@ -234,7 +277,7 @@ final class _RemoteHomeShellScreenState
                     showDragHandle: true,
                     builder: (_) => CardDetailSheet(
                       squadId: squad.id,
-                      squadName: squad.name,
+                      squadName: current.name,
                       entry: entry,
                     ),
                   );
@@ -249,6 +292,27 @@ final class _RemoteHomeShellScreenState
       ref.invalidate(remoteConversationSummariesProvider);
       ref.invalidate(squadRecentSharesProvider(squad.id));
     }
+  }
+
+  void _openConversationSettings(String squadId) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => ConversationSettingsScreen(
+          squadId: squadId,
+          onManageMembers: () {
+            ref.read(selectedSquadIdProvider.notifier).state = squadId;
+            Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  appBar: AppBar(title: const Text('小队管理')),
+                  body: const RemoteSquadListScreen(),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _openPlanConversation(ConversationListItem item) async {
@@ -289,15 +353,32 @@ final class _RemoteHomeShellScreenState
     );
   }
 
+  void _openRouteDevices() => Navigator.of(context)
+      .push<void>(MaterialPageRoute(builder: (_) => const RouteDeviceScreen()));
+
+  void _openProfileSettings() => openProfileSettings(
+    context,
+    onOpenDataWorkshop: _openDataWorkshop,
+    onManageNotifications: _manageNotifications,
+    onManageRouteDevice: _openRouteDevices,
+    onManageSquad: (squad) => _openConversationSettings(squad.id),
+  );
+
   @override
   Widget build(BuildContext context) {
     final squad = ref.watch(currentSquadProvider);
     final current = squad.value;
     return Scaffold(
       appBar: AppBar(
-        title: Text(current?.name ?? '小分队'),
+        title: Text(_index == 3 ? '个人主页' : current?.name ?? '小分队'),
         actions: [
-          if (current != null)
+          if (_index == 3)
+            IconButton(
+              tooltip: '设置',
+              onPressed: _openProfileSettings,
+              icon: const Icon(Icons.settings_outlined),
+            ),
+          if (_index != 3 && current != null)
             IconButton(
               tooltip: '路线设备',
               onPressed: () => Navigator.of(context).push<void>(
@@ -305,11 +386,12 @@ final class _RemoteHomeShellScreenState
               ),
               icon: const Icon(Icons.verified_user_outlined),
             ),
-          IconButton(
-            tooltip: '我的',
-            onPressed: () => setState(() => _index = 3),
-            icon: const Icon(Icons.account_circle_outlined),
-          ),
+          if (_index != 3)
+            IconButton(
+              tooltip: '我的',
+              onPressed: () => setState(() => _index = 3),
+              icon: const Icon(Icons.account_circle_outlined),
+            ),
         ],
       ),
       body: switch (_index) {
@@ -343,8 +425,11 @@ final class _RemoteHomeShellScreenState
           onOpenPlanDiscussion: _openPlanDiscussion,
         ),
         _ => ProfileScreen(
+          showSettingsButton: false,
           onOpenDataWorkshop: _openDataWorkshop,
           onManageNotifications: _manageNotifications,
+          onManageRouteDevice: _openRouteDevices,
+          onManageSquad: (squad) => _openConversationSettings(squad.id),
         ),
       },
       bottomNavigationBar: NavigationBar(

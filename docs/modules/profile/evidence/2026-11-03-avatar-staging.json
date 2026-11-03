@@ -1,0 +1,56 @@
+{
+  "date": "2026-11-03",
+  "scope": "ordinary A/B existing profiles owner RLS",
+  "passed": true,
+  "checks": [
+    {
+      "check": "own_profile_read",
+      "passed": true
+    },
+    {
+      "check": "owner_avatar_write",
+      "passed": true
+    },
+    {
+      "check": "nickname_preserved",
+      "passed": true
+    },
+    {
+      "check": "teammate_reads_shared_avatar",
+      "passed": true
+    },
+    {
+      "check": "teammate_cannot_write_owner_profile",
+      "passed": true
+    },
+    {
+      "check": "own_profile_read",
+      "passed": true
+    },
+    {
+      "check": "owner_avatar_unchanged_after_peer_attempt",
+      "passed": true
+    },
+    {
+      "check": "anonymous_write_denied",
+      "passed": true
+    },
+    {
+      "check": "original_avatar_restore_write",
+      "passed": true
+    },
+    {
+      "check": "own_profile_read",
+      "passed": true
+    },
+    {
+      "check": "original_profile_restored",
+      "passed": true
+    }
+  ],
+  "originalAvatarRestored": true,
+  "notVerified": [
+    "physical-device avatar picker",
+    "Android native picker"
+  ]
+}

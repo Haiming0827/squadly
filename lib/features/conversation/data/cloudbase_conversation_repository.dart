@@ -105,7 +105,8 @@ final class CloudBaseConversationRepository
       entry.squadId == squadId &&
       entry.planId == null &&
       entry.kind == TimelineEntryKind.photo &&
-      entry.photo?.isRevoked == false;
+      entry.photo?.isRevoked == false &&
+      entry.photo?.isHidden == false;
 
   @override
   Future<Either<Failure, List<TimelineEntry>>> loadRecent(

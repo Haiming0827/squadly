@@ -15,6 +15,7 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(controller.state.session!.userId, 'a');
     controller.pauseForAuthentication();
+    expect(controller.state.initialRestoration, isFalse);
     expect(controller.state.canReadAt(now), isFalse);
     source.current = OfflineSession(
       userId: 'b',
@@ -25,6 +26,18 @@ void main() {
     expect(controller.state.session!.userId, 'b');
     expect(controller.state.canReadAt(now), isTrue);
   });
+  test(
+    'initial restoration is distinct from an explicit authentication pause',
+    () {
+      final source = _Source();
+      final controller = OfflineAccessController(source: source);
+      addTearDown(controller.dispose);
+      addTearDown(source.events.close);
+      expect(controller.state.initialRestoration, isTrue);
+      controller.pauseForAuthentication();
+      expect(controller.state.initialRestoration, isFalse);
+    },
+  );
   test('no source is disabled and cannot unlock cache', () {
     final controller = OfflineAccessController();
     addTearDown(controller.dispose);

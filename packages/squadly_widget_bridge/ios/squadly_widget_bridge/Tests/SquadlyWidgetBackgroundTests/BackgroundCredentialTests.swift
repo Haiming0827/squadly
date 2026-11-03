@@ -6,8 +6,9 @@ import SquadlyWidgetCore
 private final class Vault: BackgroundCredentialVault {
   var bytes: Data?
   var fail = false
+  var onSave: (() -> Void)?
   func load() throws -> Data? { if fail { throw WidgetStoreError.unavailable }; return bytes }
-  func save(_ data: Data) throws { if fail { throw WidgetStoreError.unavailable }; bytes = data }
+  func save(_ data: Data) throws { if fail { throw WidgetStoreError.unavailable }; bytes = data; onSave?() }
   func clear() throws { if fail { throw WidgetStoreError.unavailable }; bytes = nil }
 }
 
@@ -135,4 +136,105 @@ final class BackgroundCredentialTests: XCTestCase {
     XCTAssertThrowsError(try commit(ticket))
     vault.fail = false; XCTAssertNil(try manager.read())
   }
+  private func renew(_ request: BackgroundRenewalRequest, jwt: String? = nil) throws {
+    try manager.commitRenewal(ticket: request.ticket, environmentID: env, userID: user, region: "ap-shanghai",
+      gateway: gateway, token: jwt ?? token(), expiresAt: now.addingTimeInterval(3600))
+  }
+  func testExpiredReferenceRequiresFreshSDKMaterialAndRotatesGeneration() throws {
+    try commit(prepare()); now.addTimeInterval(3601); uptime += 3601
+    XCTAssertNil(try manager.read())
+    let retained = try store.retainExpired(scope: state.session!.scope, expiresAt: state.session!.expiresAt)
+    XCTAssertEqual(retained.session?.generation, state.session?.generation)
+    XCTAssertThrowsError(try prepare())
+    let ticket = try manager.prepareRenewal(deadline: uptime + 25)
+    XCTAssertEqual(ticket.deadline, uptime + 8)
+    try renew(ticket)
+    let value = try XCTUnwrap(manager.read())
+    XCTAssertNotEqual(value.sessionGeneration, state.session!.generation)
+    XCTAssertEqual(value.expiresAt, now.addingTimeInterval(1800))
+    XCTAssertThrowsError(try renew(ticket))
+    XCTAssertNil(try store.read().photo)
+  }
+  func testSlowVaultSaveCannotPersistAfterRenewalDeadline() throws {
+    let request = try manager.prepareRenewal(deadline: uptime + 8)
+    vault.onSave = { self.uptime += 9 }
+    XCTAssertThrowsError(try renew(request))
+    XCTAssertNil(vault.bytes)
+  }
+  func testSDKRenewalRetainsVersionFenceAndRejectsOlderServerHead() throws {
+    _ = try store.applyHead(bindingID: state.binding!.id, sessionGeneration: state.session!.generation,
+      revision: "10", photo: nil)
+    now.addTimeInterval(3601); uptime += 3601
+    _ = try store.retainExpired(scope: state.session!.scope, expiresAt: state.session!.expiresAt)
+    try renew(manager.prepareRenewal(deadline: uptime + 8))
+    let updated = try store.read()
+    XCTAssertEqual(updated.head?.revision, 10)
+    XCTAssertThrowsError(try store.applyHead(bindingID: updated.binding!.id, sessionGeneration: updated.session!.generation,
+      revision: "9", photo: nil))
+  }
+  func testRenewalRejectsWrongIdentityPrivilegeAndLateCommit() throws {
+    for mode in ["subject", "role", "deadline", "rollback", "logout", "consent", "rebind", "clear"] {
+      state = try store.synchronize(scope: BackgroundCredential.scope(environmentID: env, userID: user), expiresAt: now.addingTimeInterval(3600))
+      state = try store.bind(scope: state.session!.scope, sessionGeneration: state.session!.generation, squadID: squad, squadName: "队")
+      state = try store.setPreviewEnabled(true, bindingID: state.binding!.id, sessionGeneration: state.session!.generation)
+      let ticket = try manager.prepareRenewal(deadline: uptime + 8)
+      switch mode {
+      case "deadline": uptime += 8
+      case "rollback": uptime -= 1
+      case "logout": _ = try store.synchronize(scope: nil, expiresAt: nil)
+      case "consent": _ = try store.setPreviewEnabled(false, bindingID: state.binding!.id, sessionGeneration: state.session!.generation)
+      case "rebind": _ = try store.bind(scope: state.session!.scope, sessionGeneration: state.session!.generation, squadID: "00000000-0000-4000-8000-000000000002", squadName: "其他队")
+      case "clear": try manager.clear()
+      default: break
+      }
+      let jwt = try token(role: mode == "role" ? "service_role" : "authenticated", sub: mode == "subject" ? "other" : user)
+      XCTAssertThrowsError(try renew(ticket, jwt: jwt), mode)
+      XCTAssertNil(try manager.read(), mode)
+      uptime = 10000
+    }
+  }
+  func testRecoveryReferenceCannotBeEstablishedAfterLogoutOrForAnotherScope() throws {
+    _ = try store.synchronize(scope: nil, expiresAt: nil)
+    XCTAssertThrowsError(try store.retainExpired(scope: state.session!.scope, expiresAt: now.addingTimeInterval(-1)))
+    XCTAssertThrowsError(try manager.prepareRenewal(deadline: uptime + 8))
+    XCTAssertNil(try store.read().session)
+  }
+  func testOldRenewalCancellationCannotEraseANewerCredential() throws {
+    let first = try manager.prepareRenewal(deadline: uptime + 8)
+    let second = try manager.prepareRenewal(deadline: uptime + 8)
+    XCTAssertThrowsError(try renew(first))
+    try renew(second)
+    manager.cancelRenewal(ticket: first.ticket)
+    XCTAssertNotNil(try manager.read())
+  }
+  func testBrokerWaitsForExistingEngineAndCoalescesDuplicateHints() async throws {
+    let broker = BackgroundCredentialRenewal(credentials: manager, clock: clock)
+    let first = Task { await broker.renew(deadline: uptime + 25) }
+    let second = Task { await broker.renew(deadline: uptime + 25) }
+    try await Task.sleep(nanoseconds: 10_000_000)
+    var calls = 0
+    await broker.setHandler { request, done in
+      calls += 1
+      do { try self.renew(request); done(true) } catch { done(false) }
+    }
+    let a = await first.value, b = await second.value
+    XCTAssertTrue(a); XCTAssertTrue(b); XCTAssertEqual(calls, 1)
+    let cached = await broker.renew(deadline: uptime + 25)
+    XCTAssertTrue(cached); XCTAssertEqual(calls, 1)
+  }
+  func testMissingEngineAndUncooperativeCallbackFinishOnBudget() async throws {
+    let broker = BackgroundCredentialRenewal(credentials: manager, clock: clock)
+    let absent = await broker.renew(deadline: uptime + 0.02)
+    XCTAssertFalse(absent)
+    // Let the shared task invalidate its ticket, too.
+    try await Task.sleep(nanoseconds: 10_000_000)
+    var late: BackgroundRenewalRequest?
+    await broker.setHandler { request, _ in late = request }
+    let waiting = await broker.renew(deadline: uptime + 0.02)
+    XCTAssertFalse(waiting)
+    try await Task.sleep(nanoseconds: 10_000_000)
+    XCTAssertThrowsError(try renew(XCTUnwrap(late)))
+    XCTAssertNil(try manager.read())
+  }
+
 }

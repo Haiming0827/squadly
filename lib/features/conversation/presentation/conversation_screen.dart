@@ -166,6 +166,7 @@ final class _ConversationScreenState extends ConsumerState<ConversationScreen>
         .entries
         .lastOrNull;
     if (latest == null || latest.id != _paintedLatestId) return;
+    if (latest.photo?.isHidden == true) return;
     if (latest.kind == TimelineEntryKind.photo &&
         latest.photo?.isRevoked != true &&
         !_displayedPhotos.contains(latest.id)) {
@@ -225,7 +226,11 @@ final class _ConversationScreenState extends ConsumerState<ConversationScreen>
     setState(() {
       _replyToId = entry.id;
       _replyTitle = entry.kind == TimelineEntryKind.photo
-          ? (entry.photo?.isRevoked == true ? '已撤回的照片' : '这张照片')
+          ? (entry.photo?.isHidden == true
+                ? '已隐藏的照片'
+                : entry.photo?.isRevoked == true
+                ? '已撤回的照片'
+                : '这张照片')
           : entry.kind == TimelineEntryKind.card
           ? (entry.cardSnapshot?.payload['title'] as String? ?? '这张卡片')
           : (entry.text ?? '这条消息');
@@ -302,7 +307,7 @@ final class _ConversationScreenState extends ConsumerState<ConversationScreen>
           ),
         if (state.pendingCount > 0)
           MaterialBanner(
-            content: Text('有 ${state.pendingCount} 条待发送；联网后会继续重试'),
+            content: Text('有 ${state.pendingCount} 条待发送，可稍后重试'),
             actions: [
               TextButton(
                 onPressed: () => ref
@@ -544,7 +549,11 @@ final class _TimelineTile extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     reply.kind == TimelineEntryKind.photo
-                        ? '回复照片：${reply.photo?.isRevoked == true ? '已撤回' : '小队里的这一刻'}'
+                        ? '回复照片：${reply.photo?.isHidden == true
+                              ? '已隐藏'
+                              : reply.photo?.isRevoked == true
+                              ? '已撤回'
+                              : '小队里的这一刻'}'
                         : '回复 ${reply.kind == TimelineEntryKind.card ? '卡片' : '消息'}：${reply.cardSnapshot?.payload['title'] ?? reply.text ?? ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

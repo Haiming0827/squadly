@@ -1,16 +1,21 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 
 import '../../core/error/failures.dart';
+import '../../core/network/cloudbase_auth_gate.dart';
 import '../../core/network/cloudbase_client_provider.dart';
+import '../../core/network/cloudbase_session_identity.dart';
 import '../../features/conversation/domain/conversation_photo_repository.dart';
 import '../../features/photo_widget/data/native_photo_widget_store.dart';
 import '../../features/photo_widget/data/photo_background_credentials.dart';
+import '../../features/photo_widget/data/photo_background_renewal.dart';
 import '../../features/photo_widget/domain/photo_widget.dart';
+import '../../features/photo_widget/domain/photo_widget_lifecycle.dart';
 import '../../features/photo_widget/domain/photo_widget_service.dart';
 import 'current_user_provider.dart';
 import 'domain_repository_providers.dart';
@@ -73,10 +78,9 @@ final photoBackgroundCredentialControllerProvider =
               defaultTargetPlatform != TargetPlatform.iOS) {
             return null;
           }
-          final response = await ref
-              .read(cloudBaseAppProvider)
-              .auth
-              .getSession();
+          final response = await CloudBaseAuthGate.forAuth(
+            ref.read(cloudBaseAppProvider).auth,
+          ).session();
           if (!active || ref.read(photoWidgetContextProvider) != owner) {
             return null;
           }
@@ -179,34 +183,139 @@ final photoWidgetServiceProvider = Provider<PhotoWidgetService>((ref) {
   return service;
 });
 
+/// Initial SDK restoration has no logout verdict. Known SDK identity can
+/// validate the persisted scope without issuing new private credentials.
+final photoWidgetAuthorityProvider = Provider<PhotoWidgetAuthority>((ref) {
+  final config = ref.watch(cloudBaseConfigProvider);
+  final user = ref.watch(currentUserProvider);
+  final access = ref.watch(offlineAccessProvider);
+  const blocked = (mode: PhotoWidgetAccessMode.blocked, context: null);
+  if (config.useDemo || user.isLoading || user.hasError) return blocked;
+  if (access.initialRestoration &&
+      access.status == OfflineAccessStatus.checking &&
+      user.asData?.value == null) {
+    return (mode: PhotoWidgetAccessMode.restoring, context: null);
+  }
+  final sdk = access.session;
+  if (access.status == OfflineAccessStatus.expired && sdk != null) {
+    final userId = user.asData?.value?.id;
+    if (userId != null && userId != sdk.userId) return blocked;
+    return (
+      mode: PhotoWidgetAccessMode.expired,
+      context: PhotoWidgetContext(
+        environmentId: config.environmentId,
+        userId: sdk.userId,
+        expiresAt: sdk.expiresAt,
+      ),
+    );
+  }
+  if (access.status != OfflineAccessStatus.available ||
+      sdk == null ||
+      !access.canReadAt(DateTime.now())) {
+    return blocked;
+  }
+  final owner = PhotoWidgetContext(
+    environmentId: config.environmentId,
+    userId: sdk.userId,
+    expiresAt: sdk.expiresAt,
+  );
+  final userId = user.asData?.value?.id;
+  if (userId == null) {
+    return (mode: PhotoWidgetAccessMode.restoring, context: owner);
+  }
+  if (userId != sdk.userId) return blocked;
+  final confirmed = ref.watch(photoWidgetContextProvider);
+  return confirmed == null
+      ? blocked
+      : (mode: PhotoWidgetAccessMode.ready, context: confirmed);
+});
+
 final photoWidgetLifecycleProvider = Provider<void>((ref) {
   if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return;
   final service = ref.watch(photoWidgetServiceProvider);
-  var active = true;
-  Future<void> synchronize({bool reset = false}) async {
-    if (!active || !await service.available()) return;
-    final result = await service.synchronize(reset: reset);
-    if (active && result.isRight()) await service.refresh();
-  }
-
-  ref.listen(photoWidgetContextProvider, (previous, next) {
-    unawaited(ref.read(photoBackgroundCredentialControllerProvider).reset());
-    unawaited(synchronize(reset: true));
+  final lifecycle = PhotoWidgetLifecycle(
+    service: service,
+    store: ref.read(photoWidgetStoreProvider),
+    clearCredentials: () =>
+        ref.read(photoBackgroundCredentialControllerProvider).reset(),
+    expireCredentials: () async {
+      await const MethodChannel('squadly/photo-background')
+          .invokeMethod<bool>('status');
+    },
+  );
+  final renewal = PhotoBackgroundRenewalController(
+    hold: (scope) => lifecycle.beginRecovery(scope: scope),
+    release: lifecycle.endRecovery,
+    read: (request, isCurrent) async {
+      bool allowed() =>
+          isCurrent() &&
+          ref.read(photoWidgetAuthorityProvider).mode !=
+              PhotoWidgetAccessMode.blocked;
+      if (!allowed()) return null;
+      final config = ref.read(cloudBaseConfigProvider);
+      final gateway = ref.read(photoGatewayUrlProvider);
+      if (config.useDemo || gateway == null) return null;
+      final response = await CloudBaseAuthGate.forAuth(
+        ref.read(cloudBaseAppProvider).auth,
+      ).session(isCurrent: allowed);
+      if (!allowed() || !response.isSuccess) return null;
+      final session = response.data?.session;
+      if (session == null) return null;
+      final identity = cloudBaseSessionIdentity(session);
+      final owner = PhotoWidgetContext(
+        environmentId: config.environmentId,
+        userId: identity.userId,
+        expiresAt: identity.expiresAt,
+      );
+      if (await photoWidgetScope(owner) != request.scope || !allowed()) {
+        return null;
+      }
+      final userId = ref.read(currentUserProvider).asData?.value?.id;
+      if (userId != null && userId != identity.userId) return null;
+      return PhotoBackgroundCredentialMaterial(
+        environmentId: config.environmentId,
+        region: config.region,
+        userId: identity.userId,
+        gateway: gateway,
+        accessToken: session.accessToken!,
+        expiresAt: identity.expiresAt,
+      );
+    },
+  );
+  bool foreground() =>
+      WidgetsBinding.instance.lifecycleState == null ||
+      WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+  ref.listen(photoWidgetAuthorityProvider, (previous, next) {
+    if (next.mode == PhotoWidgetAccessMode.blocked) renewal.invalidate();
+    unawaited(lifecycle.accept(next, foreground: foreground()));
   });
-  final observer = _WidgetObserver(() => unawaited(synchronize()));
+  final observer = _WidgetObserver(
+    (state) => unawaited(
+      lifecycle.accept(
+        ref.read(photoWidgetAuthorityProvider),
+        foreground: state == AppLifecycleState.resumed,
+        force: state == AppLifecycleState.resumed,
+      ),
+    ),
+  );
   WidgetsBinding.instance.addObserver(observer);
-  unawaited(synchronize(reset: true));
+  unawaited(
+    lifecycle.accept(
+      ref.read(photoWidgetAuthorityProvider),
+      foreground: foreground(),
+    ),
+  );
+  if (!ref.read(cloudBaseConfigProvider).useDemo) unawaited(renewal.start());
   ref.onDispose(() {
-    active = false;
+    unawaited(renewal.dispose());
+    lifecycle.dispose();
     WidgetsBinding.instance.removeObserver(observer);
   });
 });
 
 class _WidgetObserver extends WidgetsBindingObserver {
-  _WidgetObserver(this.resume);
-  final VoidCallback resume;
+  _WidgetObserver(this.changed);
+  final ValueChanged<AppLifecycleState> changed;
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) resume();
-  }
+  void didChangeAppLifecycleState(AppLifecycleState state) => changed(state);
 }

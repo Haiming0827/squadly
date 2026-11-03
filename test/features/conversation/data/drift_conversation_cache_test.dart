@@ -37,6 +37,7 @@ void main() {
         height: 3,
         byteLength: 600,
         isRevoked: true,
+        isHidden: true,
       ),
     );
     final lease = cache.lease('a')!;

@@ -9,6 +9,7 @@ import 'package:squadly/app/providers/conversation_runtime_providers.dart';
 import 'package:squadly/app/providers/current_user_provider.dart';
 import 'package:squadly/app/providers/domain_repository_providers.dart';
 import 'package:squadly/app/providers/photo_providers.dart';
+import 'package:squadly/app/providers/photo_safety_providers.dart';
 import 'package:squadly/app/providers/photo_submission_provider.dart';
 import 'package:squadly/core/error/failures.dart';
 import 'package:squadly/core/theme/app_theme.dart';
@@ -19,6 +20,7 @@ import 'package:squadly/features/conversation/domain/conversation_repository.dar
 import 'package:squadly/features/conversation/domain/timeline_entry.dart';
 import 'package:squadly/features/photos/domain/photo.dart';
 import 'package:squadly/features/photos/domain/photo_repository.dart';
+import 'package:squadly/features/photos/domain/photo_safety_repository.dart';
 import 'package:squadly/features/photos/domain/photo_submission.dart';
 import 'package:squadly/features/secure_route/domain/route_models.dart';
 
@@ -54,7 +56,29 @@ class TestPhotoSource implements PhotoSourceGateway {
   }
 }
 
-class TestPhotoRepository implements PhotoRepository {
+class TestPhotoRepository implements PhotoRepository, PhotoSafetyRepository {
+  final hides = <String>[];
+  final reports = <PhotoReportReason>[];
+  Future<Either<Failure, void>> Function()? onSafety;
+  @override
+  Future<Either<Failure, void>> hide({
+    required String squadId,
+    required String messageId,
+  }) async {
+    hides.add(messageId);
+    return onSafety == null ? right(null) : onSafety!();
+  }
+
+  @override
+  Future<Either<Failure, void>> report({
+    required String squadId,
+    required String messageId,
+    required PhotoReportReason reason,
+  }) async {
+    reports.add(reason);
+    return onSafety == null ? right(null) : onSafety!();
+  }
+
   final drafts = <PhotoDraft>[];
   final loads = <({String squadId, String messageId})>[];
   final revokes = <({String squadId, String messageId})>[];
@@ -130,6 +154,7 @@ class PhotoHarness {
             (ref) => ref.watch(testAvailable),
           ),
           photoRepositoryProvider.overrideWithValue(repository),
+          photoSafetyRepositoryProvider.overrideWithValue(repository),
           if (submit != null)
             photoSubmissionProvider.overrideWith((ref, target) => submit!),
           conversationRepositoryProvider.overrideWithValue(_Timeline()),

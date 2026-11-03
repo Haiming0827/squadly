@@ -3,18 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers/conversation_cache_provider.dart';
+import '../../../app/providers/conversation_customization_providers.dart';
 import '../../../app/providers/current_user_provider.dart';
 import '../../../app/providers/offline_access_provider.dart';
 import '../../../app/providers/plan_providers.dart';
 import '../../../app/providers/squad_context_providers.dart';
 import '../../../shared/widgets/app_loading_state.dart';
 import '../../../shared/widgets/app_section.dart';
+import '../../../shared/widgets/squad_avatar.dart';
 import '../../plan/domain/entities/squad_plan.dart';
 import '../../squad/domain/entities/squad.dart';
+import '../domain/conversation_preference.dart';
 import '../domain/conversation_target.dart';
 import '../domain/timeline_entry.dart';
 import 'conversation_list_controls.dart';
 import 'conversation_provider.dart';
+import 'frequent_squads.dart';
 
 final remoteConversationSummariesProvider =
     FutureProvider<List<ConversationListItem>>((ref) async {
@@ -134,6 +138,8 @@ final class _ConversationListScreenState
   @override
   Widget build(BuildContext context) {
     final summaries = ref.watch(remoteConversationSummariesProvider);
+    final preferences = ref.watch(conversationPreferenceMapProvider);
+    final customization = ref.watch(conversationPreferencesProvider);
     final offlineAccess = ref.watch(offlineAccessProvider);
     return summaries.when(
       loading: () => const Center(child: AppLoadingState(label: '正在加载会话')),
@@ -189,19 +195,36 @@ final class _ConversationListScreenState
             if (matchesConversationActivity(
                   _filter,
                   summary.latestEntry != null,
+                  isPlan: summary.plan != null,
+                  isPinned: preferences[summary.squad.id]?.isPinned ?? false,
                 ) &&
                 matchesConversationSearch(
                   query: _query,
                   squadName:
-                      '${summary.squad.name} ${summary.plan?.title ?? ''}',
+                      '${summary.squad.name} ${preferences[summary.squad.id]?.remark ?? ''} ${summary.plan?.title ?? ''}',
                   preview: _previewFor(summary.latestEntry),
                 ))
               summary,
         ];
 
+        // Stable sort: preserve the existing message order within pin groups.
+        final ordered = [
+          ...filtered.where(
+            (item) =>
+                item.plan == null &&
+                (preferences[item.squad.id]?.isPinned ?? false),
+          ),
+          ...filtered.where(
+            (item) =>
+                item.plan != null ||
+                !(preferences[item.squad.id]?.isPinned ?? false),
+          ),
+        ];
         return RefreshIndicator(
           onRefresh: () async {
+            ref.invalidate(mySquadsProvider);
             ref.invalidate(remoteConversationSummariesProvider);
+            ref.invalidate(conversationPreferencesProvider);
             await ref.read(remoteConversationSummariesProvider.future);
           },
           child: ListView(
@@ -214,6 +237,24 @@ final class _ConversationListScreenState
                 onQueryChanged: (value) => setState(() => _query = value),
                 onFilterChanged: (value) => setState(() => _filter = value),
               ),
+              FrequentSquads(
+                squads: [
+                  for (final item in items)
+                    if (item.plan == null) item.squad,
+                ],
+                preferences: preferences,
+                onOpen: widget.onOpenConversation,
+              ),
+              if (customization.hasError)
+                ListTile(
+                  dense: true,
+                  title: const Text('个人会话设置暂未加载'),
+                  trailing: TextButton(
+                    onPressed: () =>
+                        ref.invalidate(conversationPreferencesProvider),
+                    child: const Text('重试'),
+                  ),
+                ),
               if (filtered.isEmpty)
                 ConversationListNoResults(
                   onReset: () {
@@ -225,17 +266,18 @@ final class _ConversationListScreenState
                   },
                 )
               else
-                for (var index = 0; index < filtered.length; index++) ...[
+                for (var index = 0; index < ordered.length; index++) ...[
                   if (index > 0) const Divider(height: 1, indent: 72),
                   _ConversationTile(
                     key: ValueKey(
-                      filtered[index].plan == null
-                          ? 'conversation-${filtered[index].squad.id}'
-                          : 'conversation-${filtered[index].squad.id}-${filtered[index].plan!.id}',
+                      ordered[index].plan == null
+                          ? 'conversation-${ordered[index].squad.id}'
+                          : 'conversation-${ordered[index].squad.id}-${ordered[index].plan!.id}',
                     ),
-                    summary: filtered[index],
+                    summary: ordered[index],
+                    preference: preferences[ordered[index].squad.id],
                     onTap: () {
-                      final item = filtered[index];
+                      final item = ordered[index];
                       if (item.plan == null) {
                         widget.onOpenConversation(item.squad);
                       } else {
@@ -258,7 +300,11 @@ String _previewFor(TimelineEntry? entry) {
     TimelineEntryKind.text => entry.text ?? '',
     TimelineEntryKind.card => '分享了一张内容卡片',
     TimelineEntryKind.photo =>
-      entry.photo?.isRevoked == true ? '照片已撤回' : '分享了一张照片',
+      entry.photo?.isHidden == true
+          ? '照片已对你隐藏'
+          : entry.photo?.isRevoked == true
+          ? '照片已撤回'
+          : '分享了一张照片',
   };
   return '${entry.authorName}：$body';
 }
@@ -267,11 +313,13 @@ final class _ConversationTile extends StatelessWidget {
   const _ConversationTile({
     required this.summary,
     required this.onTap,
+    this.preference,
     super.key,
   });
 
   final ConversationListItem summary;
   final VoidCallback onTap;
+  final ConversationPreference? preference;
 
   @override
   Widget build(BuildContext context) {
@@ -285,20 +333,20 @@ final class _ConversationTile extends StatelessWidget {
             TimelineEntryKind.text => entry.text ?? '',
             TimelineEntryKind.card => '分享了一张内容卡片',
             TimelineEntryKind.photo =>
-              entry.photo?.isRevoked == true ? '照片已撤回' : '分享了一张照片',
+              entry.photo?.isHidden == true
+                  ? '照片已对你隐藏'
+                  : entry.photo?.isRevoked == true
+                  ? '照片已撤回'
+                  : '分享了一张照片',
           };
     final preview = entry == null ? body : '${entry.authorName}：$body';
     final timestamp = entry?.createdAt;
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      leading: CircleAvatar(
-        backgroundColor: colors.secondaryContainer,
-        foregroundColor: colors.onSecondaryContainer,
-        child: Text(squad.name.characters.first),
-      ),
+      leading: SquadAvatar(name: squad.name, avatar: squad.avatarUrl),
       title: Text(
-        plan?.title ?? squad.name,
+        plan?.title ?? preference?.displayName(squad.name) ?? squad.name,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -318,6 +366,8 @@ final class _ConversationTile extends StatelessWidget {
                   ?.copyWith(color: colors.onSurfaceVariant),
             ),
           const SizedBox(height: 4),
+          if (plan == null && (preference?.isPinned ?? false))
+            const Icon(Icons.push_pin_rounded, size: 14),
           Icon(Icons.chevron_right_rounded, color: colors.onSurfaceVariant),
         ],
       ),

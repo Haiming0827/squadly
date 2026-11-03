@@ -20,6 +20,7 @@ flutter analyze
 flutter test --no-test-assets
 flutter test --no-test-assets --dart-define=USE_DEMO_BACKEND=false \
   test/app/real_mode_router_test.dart \
+  test/app/providers/photo_widget_bootstrap_test.dart \
   test/features/auth/presentation/auth_async_state_test.dart \
   test/features/auth/presentation/auth_recovery_state_test.dart
 bash scripts/test_health_connect_bridge.sh

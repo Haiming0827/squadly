@@ -37,8 +37,8 @@ private final class PhotoFixture {
     var root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     while !FileManager.default.fileExists(atPath: root.appendingPathComponent("test/features/photos/fixtures/sanitized.jpg").path), root.path != "/" { root.deleteLastPathComponent() }
     bytes = try Data(contentsOf: root.appendingPathComponent("test/features/photos/fixtures/sanitized.jpg"))
-    store = WidgetStore(directory: directory, clock: clock)
-    manager = BackgroundCredentialManager(store: store, vault: PhotoVault(), clock: clock)
+    store = WidgetStore(directory: directory, clock: { [weak self] in self?.clock() ?? WidgetClock() })
+    manager = BackgroundCredentialManager(store: store, vault: PhotoVault(), clock: { [weak self] in self?.clock() ?? WidgetClock() })
     let scope = try BackgroundCredential.scope(environmentID: "fixture-env", userID: "fixture-user")
     let session = try store.synchronize(scope: scope, expiresAt: now.addingTimeInterval(3600)).session!
     let bound = try store.bind(scope: scope, sessionGeneration: session.generation, squadID: squad, squadName: "小队")
@@ -72,6 +72,25 @@ private final class PhotoFixture {
 }
 
 final class BackgroundPhotoSyncTests: XCTestCase {
+  func testSDKWaitDoesNotResetTheOriginalNotificationBudget() async throws {
+    let fixture = try PhotoFixture()
+    let deadline = fixture.uptime + 25
+    fixture.uptime += 24
+    let transport = PhotoTransport { request, _ in
+      XCTAssertLessThanOrEqual(request.timeoutInterval, 1)
+      fixture.uptime += 2
+      return try fixture.response(request)
+    }
+    let result = await fixture.synchronizer(transport).synchronize(deadline: deadline)
+    XCTAssertEqual(result, .failed)
+    let calls = await transport.calls
+    XCTAssertEqual(calls.count, 1)
+    XCTAssertNil(try fixture.store.read().photo)
+    let expired = await fixture.synchronizer(transport).synchronize(deadline: deadline)
+    XCTAssertEqual(expired, .noData)
+    let unchanged = await transport.calls
+    XCTAssertEqual(unchanged.count, 1)
+  }
   func testRealDecodeVerifiedHeadAndDuplicateDoNotRenew() async throws {
     let fixture = try PhotoFixture(), transport = PhotoTransport { request, _ in try fixture.response(request) }
     let sync = fixture.synchronizer(transport)
@@ -191,6 +210,29 @@ final class BackgroundPhotoSyncTests: XCTestCase {
     let transport = PhotoTransport { request, _ in try fixture.response(request) }
     let result = await fixture.synchronizer(transport).synchronize(); XCTAssertEqual(result, .noData)
     let calls = await transport.calls; XCTAssertTrue(calls.isEmpty)
+  }
+  func testDuplicateHintsShareOneBatchAndOneTrailingMetadataCheck() async throws {
+    let fixture = try PhotoFixture()
+    let started = expectation(description: "first native request started")
+    var resume: CheckedContinuation<Void, Never>?
+    let transport = PhotoTransport { request, index in
+      if index == 1 {
+        await withCheckedContinuation { continuation in resume = continuation; started.fulfill() }
+      }
+      return try fixture.response(request)
+    }
+    let sync = fixture.synchronizer(transport)
+    let first = Task { await sync.synchronize() }
+    await fulfillment(of: [started], timeout: 2)
+    let duplicate = Task { await sync.synchronize() }
+    // Both tasks have been submitted to the same actor while the transport is
+    // explicitly suspended; allow the second actor message to join this batch.
+    try await Task.sleep(nanoseconds: 20_000_000)
+    resume?.resume()
+    let one = await first.value, two = await duplicate.value
+    XCTAssertEqual(one, .newData); XCTAssertEqual(two, .newData)
+    let calls = await transport.calls
+    XCTAssertEqual(calls.count, 7); XCTAssertEqual(calls.filter { $0.url!.path == "/photos" }.count, 1)
   }
   func testStrictContentFreeHintDoesNotAcceptTargetsOrURLs() {
     XCTAssertTrue(BackgroundPhotoSync.isPhotoHint(["squadly":["v":1,"type":"photo_sync"]]))

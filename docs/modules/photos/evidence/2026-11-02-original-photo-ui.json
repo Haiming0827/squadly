@@ -1,0 +1,129 @@
+{
+  "date": "2026-11-02",
+  "timezone": "Asia/Shanghai",
+  "method": "ordinary root apps through Device Hub, original confirmed outbox",
+  "rootApp": "com.squadly.squadly",
+  "network": {
+    "kind": "actual-iOS-simulator-URLSession",
+    "noCredentialsUsed": true,
+    "passed": true,
+    "devices": [
+      {
+        "device": "a",
+        "checks": [
+          {
+            "elapsedMs": 2544,
+            "httpStatus": 200,
+            "passed": true,
+            "receivedBytes": 68,
+            "target": "internet_https"
+          },
+          {
+            "elapsedMs": 1927,
+            "httpStatus": 401,
+            "passed": true,
+            "receivedBytes": 165,
+            "target": "cloudbase_gateway"
+          },
+          {
+            "elapsedMs": 4229,
+            "httpStatus": 405,
+            "passed": true,
+            "receivedBytes": 30,
+            "target": "photo_worker"
+          }
+        ],
+        "passed": true
+      },
+      {
+        "device": "b",
+        "checks": [
+          {
+            "elapsedMs": 2622,
+            "httpStatus": 200,
+            "passed": true,
+            "receivedBytes": 68,
+            "target": "internet_https"
+          },
+          {
+            "elapsedMs": 1811,
+            "httpStatus": 401,
+            "passed": true,
+            "receivedBytes": 165,
+            "target": "cloudbase_gateway"
+          },
+          {
+            "elapsedMs": 3922,
+            "httpStatus": 405,
+            "passed": true,
+            "receivedBytes": 30,
+            "target": "photo_worker"
+          }
+        ],
+        "passed": true
+      }
+    ]
+  },
+  "before": {
+    "a": {
+      "hasSdkSnapshot": true,
+      "expectedIdentity": true,
+      "accessCurrentlyValid": false,
+      "targetPendingCount": 0
+    },
+    "b": {
+      "hasSdkSnapshot": true,
+      "expectedIdentity": true,
+      "accessCurrentlyValid": true,
+      "targetPendingCount": 1
+    }
+  },
+  "after": {
+    "a": {
+      "validOrdinarySdkIdentity": true,
+      "headHasBPhoto": true,
+      "hasOriginalParent": true,
+      "photoNotRevoked": true,
+      "photoDimensions": [
+        1600,
+        1200
+      ],
+      "photoBytes": 564631
+    },
+    "b": {
+      "validOrdinarySdkIdentity": true,
+      "headHasBPhoto": true,
+      "hasOriginalParent": true,
+      "photoNotRevoked": true,
+      "photoDimensions": [
+        1600,
+        1200
+      ],
+      "photoBytes": 564631,
+      "targetPendingCount": 0
+    },
+    "sameHeadIdentity": true
+  },
+  "uiWitness": {
+    "bOriginalFlowerRenderedInConversation": true,
+    "aOriginalFlowerRenderedInConversation": true,
+    "replyRelationLabelOnBoth": true,
+    "noPhotoReselection": true,
+    "noLoginCredentialsReentered": true
+  },
+  "priorFixSourcesStillMatch": {
+    "lib/features/photos/data/cloudbase_photo_repository.dart": true,
+    "lib/features/photos/presentation/photo_composer_screen.dart": true,
+    "integration_test/integration_test/photo_upload_transport_staging_test.dart": true,
+    "test/features/photos/fixtures/large_sanitized.jpg": true
+  },
+  "userPhotoPreserved": true,
+  "userPhotoOrScreenshotExportedToRepository": false,
+  "notVerified": [
+    "fresh system picker round trip in this run",
+    "physical camera",
+    "APNs delivery",
+    "automatic desktop background refresh",
+    "warm expired session recovery without restart"
+  ]
+}

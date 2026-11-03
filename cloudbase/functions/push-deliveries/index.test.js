@@ -36,17 +36,18 @@ async function fixture(options, run) {
   const completions = [];
   globalThis.fetch = async (url, init) => {
     calls.push({ url: String(url), init });
-    if (String(url).endsWith('/rpc/claim_push_deliveries_v2')) {
+    if (String(url).endsWith('/rpc/claim_push_work')) {
       const provider = JSON.parse(init.body).p_provider;
       if (options.failedClaim === provider) return new Response(null, { status: 503 });
-      const claim = { delivery_id: provider === 'apns' ? 7 : 8,
+      const claim = { lease_kind: options.leaseKind ?? 'message',
+        delivery_id: provider === 'apns' ? '7' : '8',
         claim_id: `lease-${provider}`, provider, message_kind: options.kind ?? 'photo',
         token: provider === 'apns' ? token : 'test-mi-reg-id' };
       return Response.json(options.claims ?? [claim]);
     }
-    if (String(url).endsWith('/rpc/complete_push_delivery')) {
+    if (String(url).endsWith('/rpc/complete_push_work')) {
       const body = JSON.parse(init.body); completions.push(body);
-      return Response.json(options.failedCompletion !== body.p_delivery_id);
+      return Response.json(String(options.failedCompletion) !== body.p_delivery_id);
     }
     if (String(url) === 'https://api.xmpush.xiaomi.com/v2/message/regid') {
       return Response.json(options.miResponse ?? { code: 0 });
@@ -117,8 +118,8 @@ test('APNs transport failure retries only its device while Mi Push completes', a
     assert.deepEqual(JSON.parse(response.body), {
       claimed: 2, accepted: 1, failed: 1, apns_configured: true, mipush_configured: true,
     });
-    assert.equal(completions.find((c) => c.p_delivery_id === 7).p_error_code, 'transport_error');
-    assert.equal(completions.find((c) => c.p_delivery_id === 8).p_outcome, 'sent');
+    assert.equal(completions.find((c) => c.p_delivery_id === '7').p_error_code, 'transport_error');
+    assert.equal(completions.find((c) => c.p_delivery_id === '8').p_outcome, 'sent');
     assert.ok(!response.body.includes('private-device-token'));
   });
 });
@@ -137,7 +138,7 @@ for (const failedClaim of ['apns', 'mipush']) test(`${failedClaim} claim failure
   await fixture({ failedClaim }, async ({ send, completions }) => {
     assert.equal((await send()).statusCode, 503);
     assert.equal(completions.length, 1);
-    assert.equal(completions[0].p_delivery_id, failedClaim === 'apns' ? 8 : 7);
+    assert.equal(completions[0].p_delivery_id, failedClaim === 'apns' ? '8' : '7');
   });
 });
 
@@ -146,7 +147,7 @@ test('APNs completion rejection cannot be counted as a completed dispatch', asyn
     const response = await send();
     assert.equal(response.statusCode, 503);
     assert.equal(response.body, '{"error":"push_worker_unavailable"}');
-    assert.equal(completions.find((c) => c.p_delivery_id === 8).p_outcome, 'sent');
+    assert.equal(completions.find((c) => c.p_delivery_id === '8').p_outcome, 'sent');
   });
 });
 
@@ -155,7 +156,7 @@ for (const env of [{ APNS_KEY_ID: '' }, { APNS_PRIVATE_KEY: 'invalid private mat
     await fixture({ env }, async ({ send, completions, pushes }) => {
       assert.equal((await send()).statusCode, 503);
       assert.equal(pushes.length, 0);
-      assert.equal(completions.find((c) => c.p_delivery_id === 8).p_outcome, 'sent');
+      assert.equal(completions.find((c) => c.p_delivery_id === '8').p_outcome, 'sent');
     });
   });
 }
@@ -175,7 +176,7 @@ test('no configured provider leaves the queue unclaimed', async () => {
   });
 });
 
-test('worker completes the database receipt after an actual HTTP/2 server accepts the request', async () => {
+for (const kind of ['photo', 'photo_sync']) test(`worker completes ${kind} receipt after actual HTTP/2 acceptance`, async () => {
   const server = http2.createServer();
   const sessions = new Set();
   server.on('session', (session) => { sessions.add(session); session.on('error', () => {}); });
@@ -185,13 +186,18 @@ test('worker completes the database receipt after an actual HTTP/2 server accept
     stream.on('error', () => {}); stream.on('data', (chunk) => bytes.push(chunk));
     stream.on('end', () => {
       assert.equal(headers[':method'], 'POST');
-      assert.equal(JSON.parse(Buffer.concat(bytes)).squadly.type, 'photo_sync');
+      const payload = JSON.parse(Buffer.concat(bytes));
+      assert.equal(payload.squadly.type, 'photo_sync');
+      assert.equal(headers['apns-push-type'], kind === 'photo_sync' ? 'background' : 'alert');
+      assert.equal(headers['apns-priority'], kind === 'photo_sync' ? '5' : '10');
+      if (kind === 'photo_sync') assert.deepEqual(payload.aps, { 'content-available': 1 });
       received = true; stream.respond({ ':status': 200 }); stream.end();
     });
   });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   try {
-    await fixture({ mi: false, transport: (request) => sendApns(request, {
+    await fixture({ mi: false, kind, leaseKind: kind === 'photo_sync' ? 'photo_sync' : 'message',
+      transport: (request) => sendApns(request, {
       connect: () => http2.connect(`http://127.0.0.1:${server.address().port}`),
     }) }, async ({ send, completions }) => {
       const response = await send();
@@ -203,4 +209,33 @@ test('worker completes the database receipt after an actual HTTP/2 server accept
     for (const session of sessions) session.destroy();
     await new Promise((resolve) => server.close(resolve));
   }
+});
+
+test('revocation sends a quiet background hint and completes its separate lease', async () => {
+  await fixture({ mi: false, leaseKind: 'photo_sync', kind: 'photo_sync' }, async ({ send, pushes, completions, calls }) => {
+    assert.equal((await send()).statusCode, 200);
+    assert.deepEqual(JSON.parse(pushes[0].init.body), {
+      aps: { 'content-available': 1 }, squadly: { v: 1, type: 'photo_sync' },
+    });
+    assert.equal(pushes[0].init.headers['apns-push-type'], 'background');
+    assert.equal(pushes[0].init.headers['apns-priority'], '5');
+    assert.equal(pushes[0].init.headers['apns-expiration'], '0');
+    assert.equal(completions[0].p_lease_kind, 'photo_sync');
+    assert.equal(completions[0].p_delivery_id, '7');
+    assert.ok(calls.some((call) => call.url.endsWith('/rpc/complete_push_work')));
+  });
+});
+
+for (const options of [
+  { leaseKind: 'message', kind: 'photo_sync', mi: false },
+  { leaseKind: 'photo_sync', kind: 'photo', mi: false },
+  { leaseKind: 'untrusted', kind: 'photo', mi: false },
+  { leaseKind: 'photo_sync', kind: 'photo_sync', apns: false },
+]) test(`invalid work combination ${JSON.stringify(options)} cannot send`, async () => {
+  await fixture(options, async ({ send, pushes, calls, completions }) => {
+    assert.equal((await send()).statusCode, 200);
+    assert.equal(pushes.length, 0);
+    assert.equal(calls.filter((call) => call.url.includes('xmpush.xiaomi.com')).length, 0);
+    assert.equal(completions[0].p_outcome, 'retry');
+  });
 });

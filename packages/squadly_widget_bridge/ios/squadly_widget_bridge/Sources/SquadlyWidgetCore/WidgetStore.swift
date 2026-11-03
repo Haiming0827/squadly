@@ -44,6 +44,39 @@ public final class WidgetStore {
     }
   }
 
+  /// An expired SDK identity can retain only its existing inert reference.
+  /// Never establish recovery authority after logout or for another scope.
+  @discardableResult
+  public func retainExpired(scope: String, expiresAt: Date) throws -> WidgetManifest {
+    try transaction { manifest in
+      guard validScope(scope), expiresAt.timeIntervalSince1970.isFinite,
+        expiresAt <= self.clock().now else { throw WidgetStoreError.invalid }
+      guard let session = manifest.session, session.scope == scope,
+        manifest.binding?.scope == scope else { throw WidgetStoreError.stale }
+      if session.expiresAt != expiresAt {
+        manifest.session = WidgetSession(scope: scope, generation: self.uuid(), expiresAt: expiresAt)
+      }
+      manifest.photo = nil; manifest.hasExpiredPhoto = true
+      return manifest
+    }
+  }
+
+  /// Only the main-app credential manager calls this after validating fresh SDK
+  /// material. The old reference may be expired, but must still match exactly.
+  @discardableResult
+  public func renewSession(bindingID: String, sessionGeneration: String, scope: String,
+                           expiresAt: Date) throws -> WidgetManifest {
+    try transaction { manifest in
+      guard let binding = manifest.binding, let session = manifest.session,
+        binding.id == bindingID, binding.previewEnabled, binding.scope == scope,
+        session.scope == scope, session.generation == sessionGeneration,
+        expiresAt.timeIntervalSince1970.isFinite, expiresAt > self.clock().now else { throw WidgetStoreError.stale }
+      manifest.session = WidgetSession(scope: scope, generation: self.uuid(), expiresAt: expiresAt)
+      manifest.photo = nil; manifest.failure = false; manifest.hasExpiredPhoto = false
+      return manifest
+    }
+  }
+
   @discardableResult
   public func bind(scope: String, sessionGeneration: String, squadID: String, squadName: String) throws -> WidgetManifest {
     try transaction { manifest in

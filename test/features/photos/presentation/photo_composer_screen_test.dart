@@ -12,6 +12,27 @@ import 'photo_test_helpers.dart';
 
 void main() {
   testWidgets(
+    'server-side pending failure does not claim the device is offline',
+    (tester) async {
+      final h = PhotoHarness();
+      h.repository.onPublish = (_) async =>
+          left(const Failure.server(message: '照片服务暂不可用，请稍后重试'));
+      await h.mount(tester, const PhotoComposerScreen(target: target));
+      await tester.tap(find.text('拍一张'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('发到「周末小队」'));
+      await tester.pumpAndSettle();
+      expect(find.text('照片服务暂不可用，请稍后重试'), findsOneWidget);
+      expect(find.text('已保存待发，可稍后使用原照片重试'), findsOneWidget);
+      expect(find.text('已保存待发，联网后会继续重试'), findsNothing);
+      expect(
+        await h.outbox.listFor(userId: 'alice', squadId: target.squadId),
+        hasLength(1),
+      );
+    },
+  );
+
+  testWidgets(
     'widget entry opens camera once and still requires explicit send',
     (tester) async {
       final h = PhotoHarness();

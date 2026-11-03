@@ -83,6 +83,7 @@ public final class BackgroundCredentialManager {
   private let clock: () -> WidgetClock
   private let lock = NSRecursiveLock()
   private var pending: (ticket: String, binding: String, generation: String)?
+  private var renewal: (ticket: String, binding: String, generation: String, scope: String, issued: TimeInterval, deadline: TimeInterval)?
   public init(store: WidgetStore, vault: BackgroundCredentialVault, clock: @escaping () -> WidgetClock = { WidgetClock() }) {
     self.store = store; self.vault = vault; self.clock = clock
   }
@@ -90,7 +91,7 @@ public final class BackgroundCredentialManager {
   public func prepare(bindingID: String, sessionGeneration: String) throws -> String {
     lock.lock(); defer { lock.unlock() }
     _ = try context(bindingID: bindingID, sessionGeneration: sessionGeneration)
-    pending = nil; try vault.clear()
+    pending = nil; renewal = nil; try vault.clear()
     let ticket = UUID().uuidString.lowercased()
     pending = (ticket, bindingID, sessionGeneration)
     return ticket
@@ -115,7 +116,52 @@ public final class BackgroundCredentialManager {
 
   public func clear() throws {
     lock.lock(); defer { lock.unlock() }
-    pending = nil; try vault.clear()
+    pending = nil; renewal = nil; try vault.clear()
+  }
+
+  /// No token crosses this request. An expired reference is never a credential.
+  public func prepareRenewal(deadline: TimeInterval) throws -> BackgroundRenewalRequest {
+    lock.lock(); defer { lock.unlock() }
+    let instant = clock().uptime
+    guard deadline.isFinite, deadline > instant else { throw WidgetStoreError.stale }
+    let state = try store.read()
+    guard let binding = state.binding, let session = state.session,
+      binding.previewEnabled, binding.scope == session.scope else { throw WidgetStoreError.stale }
+    pending = nil; renewal = nil; try vault.clear()
+    let ticket = UUID().uuidString.lowercased(), end = min(deadline, instant + 8)
+    renewal = (ticket, binding.id, session.generation, binding.scope, instant, end)
+    return BackgroundRenewalRequest(ticket: ticket, scope: binding.scope, deadline: end)
+  }
+
+  public func cancelRenewal(ticket: String) {
+    lock.lock(); defer { lock.unlock() }
+    if renewal?.ticket == ticket { renewal = nil }
+  }
+
+  public func commitRenewal(ticket: String, environmentID: String, userID: String, region: String,
+                            gateway: String, token: String, expiresAt: Date) throws {
+    lock.lock(); defer { lock.unlock() }
+    let instant = clock().uptime
+    guard let lease = renewal, lease.ticket == ticket,
+      instant >= lease.issued, instant < lease.deadline else { throw WidgetStoreError.stale }
+    renewal = nil
+    let state = try store.read()
+    guard let binding = state.binding, let session = state.session,
+      binding.previewEnabled, binding.id == lease.binding, binding.scope == lease.scope,
+      session.scope == lease.scope, session.generation == lease.generation else { throw WidgetStoreError.stale }
+    let proposed = WidgetSession(scope: lease.scope, generation: lease.generation, expiresAt: expiresAt)
+    let checked = try BackgroundCredential.make(binding: binding, session: proposed, environmentID: environmentID,
+      userID: userID, region: region, gateway: gateway, token: token, requestedExpiry: expiresAt, clock: clock())
+    let updated = try store.renewSession(bindingID: lease.binding, sessionGeneration: lease.generation,
+      scope: lease.scope, expiresAt: checked.expiresAt)
+    let value = try BackgroundCredential.make(binding: updated.binding!, session: updated.session!, environmentID: environmentID,
+      userID: userID, region: region, gateway: gateway, token: token, requestedExpiry: checked.expiresAt, clock: clock())
+    guard clock().uptime >= lease.issued, clock().uptime < lease.deadline else { throw WidgetStoreError.stale }
+    try vault.save(JSONEncoder().encode(value))
+    // A blocking local Keychain write is not permission to finish a late ticket.
+    guard clock().uptime >= lease.issued, clock().uptime < lease.deadline else {
+      try vault.clear(); throw WidgetStoreError.stale
+    }
   }
 
   /// Purges expired/corrupt/mismatched bytes, including after a process restart.
@@ -146,6 +192,12 @@ public final class BackgroundCredentialManager {
     lock.lock(); defer { lock.unlock() }
     if let lease = pending, (try? context(bindingID: lease.binding, sessionGeneration: lease.generation)) == nil {
       pending = nil
+    }
+    if let lease = renewal {
+      let state = try? store.read(), instant = clock().uptime
+      if state?.binding?.id != lease.binding || state?.binding?.previewEnabled != true ||
+        state?.session?.scope != lease.scope || state?.session?.generation != lease.generation ||
+        instant < lease.issued || instant >= lease.deadline { renewal = nil }
     }
     _ = try read()
   }
